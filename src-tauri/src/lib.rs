@@ -4,6 +4,17 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// Tauri returns an HWND from whatever version of the `windows` crate IT
+// depends on, which need not be the version this crate depends on - and two
+// copies of that crate in one dependency graph make those two HWNDs distinct
+// types that will not substitute for each other. A window handle is a bare
+// pointer in every version, so rebuild it in ours. Matching the two versions
+// by hand instead would only move the breakage to whichever side bumps first.
+#[cfg(target_os = "windows")]
+fn hwnd_of(window: &tauri::WebviewWindow) -> Option<windows::Win32::Foundation::HWND> {
+    Some(windows::Win32::Foundation::HWND(window.hwnd().ok()?.0))
+}
+
 // Windows 11 rounds top-level windows automatically, but that default can be
 // disabled by group policy or a non-standard window setup (e.g. borderless
 // windows). Setting DWMWA_WINDOW_CORNER_PREFERENCE explicitly guarantees
@@ -15,7 +26,7 @@ pub fn apply_rounded_corners(window: &tauri::WebviewWindow) {
         DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
     };
 
-    if let Ok(hwnd) = window.hwnd() {
+    if let Some(hwnd) = hwnd_of(window) {
         let preference = DWMWCP_ROUND;
         unsafe {
             let _ = DwmSetWindowAttribute(
@@ -44,7 +55,7 @@ fn get_monitor_work_area(window: tauri::WebviewWindow) -> Option<(i32, i32, i32,
         GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
     };
 
-    let hwnd = window.hwnd().ok()?;
+    let hwnd = hwnd_of(&window)?;
     unsafe {
         let hmonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
         let mut info = MONITORINFO {
