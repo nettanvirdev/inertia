@@ -1,29 +1,25 @@
 version: 2
 updates:
-  # Frontend (bun/npm) dependencies
+  # Frontend (bun/npm) dependencies. Everything lands in ONE pull request per
+  # run rather than one per package - a starter this size has no CI to gate
+  # them, so a single reviewable bump beats a dozen separate ones.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
-      npm-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      npm:
+        patterns:
+          - "*"
 
   # Rust/Tauri dependencies
   - package-ecosystem: "cargo"
     directory: "/src-tauri"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
-      cargo-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
-  # GitHub Actions workflows
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+      cargo:
+        patterns:
+          - "*"

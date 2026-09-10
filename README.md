@@ -24,9 +24,10 @@ design system, and dependency updates wired up.
   (light and dark, tokens for surfaces, fills, status colours, motion curves and
   a radius ramp) built on Tailwind v4. Retheming the whole app happens in that
   one file.
-- **Dependabot + CI.** Weekly npm / cargo / actions updates, and a workflow that
-  builds the frontend and runs `cargo check` on every PR so those updates get
-  validated before you merge them.
+- **Dependabot.** Weekly npm and cargo updates, grouped into one pull request
+  per ecosystem. There is deliberately no CI workflow: compiling Tauri on a
+  hosted Windows runner is slow and would run on every dependency bump, so
+  updates are verified by building locally instead.
 
 ## Getting started
 
