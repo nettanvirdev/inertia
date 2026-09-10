@@ -1,0 +1,702 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────────
+ * INERTIA - Design DNA, app-palette 1.0
+ * Ported from the Inertia study app's theme. Two authored palettes, dark first.
+ * Every token below MUST exist in both :root (light) and .dark (dark). This
+ * file is the single place to retheme the entire app.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── motion ──────────────────────────────────────────────────────────────────
+ * The durations and curves every animation in the app is built from.
+ *
+ * Three rules:
+ *   - move only transform and opacity, which the compositor animates alone;
+ *     a height that has to change uses grid rows (see `.collapse-fold`);
+ *   - decelerate in, and leave faster than you arrived;
+ *   - reduced motion removes travel and scale, and keeps a short fade so
+ *     nothing appears without warning.
+ * ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --motion-instant: 80ms;
+  --motion-fast: 140ms;
+  --motion-base: 200ms;
+  --motion-collapse: 240ms;
+  --motion-panel: 260ms;
+  --motion-slow: 300ms;
+  --motion-exit: 150ms;
+  --motion-reduced: 100ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inOut: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+:root,
+.light {
+  color-scheme: light;
+
+  --ink: 35 38 42;
+
+  --background: #fbfbf9;
+  --foreground: #23262a;
+  --foreground-secondary: #4c5158;
+  --muted-foreground: #62676e;
+  --heading: #16191c;
+
+  /* ── surface ladder ───────────────────────────────────────────────────────
+   * Light runs downward: the ground is the brightest thing on screen, so a
+   * surface sitting on it is darker, and "lighter" means nearer the ground. */
+  --card: #f4f4f1;
+  --card-foreground: #23262a;
+  --card-lighter: #ffffff;
+  --card-subtle: #f4f4f1;
+  --card-raised: #ffffff;
+  --card-darker: #f0f0ec;
+  --muted: #eaeae5;
+  --user-message-background: #f4f4f1;
+
+  --sidebar: #f5f5f2;
+  --sidebar-foreground: #23262a;
+  --sidebar-border: #e7e7e2;
+  --titlebar: #f5f5f2;
+
+  --border: #e7e7e2;
+  --border-strong: #d6d6cf;
+  --border-subtle: #f0f0ec;
+
+  --input: #f1f1ed;
+  --input-border: #e0e0d9;
+  --input-hover: #ebebe6;
+  --input-focus: #e5e5df;
+  --input-foreground: #23262a;
+  --input-placeholder: #6d727a;
+
+  --icon: #23262a;
+  --icon-muted: #666b72;
+  --icon-surface: #7e7e7e;
+  --icon-surface-foreground: #efefef;
+
+  --popover: #ffffff;
+  --popover-foreground: #23262a;
+
+  --destructive: #d94841;
+  --destructive-foreground: #ffffff;
+  --destructive-ink: #b42318;
+  --destructive-wash: color-mix(in srgb, var(--destructive) 10%, transparent);
+
+  --success: #17b26a;
+  --success-ink: #067647;
+  --success-wash: color-mix(in srgb, var(--success) 10%, transparent);
+
+  --warning: #f79009;
+  --warning-ink: #b54708;
+  --warning-wash: color-mix(in srgb, var(--warning) 10%, transparent);
+
+  --info: #2e90fa;
+  --info-ink: #175cd3;
+  --info-wash: color-mix(in srgb, var(--info) 10%, transparent);
+
+  --shadow-sm: 0 1px 2px rgba(51, 53, 55, 0.06), 0 1px 3px rgba(51, 53, 55, 0.04);
+  --shadow-md: 0 4px 12px rgba(51, 53, 55, 0.08);
+  --shadow-lg: 0 12px 32px rgba(51, 53, 55, 0.12);
+
+  --fill-whisper: rgb(var(--ink) / 0.015);
+  --fill-nav: rgb(var(--ink) / 0.025);
+  --fill-nav-active: rgb(var(--ink) / 0.03);
+  --fill-control: rgb(var(--ink) / 0.03);
+  --fill-menu: rgb(var(--ink) / 0.035);
+  --fill-secondary: rgb(var(--ink) / 0.04);
+  --fill-control-hover: rgb(var(--ink) / 0.055);
+  --fill-close: rgb(var(--ink) / 0.06);
+  --fill-secondary-hover: rgb(var(--ink) / 0.08);
+  --fill-track: rgb(var(--ink) / 0.15);
+
+  --fill-field: rgb(var(--ink) / 0.06);
+  --fill-field-hover: rgb(var(--ink) / 0.09);
+
+  --focus-ring: rgb(var(--ink) / 0.55);
+  --scrim: rgb(var(--ink) / 0.40);
+
+  --overlay: #ffffff;
+  --overlay-edge: #e2e2dc;
+
+  --control-border: rgb(var(--ink) / 0.14);
+  --control-hover: rgb(var(--ink) / 0.02);
+  --control-pressed: rgb(var(--ink) / 0.05);
+  --thumb-border: rgb(var(--ink) / 0.05);
+
+  --switch-off: #c4c4c4;
+  --switch-off-hover: #afafaf;
+
+  --destructive-hover: #fa423e;
+  --destructive-pressed: #ba2623;
+
+  /* ── the radius ramp ──────────────────────────────────────────────────────
+   * xs 3 · sm 6 · md 12 · lg 16, proportional rather than subtractive so the
+   * whole ramp holds its shape at any --radius. */
+  --radius: 1rem;
+
+  --spacing: 0.25rem;
+
+  /* ── shell geometry ────────────────────────────────────────────────────── */
+  --titlebar-h: 2rem;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --ink: 230 233 237;
+
+  --background: #17191c;
+  --foreground: #e6e9ed;
+  --foreground-secondary: #c3c8ce;
+  --muted-foreground: #a0a6ae;
+  --heading: #f2f5f8;
+
+  /* Dark runs upward: ground #181818 · card #1f1f21 · lighter #2a2a2a */
+  --card: #1e2024;
+  --card-foreground: #e6e9ed;
+  --card-lighter: #282b30;
+  --card-subtle: #1e2024;
+  --card-raised: #282b30;
+  --card-darker: #131417;
+  --muted: #282b30;
+  --user-message-background: #282b30;
+
+  --sidebar: #1b1d21;
+  --sidebar-foreground: #e6e9ed;
+  --sidebar-border: #2a2d33;
+  --titlebar: #1b1d21;
+
+  --border: #2a2d33;
+  --border-strong: #3b4048;
+  --border-subtle: #232529;
+
+  --input: #2b2e34;
+  --input-border: #383c43;
+  --input-hover: #32363d;
+  --input-focus: #3a3f47;
+  --input-foreground: #e6e9ed;
+  --input-placeholder: #9aa0a8;
+
+  --icon: #e6e9ed;
+  --icon-muted: #a0a6ae;
+  --icon-surface: #959595;
+  --icon-surface-foreground: #2b2b2b;
+
+  --popover: #25282d;
+  --popover-foreground: #e6e9ed;
+
+  --destructive: #da463c;
+  --destructive-foreground: #ffffff;
+  --destructive-ink: #fda29b;
+  --destructive-wash: color-mix(in srgb, var(--destructive) 18%, transparent);
+
+  --success: #47cd89;
+  --success-ink: #75e0a7;
+  --success-wash: color-mix(in srgb, var(--success) 18%, transparent);
+
+  --warning: #fdb022;
+  --warning-ink: #fec84b;
+  --warning-wash: color-mix(in srgb, var(--warning) 18%, transparent);
+
+  --info: #53b1fd;
+  --info-ink: #84caff;
+  --info-wash: color-mix(in srgb, var(--info) 18%, transparent);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  --fill-whisper: rgb(var(--ink) / 0.02);
+  --fill-nav: rgb(var(--ink) / 0.035);
+  --fill-nav-active: rgb(var(--ink) / 0.04);
+  --fill-control: rgb(var(--ink) / 0.035);
+  --fill-menu: rgb(var(--ink) / 0.05);
+  --fill-secondary: rgb(var(--ink) / 0.06);
+  --fill-control-hover: rgb(var(--ink) / 0.075);
+  --fill-close: rgb(var(--ink) / 0.08);
+  --fill-secondary-hover: rgb(var(--ink) / 0.10);
+  --fill-track: rgb(var(--ink) / 0.18);
+
+  --fill-field: rgb(var(--ink) / 0.07);
+  --fill-field-hover: rgb(var(--ink) / 0.10);
+
+  --focus-ring: rgb(var(--ink) / 0.38);
+  --scrim: rgb(0 0 0 / 0.6);
+
+  --overlay: #25282d;
+  --overlay-edge: #3b4048;
+
+  --control-border: rgb(var(--ink) / 0.1);
+  --control-hover: rgb(var(--ink) / 0.03);
+  --control-pressed: rgb(var(--ink) / 0.07);
+  --thumb-border: rgb(var(--ink) / 0.05);
+
+  --switch-off: rgb(var(--ink) / 0.18);
+  --switch-off-hover: rgb(var(--ink) / 0.26);
+
+  --destructive-hover: #fa423e;
+  --destructive-pressed: #ba2623;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-lighter: var(--card-lighter);
+  --color-card-darker: var(--card-darker);
+  --color-card-subtle: var(--card-subtle);
+  --color-card-raised: var(--card-raised);
+  --color-input-hover: var(--input-hover);
+  --color-input-focus: var(--input-focus);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-user-message-background: var(--user-message-background);
+  --color-heading: var(--heading);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-ink: var(--destructive-ink);
+  --color-destructive-wash: var(--destructive-wash);
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-success-wash: var(--success-wash);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-wash: var(--warning-wash);
+  --color-info: var(--info);
+  --color-info-ink: var(--info-ink);
+  --color-info-wash: var(--info-wash);
+  --color-titlebar: var(--titlebar);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-border-strong: var(--border-strong);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+  --color-input-foreground: var(--input-foreground);
+  --color-input-placeholder: var(--input-placeholder);
+  --color-icon: var(--icon);
+  --color-icon-muted: var(--icon-muted);
+  --color-icon-surface: var(--icon-surface);
+  --color-icon-surface-foreground: var(--icon-surface-foreground);
+  --color-overlay: var(--overlay);
+  --color-overlay-edge: var(--overlay-edge);
+  --color-scrim: var(--scrim);
+
+  /* `ring-ring` rather than a hardcoded alpha - the palette gives focus a
+     different alpha per mode, which a fixed value cannot express. */
+  --color-ring: var(--focus-ring);
+
+  /* No --radius-window here on purpose. The window corner belongs to the
+     compositor: Windows rounds the frame (and clips what's painted inside it)
+     at its own radius, which tracks DPI and the OS version. Rounding the shell
+     in CSS as well just cuts the content on a second, tighter curve and leaves
+     a crescent of whatever is behind the window showing between the two. */
+
+  --radius-xs: calc(var(--radius) * 0.1875);
+  --radius-sm: calc(var(--radius) * 0.375);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+
+  --color-control-border: var(--control-border);
+  --color-control-hover: var(--control-hover);
+  --color-control-pressed: var(--control-pressed);
+  --color-thumb-border: var(--thumb-border);
+  --color-switch-off: var(--switch-off);
+  --color-switch-off-hover: var(--switch-off-hover);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-pressed: var(--destructive-pressed);
+
+  /* ── the interface face ───────────────────────────────────────────────────
+   * The platform's own system face first, then Inter as the one thing that
+   * might be installed on a machine that has neither. On macOS this IS the
+   * system face; on Windows it's Segoe UI Variable, what every native app
+   * there is set in. */
+  --font-sans:
+    "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    "Segoe UI Variable Text", "Segoe UI", Inter, "Inter var", system-ui,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --font-mono:
+    "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", "Cascadia Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  :disabled {
+    cursor: default;
+  }
+  ::selection {
+    background: var(--fill-secondary-hover);
+  }
+  /* Scrollbars are a seam in a borderless UI - hide them everywhere. */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  .icon {
+    stroke-width: 1.65;
+    shape-rendering: geometricPrecision;
+    flex: none;
+  }
+  .icon[class~="size-3"],
+  .icon[class*="size-3.5"] {
+    stroke-width: 1.9;
+  }
+}
+
+/* ── the one hover language, as utilities ─────────────────────────────────── */
+@utility fill-whisper {
+  background-color: var(--fill-whisper);
+}
+@utility fill-nav {
+  background-color: var(--fill-nav);
+}
+@utility fill-nav-active {
+  background-color: var(--fill-nav-active);
+}
+@utility fill-control {
+  background-color: var(--fill-control);
+}
+@utility fill-menu {
+  background-color: var(--fill-menu);
+}
+@utility fill-secondary {
+  background-color: var(--fill-secondary);
+}
+@utility fill-control-hover {
+  background-color: var(--fill-control-hover);
+}
+@utility fill-close {
+  background-color: var(--fill-close);
+}
+@utility fill-secondary-hover {
+  background-color: var(--fill-secondary-hover);
+}
+@utility fill-track {
+  background-color: var(--fill-track);
+}
+
+/* One recipe for every floating sheet, so a menu, a select and a dialog can
+   never drift apart in elevation. The edge is INSET, so it costs no layout. */
+@utility overlay-surface {
+  background-color: var(--overlay);
+  box-shadow: inset 0 0 0 1px var(--overlay-edge);
+}
+
+@utility overlay-plain {
+  background-color: var(--overlay);
+  box-shadow: var(--shadow-lg);
+}
+
+/* The dimmed ground behind a dialog. Full-bleed and square: the window's
+   corner is rounded by the compositor, which clips everything painted here,
+   so a scrim that tried to round itself would only pull away from an edge
+   the OS has already cut. */
+@utility scrim {
+  background-color: var(--scrim);
+}
+
+/* ── cards, as the palette defines them ───────────────────────────────────
+ * One utility each, so "what is a card" is answered here rather than in
+ * thirty class lists that will drift apart. */
+@utility card-surface {
+  background-color: var(--card);
+}
+@utility card-surface-raised {
+  background-color: var(--card-raised);
+}
+@utility card-surface-subtle {
+  background-color: var(--card-subtle);
+}
+
+/* The inverted chip - solid grey, light-on-dark in light mode and the reverse
+   in dark. */
+@utility icon-surface {
+  background-color: var(--icon-surface);
+  color: var(--icon-surface-foreground);
+}
+
+/* ── appearance ───────────────────────────────────────────────────────────
+ * `--accent-solid` is absent by default on purpose: the base design has no
+ * accent colour at all, and falling back to the foreground is what every
+ * loud button already looked like before an accent existed. */
+@utility accent-fill {
+  background-color: var(--accent-solid, var(--foreground));
+  color: var(--accent-on, var(--background));
+}
+@utility accent-ink {
+  color: var(--accent-solid, var(--foreground));
+}
+
+/* ── overlay choreography (ease-out only, no bounce) ──────────────────────────
+ * An anchored sheet must look like it came OUT OF the control that opened it:
+ * a short travel on the placement axis, a touch of scale, and a duration short
+ * enough to still read as one gesture rather than a window appearing. */
+@keyframes inertia-in {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+@keyframes inertia-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.96);
+  }
+}
+@keyframes inertia-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes inertia-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes inertia-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes inertia-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes inertia-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes inertia-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes inertia-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@utility animate-overlay-in {
+  animation: inertia-in var(--motion-base) var(--ease-out);
+}
+@utility animate-overlay-out {
+  animation: inertia-out var(--motion-exit) var(--ease-in) forwards;
+}
+@utility animate-fade-in {
+  animation: inertia-fade-in var(--motion-base) ease-out;
+}
+@utility animate-fade-out {
+  animation: inertia-fade-out var(--motion-exit) ease-out forwards;
+}
+@utility animate-slide-up {
+  animation: inertia-slide-up var(--motion-base) var(--ease-out);
+}
+@utility animate-pop-in {
+  animation: inertia-pop-in var(--motion-fast) var(--ease-spring);
+}
+@utility animate-spin-slow {
+  animation: inertia-spin 900ms linear infinite;
+}
+@utility animate-soft-pulse {
+  animation: inertia-pulse 1.6s ease-in-out infinite;
+}
+@utility text-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 42%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 58%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: inertia-shimmer 1.8s linear infinite;
+}
+
+/* ── the fold ────────────────────────────────────────────────────────────────
+ * `<Collapse>`. A grid with one row, transitioned between 0fr and 1fr: the
+ * content decides what 1fr means, so nothing is measured, and the browser
+ * does one layout per frame rather than a paint of everything below. */
+.collapse-fold {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-collapse) var(--ease-out),
+    opacity var(--motion-base) var(--ease-out);
+}
+.collapse-fold[data-state="open"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.collapse-fold[data-state="closing"] {
+  transition-duration: var(--motion-exit), var(--motion-exit);
+  transition-timing-function: var(--ease-inOut), var(--ease-in);
+}
+.collapse-fold[data-state="closed"] {
+  display: none;
+}
+.collapse-fold > * {
+  overflow: hidden;
+  min-height: 0;
+}
+[data-state="closing"].animate-overlay-in {
+  animation: inertia-out var(--motion-exit) var(--ease-in) forwards;
+  pointer-events: none;
+}
+[data-state="closing"].animate-fade-in,
+[data-state="closing"].animate-slide-up {
+  animation: inertia-fade-out var(--motion-exit) ease-out forwards;
+  pointer-events: none;
+}
+.collapse-fold[data-state="entering"],
+.collapse-fold[data-state="closing"] {
+  will-change: transform, opacity;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* ── window ──────────────────────────────────────────────────────────────────
+ * The shell settling after the system has moved the frame - maximised,
+ * restored, resized by the animated titlebar controls. Opacity alone, and
+ * deliberately no scale: a webview cannot smoothly rescale its own layout, so
+ * this only softens the frame the reflow lands in. */
+@keyframes inertia-window-settle {
+  from {
+    opacity: 0.86;
+  }
+  to {
+    opacity: 1;
+  }
+}
+[data-settling="true"] {
+  animation: inertia-window-settle var(--motion-slow) var(--ease-out);
+}
+
+/* Tauri frameless-window drag region. Kept as classes (rather than relying on
+   `data-tauri-drag-region`'s built-in double-click-to-maximize) so the
+   titlebar can drive its own animated maximize/restore instead. */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ── reduced motion ──────────────────────────────────────────────────────────
+ * What is reduced is travel and scale - nothing slides, grows or folds. What
+ * stays is a short opacity fade, because a menu that is simply there on one
+ * frame is more startling than one that fades in over a tenth of a second. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--motion-reduced) !important;
+    animation-iteration-count: 1 !important;
+    animation-name: none !important;
+    transition-property: color, background-color, border-color, fill, stroke, opacity !important;
+    transition-duration: var(--motion-reduced) !important;
+    transition-timing-function: ease-out !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-overlay-in,
+  .animate-fade-in,
+  .animate-slide-up {
+    animation-name: inertia-fade-in !important;
+  }
+  [data-state="closing"].animate-overlay-in,
+  [data-state="closing"].animate-fade-in,
+  [data-state="closing"].animate-slide-up {
+    animation-name: inertia-fade-out !important;
+    animation-fill-mode: forwards !important;
+  }
+  .collapse-fold {
+    transition-property: opacity !important;
+  }
+  .animate-spin-slow,
+  .animate-spin {
+    animation-name: inertia-spin !important;
+    animation-duration: 900ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ── the gutter ────────────────────────────────────────────────────────────
+ * One number, used by every panel, so chrome and content start at the same
+ * distance from the panel's edge instead of drifting apart one `px-3` at a
+ * time. */
+@utility panel-gutter {
+  padding-inline: 0.75rem;
+}
+@utility panel-inset {
+  margin-inline: 0.75rem;
+}
