@@ -1,0 +1,8 @@
+/* The installer is the app's design system, unchanged - one palette file, two
+   binaries. Tailwind's automatic source detection roots at this Vite project
+   (`installer/`), so the app's own `src/` has to be declared explicitly or
+   every class shared from `@/lib/icons` gets tree-shaken out of the build. */
+@import "../../../src/styles/globals.css";
+
+@source "../../src";
+@source "../../../src";

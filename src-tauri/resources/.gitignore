@@ -1,0 +1,3 @@
+# Built by scripts/build-setup.mjs from the uninstaller crate, then bundled
+# into the app as a resource. A build artifact, not source.
+inertia-uninstall.exe

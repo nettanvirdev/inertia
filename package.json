@@ -7,14 +7,20 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev:setup-ui": "vite --config vite.installer.config.ts",
+    "build:setup-ui": "tsc && vite build --config vite.installer.config.ts",
+    "dev:setup": "cd installer/src-tauri && bunx tauri dev",
+    "build:setup": "node scripts/build-setup.mjs",
+    "dev:uninstall": "cd uninstaller/src-tauri && bunx tauri dev"
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-opener": "^2",
     "clsx": "^2.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

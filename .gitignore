@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Setup bootstrapper build output
+dist-installer
+dist-setup

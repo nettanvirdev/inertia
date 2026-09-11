@@ -16,7 +16,8 @@
 
     /* Path aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@setup/*": ["./installer/src/*"]
     },
 
     /* Linting */
@@ -25,6 +26,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "installer/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

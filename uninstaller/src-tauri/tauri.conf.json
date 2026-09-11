@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Inertia Uninstall",
+  "version": "0.1.0",
+  "identifier": "com.nettanvirdev.inertia.uninstall",
+  "build": {
+    "frontendDist": "../../dist-installer"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "setup",
+        "title": "Uninstall Inertia",
+        "width": 460,
+        "height": 520,
+        "resizable": false,
+        "maximizable": false,
+        "center": true,
+        "decorations": false,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["../../src-tauri/icons/icon.ico", "../../src-tauri/icons/128x128.png"]
+  }
+}
