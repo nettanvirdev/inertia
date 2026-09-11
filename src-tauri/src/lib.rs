@@ -78,6 +78,101 @@ fn get_monitor_work_area(_window: tauri::WebviewWindow) -> Option<(i32, i32, i32
 }
 
 
+// ── the maximize / restore animation ────────────────────────────────────────
+// This used to live in the frontend, tweening with requestAnimationFrame and
+// calling setPosition + setSize over IPC every frame. Three things made that
+// visibly rough, and all three are gone by doing it here:
+//
+//   - setPosition and setSize are two separate SetWindowPos calls, so every
+//     single frame the window existed for an instant at its new origin with
+//     its old size. That shear is the flicker.
+//   - sixty IPC round-trips a second, each awaited, means the frame interval
+//     is however long the round-trip took rather than a steady 8ms.
+//   - the tween finished by calling the native maximize(), which re-snapped
+//     the window to the OS's own maximized rect - a few pixels off the work
+//     area we had just animated to. That is the jump right at the end.
+//
+// So: one atomic SetWindowPos per frame, from a thread, and no native
+// maximize at all. "Maximized" here means "occupying the work area", which is
+// what it looked like anyway, and nothing re-snaps when the tween lands.
+#[cfg(target_os = "windows")]
+#[tauri::command]
+async fn animate_window_to(
+    window: tauri::WebviewWindow,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    duration_ms: u64,
+) -> Result<(), String> {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER,
+    };
+
+    let hwnd = hwnd_of(&window).ok_or("no window handle")?;
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+
+    let (x0, y0) = (position.x, position.y);
+    let (w0, h0) = (size.width as i32, size.height as i32);
+
+    // HWND is a raw pointer and therefore not Send, so carry it across the
+    // thread boundary as an integer and rebuild it there.
+    let raw = hwnd.0 as isize;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let hwnd = windows::Win32::Foundation::HWND(raw as *mut std::ffi::c_void);
+        let started = std::time::Instant::now();
+        let duration = duration_ms.max(1) as f32;
+
+        loop {
+            let t = (started.elapsed().as_millis() as f32 / duration).min(1.0);
+            // Matches --ease-out in globals.css: fast off the trigger, settles
+            // without overshoot. Kept identical so window motion and in-app
+            // motion read as the same system.
+            let e = 1.0 - (1.0 - t).powi(3);
+
+            let cx = x0 + ((x - x0) as f32 * e).round() as i32;
+            let cy = y0 + ((y - y0) as f32 * e).round() as i32;
+            let cw = w0 + ((width - w0) as f32 * e).round() as i32;
+            let ch = h0 + ((height - h0) as f32 * e).round() as i32;
+
+            unsafe {
+                let _ = SetWindowPos(hwnd, None, cx, cy, cw, ch, SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+
+            if t >= 1.0 {
+                break;
+            }
+            // ~120Hz. Finer than the compositor needs, but the cost is a few
+            // extra SetWindowPos calls rather than a few extra IPC hops.
+            std::thread::sleep(std::time::Duration::from_millis(8));
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+async fn animate_window_to(
+    window: tauri::WebviewWindow,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    _duration_ms: u64,
+) -> Result<(), String> {
+    // No smooth path off Windows; land on the target in one step.
+    use tauri::{PhysicalPosition, PhysicalSize};
+    window
+        .set_position(PhysicalPosition::new(x, y))
+        .map_err(|e| e.to_string())?;
+    window
+        .set_size(PhysicalSize::new(width as u32, height as u32))
+        .map_err(|e| e.to_string())
+}
+
 // ── preferences ─────────────────────────────────────────────────────────────
 // A single small JSON file in the OS config dir, written whole on every
 // change. Deliberately not the store plugin: two scalars and a first-run flag
@@ -140,6 +235,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_monitor_work_area,
+            animate_window_to,
             load_preferences,
             save_preferences
         ])

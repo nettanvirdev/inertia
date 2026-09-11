@@ -1,40 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentWindow, currentMonitor, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
+import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 
-const appWindow = getCurrentWindow();
+/**
+ * `getCurrentWindow()` reads metadata that only exists inside a Tauri webview,
+ * and it used to be called as this module evaluated - so importing anything
+ * that led here threw before React mounted, and `bun run dev` in a plain
+ * browser rendered nothing at all. Resolving to null instead keeps the
+ * frontend previewable on its own (the chrome simply does nothing there,
+ * which is the honest behaviour when there is no window to drive).
+ */
+function currentWindowOrNull() {
+  try {
+    return getCurrentWindow();
+  } catch {
+    return null;
+  }
+}
+
+const appWindow = currentWindowOrNull();
+type AppWindow = NonNullable<typeof appWindow>;
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type WindowMode = "normal" | "maximized";
 
-/** Matches --ease-out from globals.css: fast off the trigger, no overshoot. */
-function easeOut(t: number) {
-  return 1 - Math.pow(1 - t, 3);
-}
-
 const RESIZE_MS = 220;
 
-async function tweenBounds(from: Bounds, to: Bounds, duration: number) {
-  const start = performance.now();
-  await new Promise<void>((resolve) => {
-    function frame(now: number) {
-      const t = Math.min(1, (now - start) / duration);
-      const e = easeOut(t);
-      const x = Math.round(from.x + (to.x - from.x) * e);
-      const y = Math.round(from.y + (to.y - from.y) * e);
-      const width = Math.round(from.width + (to.width - from.width) * e);
-      const height = Math.round(from.height + (to.height - from.height) * e);
-      void appWindow.setPosition(new PhysicalPosition(x, y));
-      void appWindow.setSize(new PhysicalSize(width, height));
-      if (t < 1) requestAnimationFrame(frame);
-      else resolve();
-    }
-    requestAnimationFrame(frame);
-  });
+/** A few px of slop, because DPI scaling rarely divides evenly. */
+const EDGE_SLOP = 2;
+
+function sameBounds(a: Bounds, b: Bounds) {
+  return (
+    Math.abs(a.x - b.x) <= EDGE_SLOP &&
+    Math.abs(a.y - b.y) <= EDGE_SLOP &&
+    Math.abs(a.width - b.width) <= EDGE_SLOP &&
+    Math.abs(a.height - b.height) <= EDGE_SLOP
+  );
 }
 
-async function readBounds(): Promise<Bounds> {
-  const [position, size] = await Promise.all([appWindow.outerPosition(), appWindow.outerSize()]);
+async function readBounds(win: AppWindow): Promise<Bounds> {
+  const [position, size] = await Promise.all([win.outerPosition(), win.outerSize()]);
   return { x: position.x, y: position.y, width: size.width, height: size.height };
 }
 
@@ -59,11 +64,19 @@ async function readWorkArea(from: Bounds): Promise<Bounds> {
 
 /**
  * Drives the frameless window's chrome: current maximize state, and an
- * animated grow/shrink between the restored and maximized bounds instead of
- * the instant snap `Window.maximize()` gives on its own. Never calls the
- * native maximize/unmaximize mid-tween - Windows resists resizing a window
- * that is really flagged maximized, so the whole gesture is done as a plain
- * move + resize and the native call only finalizes the exact target bounds.
+ * animated grow/shrink between the restored and maximized bounds.
+ *
+ * The animation itself is in Rust (`animate_window_to`), not here. Doing it
+ * from JS meant two IPC calls per frame - setPosition then setSize - which
+ * left the window at its new origin with its old size for an instant every
+ * frame, and paced the tween by round-trip latency rather than by the clock.
+ *
+ * Just as importantly, nothing calls the native `maximize()` / `unmaximize()`
+ * any more. Those snap instantly, and calling maximize() to "finish" a tween
+ * re-snapped the window to the OS's own maximized rect - a few pixels away
+ * from the work area we had just animated to, which is what made the last
+ * moment of the animation jump. Here, "maximized" simply means the window
+ * occupies the monitor's work area.
  */
 export function useWindowChrome() {
   const [mode, setMode] = useState<WindowMode>("normal");
@@ -71,19 +84,30 @@ export function useWindowChrome() {
   const animating = useRef(false);
 
   useEffect(() => {
+    if (!appWindow) return;
+    const win = appWindow;
+
     let disposed = false;
     let unlisten: (() => void) | undefined;
 
-    (async () => {
-      const isMax = await appWindow.isMaximized();
-      if (!disposed) setMode(isMax ? "maximized" : "normal");
+    // Resizes we did not drive - an edge drag, or Windows' own Aero Snap -
+    // still have to be reflected, or the titlebar glyph lies about the state.
+    const sync = async () => {
+      const [bounds, native] = await Promise.all([readBounds(win), win.isMaximized()]);
+      const work = await readWorkArea(bounds);
+      if (!disposed) setMode(native || sameBounds(bounds, work) ? "maximized" : "normal");
+    };
 
-      unlisten = await appWindow.onResized(async () => {
+    void sync();
+    void win
+      .onResized(() => {
         if (animating.current) return;
-        const isMax = await appWindow.isMaximized();
-        if (!disposed) setMode(isMax ? "maximized" : "normal");
+        void sync();
+      })
+      .then((off) => {
+        if (disposed) off();
+        else unlisten = off;
       });
-    })();
 
     return () => {
       disposed = true;
@@ -92,42 +116,43 @@ export function useWindowChrome() {
   }, []);
 
   const minimize = useCallback(() => {
-    void appWindow.minimize();
+    void appWindow?.minimize();
   }, []);
 
   const close = useCallback(() => {
-    void appWindow.close();
+    void appWindow?.close();
   }, []);
 
   const toggleMaximize = useCallback(async () => {
-    if (animating.current) return;
+    if (animating.current || !appWindow) return;
+    const win = appWindow;
     animating.current = true;
     try {
-      const from = await readBounds();
+      const from = await readBounds(win);
 
-      if (mode === "maximized") {
-        await appWindow.unmaximize();
-        const to = restoreBounds.current ?? from;
-        await appWindow.setPosition(new PhysicalPosition(from.x, from.y));
-        await appWindow.setSize(new PhysicalSize(from.width, from.height));
-        await tweenBounds(from, to, RESIZE_MS);
-        setMode("normal");
-      } else {
-        restoreBounds.current = from;
-        const to = await readWorkArea(from);
-        await tweenBounds(from, to, RESIZE_MS);
-        await appWindow.setPosition(new PhysicalPosition(to.x, to.y));
-        await appWindow.setSize(new PhysicalSize(to.width, to.height));
-        await appWindow.maximize();
-        setMode("maximized");
+      // Aero Snap can leave the window genuinely maximized. Animating out of
+      // that state without clearing it first means Windows fights every
+      // SetWindowPos, so drop the flag - and drop it while the window still
+      // fills the screen, so there is nothing to see.
+      if (await win.isMaximized()) {
+        await win.unmaximize();
+        await invoke("animate_window_to", { ...from, durationMs: 0 });
       }
+
+      const to =
+        mode === "maximized" ? (restoreBounds.current ?? from) : await readWorkArea(from);
+
+      if (mode !== "maximized") restoreBounds.current = from;
+
+      await invoke("animate_window_to", { ...to, durationMs: RESIZE_MS });
+      setMode(mode === "maximized" ? "normal" : "maximized");
     } finally {
       animating.current = false;
     }
   }, [mode]);
 
   const beginDrag = useCallback(() => {
-    void appWindow.startDragging();
+    void appWindow?.startDragging();
   }, []);
 
   return { mode, minimize, toggleMaximize, close, beginDrag };
