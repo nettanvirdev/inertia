@@ -700,3 +700,38 @@
 @utility panel-inset {
   margin-inline: 0.75rem;
 }
+
+/* ── the mark ────────────────────────────────────────────────────────────────
+ * The product logo's entrance. Longer and softer than `animate-pop-in`: that
+ * curve is tuned for a 14px glyph swapping inside a button, and the same
+ * overshoot on a 56px mark reads as a bounce rather than as arrival. */
+@keyframes inertia-mark-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0) scale(0.84);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+.mark-logo {
+  animation: inertia-mark-in 520ms var(--ease-spring) both;
+}
+
+/* ── the walkthrough's step rail ─────────────────────────────────────────────
+ * A dot per step. The active one stretches into a pill rather than growing in
+ * both axes, so the rail's height never moves while the flow advances. */
+@utility step-dot {
+  height: 0.375rem;
+  width: 0.375rem;
+  border-radius: 999px;
+  background-color: var(--fill-track);
+  transition:
+    width var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out);
+}
+@utility step-dot-active {
+  width: 1.25rem;
+  background-color: var(--accent-solid, var(--foreground));
+}

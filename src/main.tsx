@@ -2,18 +2,15 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
+import { applyTheme } from "./lib/prefs";
 
-// The theme is authored as explicit .light/.dark classes rather than a media
-// query, so a future settings screen can offer more palettes than "system"
-// (see the light/dark variants ported from the source design system). Until
-// that screen exists, follow the OS preference so the app isn't stuck in
-// light mode on a dark machine.
-const media = window.matchMedia("(prefers-color-scheme: dark)");
-const applyTheme = (isDark: boolean) => {
-  document.documentElement.classList.toggle("dark", isDark);
-};
-applyTheme(media.matches);
-media.addEventListener("change", (e) => applyTheme(e.matches));
+// The stored theme can only be read asynchronously (it lives in a file the
+// Rust side owns), so paint something synchronously first or the window shows
+// one unstyled frame before the real preference lands. Dark rather than the OS
+// preference, because dark is also the default preference - guessing "system"
+// here would flash light on a light machine for every user who never changed
+// the setting. `App` overwrites this as soon as preferences load.
+applyTheme("dark");
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
