@@ -185,6 +185,23 @@ function resolveComposerCombo(shortcut, sendOnEnter) {
   return shortcut.combo;
 }
 
+/**
+ * The catalogue as the user's own settings make it.
+ *
+ * Local rather than exported: the reference sheet is the only reader, and it
+ * wants the groups. It WAS exported, was deleted for having no importer, and
+ * the deletion took the only thing `getShortcutGroups` calls with it - so the
+ * Shortcuts tab in Settings threw on render and took the window down to a
+ * blank page. Nothing caught it: a name that is not defined is a reference the
+ * bundler assumes is a global, and no test opened that tab.
+ */
+function getShortcuts({ sendOnEnter = true } = {}) {
+  if (sendOnEnter) return SHORTCUTS;
+  return SHORTCUTS.map((s) =>
+    s.scope === 'composer' ? { ...s, combo: resolveComposerCombo(s, false) } : s,
+  );
+}
+
 /** Shortcuts grouped for the reference sheet, in declaration order. */
 export function getShortcutGroups(options) {
   const groups = [];

@@ -19,7 +19,3 @@ export const RUN_STATUS_META = {
   error: { label: 'Failed', icon: 'CircleX' },
   running: { label: 'Running', icon: 'Loader' },
 };
-
-export function getRoutineById(id) {
-  return ROUTINES.find((r) => r.id === id);
-}
