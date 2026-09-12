@@ -490,6 +490,8 @@ struct Live {
     /// counted as a new page. Without it, pressing Back would push a history
     /// entry and the Forward button would never light up.
     traversing: bool,
+    /// The `seq` of the last placement applied. See [`Panes::place`].
+    placed: u64,
 }
 
 impl std::fmt::Debug for Live {
@@ -540,6 +542,15 @@ impl Panes {
     pub fn front_of(&self, thread: &str) -> Option<String> {
         let id = self.front.lock().get(thread).cloned()?;
         self.live.lock().contains_key(&id).then_some(id)
+    }
+
+    /// Any pane that is open, for the things that are true of all of them.
+    ///
+    /// The cookie store is one: every pane is a child webview of the same
+    /// window and they share it, so signing one in signs them all in. Which
+    /// one answers is therefore not a question worth asking.
+    pub fn any_webview(&self) -> Option<Webview<Wry>> {
+        self.live.lock().values().next().map(|pane| pane.webview.clone())
     }
 
     fn webview(&self, id: &str) -> Option<Webview<Wry>> {
@@ -693,28 +704,52 @@ impl Panes {
                 error: None,
                 history: History::default(),
                 traversing: false,
+                placed: 0,
             },
         );
         Ok(())
     }
 
     /// Where the pane is, and whether it should be drawn.
+    /// Put a pane where the renderer measured its hole, or hide it.
+    ///
+    /// Two rules here, and both were learned from the same white rectangle
+    /// left over the transcript after the browser was closed.
+    ///
+    /// **This never creates a pane.** Positioning something that does not
+    /// exist is meaningless, and it used to call `ensure` - so the very call
+    /// whose job was to hide a pane on unmount could instead conjure one up
+    /// and leave it on screen with nothing left to tell it where to be.
+    ///
+    /// **A newer placement always wins.** These arrive as separate commands
+    /// and are answered concurrently, so the order they are handled in is not
+    /// the order they were sent in. The pane sends a rising `seq` and anything
+    /// older than what has already been applied is dropped. Without that, the
+    /// last thing said on the way out - hide - could be overtaken by a
+    /// `visible: true` from the timer a moment earlier, and nothing would ever
+    /// correct it: the component that would have is gone.
     pub fn place(
         self: &Arc<Self>,
-        app: &AppHandle,
+        _app: &AppHandle,
         id: &str,
         rect: &Value,
         visible: bool,
+        seq: u64,
     ) -> Result<Value, String> {
-        self.ensure(app, id)?;
         let bounds = safe_bounds(rect);
         let on = is_drawable(&bounds, visible);
 
         let webview = {
             let mut live = self.live.lock();
             let Some(pane) = live.get_mut(id) else {
-                return Err("That browser pane has gone away. Open it again.".to_string());
+                // Not an error. A pane closes while its last placement is
+                // still in flight every single time one is closed.
+                return Ok(json!({ "id": id, "closed": true }));
             };
+            if seq > 0 && seq < pane.placed {
+                return Ok(json!({ "id": id, "bounds": pane.bounds.as_json(), "visible": pane.visible, "stale": true }));
+            }
+            pane.placed = seq;
             pane.bounds = bounds;
             pane.visible = on;
             pane.webview.clone()
@@ -1069,8 +1104,9 @@ pub async fn preview_place(
     id: String,
     rect: Value,
     visible: bool,
+    seq: Option<u64>,
 ) -> Result<Value, String> {
-    Panes::global().place(&app, &id, &rect, visible)
+    Panes::global().place(&app, &id, &rect, visible, seq.unwrap_or(0))
 }
 
 #[tauri::command]

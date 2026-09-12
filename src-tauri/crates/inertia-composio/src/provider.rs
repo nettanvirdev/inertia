@@ -396,6 +396,14 @@ impl ToolProvider for ComposioProvider {
             return Ok(Vec::new());
         };
 
+        // Ordinarily nothing is stale and this returns without a request. The
+        // exception is the turn straight after an invalidation, and that turn
+        // is exactly the one that must not answer with no tools: dropping the
+        // lists used to drop the connections with them, so an agent lost every
+        // Composio tool it had until somebody happened to open the
+        // Integrations screen again.
+        self.rediscover_stale(&client).await;
+
         let connections = self.connections.read();
         let mut tools: Vec<Arc<dyn Tool>> = Vec::new();
 
@@ -424,12 +432,60 @@ impl ToolProvider for ComposioProvider {
 impl ComposioProvider {
     /// Drops the discovered tool lists, so the next turn asks Composio again.
     ///
+    /// The lists, not the connections. Which apps are connected is a fact about
+    /// the workspace and is not invalidated by anything; what goes stale is
+    /// which operations each one currently exposes. Clearing both meant an
+    /// invalidation silently unconnected every app until `composio_load_all`
+    /// ran, which only happens when the Integrations screen is opened.
+    ///
     /// Public as well as available through the trait, because the settings
     /// screen invalidates after an edit that went around the tool pipeline
     /// entirely - and reaching it through `ToolProvider` there would mean
     /// importing the trait to call one method on a concrete type.
     pub fn drop_cached_tools(&self) {
-        self.connections.write().clear();
+        for (_, discovered) in self.connections.write().iter_mut() {
+            discovered.clear();
+        }
+    }
+
+    /// Fills in the lists that were dropped, for the apps that still need one.
+    ///
+    /// Sequentially would be one wait per app in front of a turn, so they go
+    /// together. An app that fails keeps an empty list and contributes no
+    /// tools, which is the same as it was a moment ago and not worth failing
+    /// the turn over.
+    async fn rediscover_stale(&self, client: &Composio) {
+        let stale: Vec<ConnectionRecord> = self
+            .connections
+            .read()
+            .iter()
+            .filter(|(record, discovered)| discovered.is_empty() && record.is_usable())
+            .map(|(record, _)| record.clone())
+            .collect();
+
+        if stale.is_empty() {
+            return;
+        }
+
+        let found = futures::future::join_all(stale.into_iter().map(|record| {
+            let client = client.clone();
+            async move {
+                let discovered = client.tools(&record.toolkit_slug).await.unwrap_or_default();
+                (record, discovered)
+            }
+        }))
+        .await;
+
+        let mut connections = self.connections.write();
+        for (record, discovered) in found {
+            if discovered.is_empty() {
+                continue;
+            }
+            let selected = select(&discovered, &record.enabled_tools);
+            if let Some((_, slot)) = connections.iter_mut().find(|(held, _)| held.id == record.id) {
+                *slot = selected;
+            }
+        }
     }
 }
 

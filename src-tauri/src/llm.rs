@@ -738,10 +738,12 @@ fn instruction(focus: &str) -> String {
 
 /// Summarise a conversation, on purpose, because somebody asked.
 ///
-/// The loop already compacts a transcript that will not fit, quietly. This is
-/// the other half of the same idea: `/compact` in the composer, for the moment
-/// a person can see the work is about to turn a corner and would rather carry a
-/// clean note over than a hundred messages of getting there.
+/// This is the whole of compaction in this shell, and it is asked for twice:
+/// by `/compact` in the composer, and by the window when the context gauge
+/// crosses its threshold. The agent loop itself does not compact - an earlier
+/// comment here said it did, describing a design that was never ported, and
+/// that sentence is why nobody noticed the window's automatic trigger had
+/// nothing feeding it.
 ///
 /// One call, no tools, the same model the conversation is using. Awaited rather
 /// than streamed, because the caller wants a note and not a performance - and

@@ -71,6 +71,15 @@ import { speakingAgent } from "@/features/chat/room.js";
  * into the rail in dark, where the two tokens are identical.
  */
 
+/**
+ * How long a freshly opened conversation is held at its end.
+ *
+ * Long enough for code blocks and images to finish measuring - they all add
+ * height below the position just set - and short enough that it cannot be
+ * mistaken for the view refusing to move.
+ */
+const SETTLE_MS = 600;
+
 const NEAR_BOTTOM_PX = 120;
 const NO_BLOCKS = [];
 
@@ -306,10 +315,51 @@ export function ChatView() {
     scrollToBottom();
   }, [asked, scrollToBottom]);
 
-  React.useEffect(() => {
+  /**
+   * A conversation opens at its end, and does not travel there.
+   *
+   * Three things had to change for that, and each of them was on its own
+   * enough to make a long thread scroll past under the reader on every open.
+   *
+   * **Before the paint, not after.** This was a `useEffect`, which runs once
+   * the browser has already drawn - so the first frame of every conversation
+   * was its oldest message, and the jump to the end was a correction the
+   * reader could see. A layout effect writes the scroll position while the
+   * frame is still being built.
+   *
+   * **`scrollTop`, not `scrollTo`.** The viewport carries `scroll-smooth`.
+   * A layout effect that asked to be moved would have been animated, which is
+   * the travelling this is meant to stop; `scrollTop` set inside a layout
+   * effect lands before there is anything to animate from.
+   *
+   * **And then again, until it settles.** The height at that moment is not
+   * the final height: code blocks, images and markdown all measure after the
+   * first layout, and every one of them adds pixels below the position just
+   * set. So the end is held for a moment - long enough for the content to
+   * finish arriving, short enough that it can never fight a reader who has
+   * started scrolling, which is what `atBottom` going false means.
+   */
+  React.useLayoutEffect(() => {
     setAtBottom(true);
-    scrollToBottom("auto");
-  }, [activeThreadId, scrollToBottom]);
+    const el = scrollRef.current;
+    if (!el) return undefined;
+
+    const pin = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+    pin();
+
+    const observer = new ResizeObserver(pin);
+    // The content, not the viewport: the viewport's size is not what changes
+    // when a code block finishes laying itself out.
+    for (const child of el.children) observer.observe(child);
+    const until = setTimeout(() => observer.disconnect(), SETTLE_MS);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(until);
+    };
+  }, [activeThreadId]);
 
   // Ticks only while a call is live, so an idle thread does no work for a
   // clock nobody is looking at.

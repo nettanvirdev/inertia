@@ -26,14 +26,39 @@ use serde_json::{json, Value};
 use crate::record;
 use crate::store::Store;
 
-/// The three of them, for a registry.
+/// Told when a memory is written or thrown away, with its id.
+///
+/// A hook rather than a handle, because this crate has no window in it and no
+/// opinion about what a window is. The app passes one that emits
+/// `workspace:changed`; a test passes one that records; a routine firing in a
+/// process nobody is looking at passes none.
+pub type Wrote = Arc<dyn Fn(&str, &str) + Send + Sync>;
+
+/// The three of them, for a registry, telling nobody.
 pub fn all(store: Store) -> Vec<Arc<dyn Tool>> {
+    all_announcing(store, None)
+}
+
+/// The three of them, announcing what they wrote.
+///
+/// Without the announcement a memory an agent saved was on disk and invisible:
+/// the Memory screen reads the folder once, at launch, and is told about
+/// changes - and nothing here was telling it. The record was correct and the
+/// screen said "0 entries" until the app restarted.
+pub fn all_announcing(store: Store, wrote: Option<Wrote>) -> Vec<Arc<dyn Tool>> {
     let store = Arc::new(store);
     vec![
         Arc::new(RecallTool { store: store.clone() }),
-        Arc::new(SaveTool { store: store.clone() }),
-        Arc::new(ForgetTool { store }),
+        Arc::new(SaveTool { store: store.clone(), wrote: wrote.clone() }),
+        Arc::new(ForgetTool { store, wrote }),
     ]
+}
+
+/// Say what happened, if anybody is listening.
+fn said(wrote: &Option<Wrote>, id: &str, op: &str) {
+    if let Some(tell) = wrote {
+        tell(id, op);
+    }
 }
 
 /// One memory, rendered for a model rather than for a screen.
@@ -139,9 +164,19 @@ impl Tool for RecallTool {
 
 /* -- save ----------------------------------------------------------------- */
 
-#[derive(Debug)]
 struct SaveTool {
     store: Arc<Store>,
+    wrote: Option<Wrote>,
+}
+
+// By hand, because a closure has no `Debug`. The hook is either there
+// or it is not, which is the whole of what a reader needs.
+impl std::fmt::Debug for SaveTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SaveTool")
+            .field("announces", &self.wrote.is_some())
+            .finish_non_exhaustive()
+    }
 }
 
 #[async_trait]
@@ -233,11 +268,14 @@ impl Tool for SaveTool {
         // to write down - is a successful call with unhappy output, not an error
         // that ends the turn.
         match self.store.remember(&input, true) {
-            Ok(saved) => Ok(ToolOutcome::text(format!(
-                "Remembered: {}",
-                record::text(&saved, "title")
-            ))
-            .with_title(record::text(&saved, "title"))),
+            Ok(saved) => {
+                said(&self.wrote, &record::text(&saved, "id"), "put");
+                Ok(ToolOutcome::text(format!(
+                    "Remembered: {}",
+                    record::text(&saved, "title")
+                ))
+                .with_title(record::text(&saved, "title")))
+            }
             Err(why) => Ok(ToolOutcome::text(format!("Not remembered. {why}"))),
         }
     }
@@ -245,9 +283,19 @@ impl Tool for SaveTool {
 
 /* -- forget --------------------------------------------------------------- */
 
-#[derive(Debug)]
 struct ForgetTool {
     store: Arc<Store>,
+    wrote: Option<Wrote>,
+}
+
+// By hand, because a closure has no `Debug`. The hook is either there
+// or it is not, which is the whole of what a reader needs.
+impl std::fmt::Debug for ForgetTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ForgetTool")
+            .field("announces", &self.wrote.is_some())
+            .finish_non_exhaustive()
+    }
 }
 
 #[async_trait]
@@ -293,7 +341,10 @@ impl Tool for ForgetTool {
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
         let id = record::text(&args, "id");
         match self.store.forget(&id) {
-            Ok(()) => Ok(ToolOutcome::text(format!("Forgotten: {id}"))),
+            Ok(()) => {
+                said(&self.wrote, &id, "remove");
+                Ok(ToolOutcome::text(format!("Forgotten: {id}")))
+            }
             Err(why) => Ok(ToolOutcome::text(format!("Not forgotten. {why}"))),
         }
     }
@@ -341,6 +392,62 @@ mod tests {
 
     fn tool<'a>(tools: &'a [Arc<dyn Tool>], id: &str) -> &'a Arc<dyn Tool> {
         tools.iter().find(|t| t.id() == id).expect("the tool")
+    }
+
+    /// A memory an agent writes has to reach the screen that lists them.
+    ///
+    /// It did not: the folder is read once, at launch, and told about changes
+    /// afterwards - and nothing here was telling it. The record was on disk and
+    /// correct, and the Memory screen said "0 entries" until the app restarted.
+    #[tokio::test]
+    async fn saving_and_forgetting_are_both_announced() {
+        let dir = tempfile::tempdir().expect("a temp dir");
+        let store = Store::new(Layout::new(dir.path().join("workspace")), None);
+
+        let heard: Arc<std::sync::Mutex<Vec<(String, String)>>> = Default::default();
+        let sink = heard.clone();
+        let tools = all_announcing(
+            store,
+            Some(Arc::new(move |id: &str, op: &str| {
+                sink.lock().expect("the sink").push((id.into(), op.into()));
+            })),
+        );
+
+        tool(&tools, "memory_save")
+            .execute(
+                json!({ "title": "Likes cats", "body": "The user likes cats.", "scope": "global" }),
+                &ctx(&dir),
+            )
+            .await
+            .expect("the call ran");
+
+        let id = {
+            let said = heard.lock().expect("the sink");
+            assert_eq!(said.len(), 1, "{said:?}");
+            assert_eq!(said[0].1, "put");
+            said[0].0.clone()
+        };
+        assert!(!id.is_empty(), "the screen needs to know which record");
+
+        tool(&tools, "memory_forget")
+            .execute(json!({ "id": id.clone() }), &ctx(&dir))
+            .await
+            .expect("the call ran");
+
+        let said = heard.lock().expect("the sink");
+        assert_eq!(said.len(), 2, "{said:?}");
+        assert_eq!(said[1], (id, "remove".to_string()));
+    }
+
+    /// And a process with no window to tell still works.
+    #[tokio::test]
+    async fn telling_nobody_is_allowed() {
+        let (dir, _store, tools) = setup();
+        let out = tool(&tools, "memory_save")
+            .execute(json!({ "title": "A fact", "body": "Something true." }), &ctx(&dir))
+            .await
+            .expect("the call ran");
+        assert!(out.output.starts_with("Remembered:"), "{}", out.output);
     }
 
     #[tokio::test]

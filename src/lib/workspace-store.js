@@ -395,6 +395,39 @@ export function useWorkspacePersistence(state, { onArrival } = {}) {
 
     let alive = true;
     return client.onChanged(async (payload) => {
+      /**
+       * A document, not a collection.
+       *
+       * This handler only ever looked at `collection`, so every announcement
+       * carrying `document` fell straight through - which is all of them for
+       * the permission rules. An agent granting itself `shell(git *)` wrote
+       * `settings.permissions` correctly, the Permissions screen kept showing
+       * the old ruleset, and then the mirror above wrote the renderer's stale
+       * copy back over the file. That is not a display bug: the agent's rules
+       * were deleted by the next save of anything.
+       */
+      const documentKey = payload?.document;
+      if (documentKey) {
+        const rows = DOCUMENTS.filter((doc) => doc.document === documentKey);
+        if (rows.length === 0) return;
+        let stored;
+        try {
+          stored = await client.readDocument(documentKey, {});
+        } catch {
+          return;
+        }
+        if (!alive) return;
+        for (const doc of rows) {
+          const value = stored?.[doc.field];
+          if (value === undefined) continue;
+          const mark = fingerprint(value);
+          if (written.current.documents[markOf(doc)] === mark) continue;
+          doc.apply(value, latest.current);
+          written.current.documents[markOf(doc)] = mark;
+        }
+        return;
+      }
+
       const name = payload?.collection;
       const source = SOURCES.find((one) => one.collection === name);
       if (!source) return;

@@ -12,14 +12,19 @@ import { formatTokens } from "@shared/usage";
  * anything about it. Claude Code has `/context`, Codex has a tool the model
  * calls; a small ring in the header is the version that needs no asking.
  *
- * Three colours and no more. Quiet until 80%, amber from there, red from 95%:
+ * Three colours and no more. Quiet until 80%, amber from there, red at 85%:
  * amber is "wrap this up or start a new chat", red is "the next step will be
- * summarised". Both are things a person can act on, which is the test for
- * putting a colour on anything.
+ * summarised", and 85% is the number that is actually true of the second one.
+ * Both are things a person can act on, which is the test for putting a colour
+ * on anything.
  */
 
 const AMBER_AT = 0.8;
-const RED_AT = 0.95;
+// The same number automatic compaction fires at, deliberately. Red used to be
+// 0.95, above the threshold - so the band could only be reached with automatic
+// compaction switched off, and the one colour that means "this is about to
+// happen" was the one nobody saw.
+const RED_AT = 0.85;
 
 export function ContextMeter({ context, className }) {
   const used = Number(context?.used) || 0;

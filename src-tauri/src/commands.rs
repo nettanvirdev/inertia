@@ -593,20 +593,28 @@ pub fn composio_disconnect(
 }
 
 /// Reconnects every active app. Called after a workspace opens.
+///
+/// All at once, not one after another. Each connect is its own walk of that
+/// app's paged tool list, so ten connected apps done in turn is ten waits
+/// stacked end to end - on every visit to the Integrations screen, which is
+/// where this is called from. They do not depend on each other, so they should
+/// not queue behind each other.
 #[tauri::command]
 pub async fn composio_load_all(state: State<'_, AppState>) -> Result<Vec<ConnectionRecord>, String> {
     let workspace = state.workspace()?;
-    let mut loaded = Vec::new();
+    let records = workspace.composio_records();
 
-    for record in workspace.composio_records() {
-        if record.is_usable() {
-            // One app failing to load must not stop the others.
-            let _ = workspace.composio.connect(record.clone()).await;
-        }
-        loaded.push(record);
-    }
+    // One app failing to load must not stop the others, which is what
+    // discarding each result is for.
+    futures::future::join_all(
+        records
+            .iter()
+            .filter(|record| record.is_usable())
+            .map(|record| workspace.composio.connect(record.clone())),
+    )
+    .await;
 
-    Ok(loaded)
+    Ok(records)
 }
 
 // ── permission answers ──────────────────────────────────────────────────

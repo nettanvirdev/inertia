@@ -71,6 +71,14 @@ pub struct Armed {
     pub settings: Settings,
     pub transcript: String,
     pub agent_id: Option<String>,
+    /// Told about each memory this pass writes.
+    ///
+    /// The tools announce their writes; this pass is the other half and used
+    /// not to. A conversation went quiet, Inertia quietly extracted two or
+    /// three memories, and the Memory screen showed nothing new until the app
+    /// restarted - which reads as a feature that does not work rather than one
+    /// nobody was told about.
+    pub announce: Option<crate::tools::Wrote>,
     /// How many messages of this conversation this transcript covers.
     pub count: usize,
     pub model: Arc<dyn Complete>,
@@ -245,12 +253,20 @@ impl Capture {
             }
 
             let title = record::text(&row, "title");
-            let written = match item.replaces.as_deref() {
+            let replaces = item.replaces.clone();
+            let written = match replaces.as_deref() {
                 Some(id) => store.update(id, row),
                 // One record failing is not a reason to lose the others.
                 None => store.remember(&row, true),
             };
-            if written.is_ok() {
+            if let Ok(saved) = &written {
+                if let Some(tell) = &entry.announce {
+                    let id = record::text(saved, "id");
+                    let id = if id.is_empty() { replaces.unwrap_or_default() } else { id };
+                    if !id.is_empty() {
+                        tell(&id, "put");
+                    }
+                }
                 stored.push(title);
             }
         }
@@ -377,9 +393,20 @@ mod tests {
             settings: Settings::default(),
             transcript: "we decided to deploy to fly.io".into(),
             agent_id: None,
+            announce: None,
             count,
             model: reply,
         }
+    }
+
+    /// The same, told what it wrote.
+    fn armed_announcing(
+        dir: &tempfile::TempDir,
+        reply: Arc<dyn Complete>,
+        count: usize,
+        wrote: crate::tools::Wrote,
+    ) -> Armed {
+        Armed { announce: Some(wrote), ..armed(dir, reply, count) }
     }
 
     #[tokio::test]
@@ -404,6 +431,36 @@ mod tests {
         let rows = store.list();
         assert_eq!(rows.len(), 2);
         assert!(rows.iter().any(|row| record::text(row, "kind") == "handover"));
+    }
+
+    /// The pass writes memories nobody asked for, which is the point of it -
+    /// and the Memory screen has to be told, or the feature reads as one that
+    /// does nothing. The tools announce; this half never did.
+    #[tokio::test]
+    async fn what_the_pass_writes_is_announced() {
+        let dir = tempfile::tempdir().expect("a temp dir");
+        let reply = Arc::new(Fixed(
+            r#"{"memories":[{"title":"Deploys go to fly.io","body":"never render","scope":"project"}]}"#
+                .into(),
+        ));
+
+        let heard: Arc<parking_lot::Mutex<Vec<(String, String)>>> = Default::default();
+        let sink = heard.clone();
+        let entry = armed_announcing(
+            &dir,
+            reply,
+            4,
+            Arc::new(move |id: &str, op: &str| sink.lock().push((id.into(), op.into()))),
+        );
+
+        let capture = Arc::new(Capture::new());
+        capture.arm("t1", entry);
+        capture.run("t1").await.expect("a pass ran");
+
+        let said = heard.lock();
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert_eq!(said[0].1, "put");
+        assert!(!said[0].0.is_empty(), "the screen needs to know which record");
     }
 
     #[tokio::test]

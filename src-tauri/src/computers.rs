@@ -24,6 +24,65 @@ use crate::state::AppState;
 /// The channel a running command reports on.
 const COMPUTER_EVENT: &str = "computer:event";
 
+/// Commands still running, by the run id the caller was given.
+///
+/// The Stop button existed from the first build and stopped nothing: the
+/// bridge answered `{cancelled: false}` without asking anybody. Dropping the
+/// provider future is what actually ends a command - `spawn_docker` sets
+/// `kill_on_drop`, and the local provider kills its child the same way - so
+/// the whole of cancelling is holding onto something that can drop it.
+///
+/// A Daytona command is an HTTP request to a toolbox that has already been
+/// handed the command, so aborting stops this app waiting and does not reach
+/// into the sandbox. Said plainly in the answer rather than implied.
+static RUNNING: std::sync::LazyLock<
+    parking_lot::Mutex<std::collections::HashMap<String, tokio::task::AbortHandle>>,
+> = std::sync::LazyLock::new(Default::default);
+
+/// Runs a command so that [`computer_cancel`] can end it.
+///
+/// The work goes onto its own task and the handle into the map, so the
+/// invoke's future is not the only thing holding it. `finally` style cleanup
+/// is on both paths, because a run left in the map is a run the Stop button
+/// would later claim to have cancelled.
+async fn cancellable<F>(run_id: &str, work: F) -> Result<F::Output, String>
+where
+    F: std::future::Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    // `tokio::spawn` rather than Tauri's wrapper, which hands back a handle
+    // with no way to abort it - and abort is the entire point here.
+    let task = tokio::spawn(work);
+    RUNNING.lock().insert(run_id.to_string(), task.abort_handle());
+
+    let finished = task.await;
+    RUNNING.lock().remove(run_id);
+
+    finished.map_err(|failed| {
+        if failed.is_cancelled() {
+            "Stopped.".to_string()
+        } else {
+            format!("The command ended unexpectedly: {failed}")
+        }
+    })
+}
+
+/// Stop a command that is still running.
+///
+/// Answers whether there was one. A run that finished a moment ago is not an
+/// error - the button and the answer raced, and the person got what they
+/// wanted either way.
+#[tauri::command]
+pub fn computer_cancel(run_id: String) -> Value {
+    match RUNNING.lock().remove(&run_id) {
+        Some(handle) => {
+            handle.abort();
+            json!({ "cancelled": true })
+        }
+        None => json!({ "cancelled": false }),
+    }
+}
+
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
@@ -297,6 +356,12 @@ pub async fn computer_create(
         cpu: number("cpu"),
         memory_gb: number("memoryGb"),
         disk_gb: number("diskGb"),
+        image: record
+            .get("image")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string),
     };
 
     match provider.create(&spec).await {
@@ -323,6 +388,11 @@ pub async fn computer_create(
             Err(failure.to_string())
         }
     }
+}
+
+/// What the provider calls this machine.
+pub(crate) fn handle_of(record: &Value) -> String {
+    field(record, "handle").to_string()
 }
 
 /// One lifecycle verb, applied and recorded.
@@ -402,37 +472,49 @@ pub async fn computer_exec(
     id: String,
     request: Value,
 ) -> Result<Value, String> {
-    let (provider, record) = machine(&state, &id)?;
+    // `running_machine`, not `machine`: a command sent to a stopped container
+    // fails with a sentence about Docker rather than about this machine, and
+    // the pane's own guard reads a record that may be a moment out of date.
+    let (provider, record) = running_machine(&state, &id)?;
     let handle = field(&record, "handle").to_string();
 
     let text = |key: &str| request.get(key).and_then(Value::as_str).map(str::to_string);
     let run_id = text("runId").unwrap_or_else(|| format!("run-{}", uuid::Uuid::now_v7().simple()));
 
-    let result = provider
-        .exec(
-            &handle,
-            &ExecRequest {
-                command: text("command").unwrap_or_default(),
-                cwd: text("cwd"),
-                env: request
-                    .get("env")
-                    .and_then(Value::as_object)
-                    .map(|map| {
-                        map.iter()
-                            .map(|(k, v)| {
-                                (k.clone(), v.as_str().unwrap_or_default().to_string())
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                timeout: request
-                    .get("timeoutMs")
-                    .and_then(Value::as_u64)
-                    .map(std::time::Duration::from_millis),
-            },
-        )
-        .await
-        .map_err(err)?;
+    let ask = ExecRequest {
+        command: text("command").unwrap_or_default(),
+        cwd: text("cwd"),
+        env: request
+            .get("env")
+            .and_then(Value::as_object)
+            .map(|map| {
+                map.iter()
+                    .map(|(k, v)| (k.clone(), v.as_str().unwrap_or_default().to_string()))
+                    .collect()
+            })
+            .unwrap_or_default(),
+        timeout: request
+            .get("timeoutMs")
+            .and_then(Value::as_u64)
+            .map(std::time::Duration::from_millis),
+    };
+
+    // Said before the command runs, because it carries the run id and the id is
+    // what makes Stop possible. The pane opens its subscription before it sends
+    // the request and sets its id from this; nothing ever sent one, so
+    // `runId` stayed null and the Stop button was a no-op for the life of the
+    // app - against `cancellable` below, which was ready for it.
+    let _ = app.emit(
+        COMPUTER_EVENT,
+        json!({ "runId": run_id, "computerId": id, "type": "start" }),
+    );
+
+    let result = {
+        let provider = provider.clone();
+        let handle = handle.clone();
+        cancellable(&run_id, async move { provider.exec(&handle, &ask).await }).await?
+    }
+    .map_err(err)?;
 
     // The whole output arrives at once from every provider here, so there is
     // nothing to stream - but the pane paints on this event, and one that never
@@ -666,17 +748,57 @@ pub async fn computer_build_image(app: AppHandle) -> Result<Value, String> {
     }
 }
 
-/// What a cloud machine can be made from, with the size each choice carries.
+/// What a cloud machine can be made from.
 ///
-/// Empty for every provider that has no such concept, which is all of them
-/// here: Docker takes a real `--cpus` and `--memory`, which is the ordinary way
-/// round, and the Daytona provider in this shell does not fetch a snapshot
-/// catalogue yet. Empty rather than an error on purpose - a catalogue that
-/// cannot be read is not a reason to block making a machine, and the dialog
-/// falls back to the provider's own default.
+/// Empty for every provider that has no such concept - Docker takes a real
+/// `--cpus` and `--memory`, which is the ordinary way round. Daytona does have
+/// one, and this answered an empty list for it regardless, so the New computer
+/// dialog said "No snapshots on this account" to people whose account had
+/// snapshots and then refused to let them press Create.
+///
+/// Empty rather than an error when the read fails, on purpose: a catalogue
+/// that cannot be read is not a reason to block making a machine, and the
+/// dialog falls back to the provider's own default.
 #[tauri::command]
-pub async fn computer_catalogue(_provider_id: Option<String>) -> Result<Vec<Value>, String> {
-    Ok(Vec::new())
+pub async fn computer_catalogue(
+    state: State<'_, AppState>,
+    provider_id: Option<String>,
+) -> Result<Vec<Value>, String> {
+    let provider_id = provider_id.unwrap_or_else(|| "docker".into());
+    if provider_id != "daytona" {
+        return Ok(Vec::new());
+    }
+
+    let provider = provider_for(&state, &provider_id)?;
+    // Daytona's snapshot list belongs to the account, not to any one sandbox,
+    // so the handle it takes is ignored - which is what lets the dialog ask
+    // before there is a machine to ask about.
+    let snapshots = provider.snapshots("").await.unwrap_or_default();
+
+    Ok(snapshots
+        .into_iter()
+        .map(|snapshot| {
+            json!({
+                "id": snapshot.id,
+                "name": snapshot.name,
+                "createdAt": snapshot.created_at,
+                "size": snapshot.size,
+                // Which of them the dialog should land on. The one this app
+                // publishes is the one it knows will work.
+                "desktop": snapshot.name == image_snapshot_name(),
+            })
+        })
+        .collect())
+}
+
+/// The snapshot name this build expects to find on a Daytona account.
+fn image_snapshot_name() -> String {
+    let manifest = inertia_computers::image::manifest();
+    if manifest.daytona_snapshot.is_empty() {
+        manifest.reference.clone()
+    } else {
+        manifest.daytona_snapshot.clone()
+    }
 }
 
 /* -- the desktop ---------------------------------------------------------- */
@@ -686,7 +808,7 @@ pub async fn computer_catalogue(_provider_id: Option<String>) -> Result<Vec<Valu
 /// Checked before anything that drives a screen, because every one of those
 /// commands against a stopped container fails with a message about a container
 /// rather than about the machine.
-fn running_machine(state: &AppState, id: &str) -> Result<(Arc<dyn Provider>, Value), String> {
+pub(crate) fn running_machine(state: &AppState, id: &str) -> Result<(Arc<dyn Provider>, Value), String> {
     let (provider, record) = machine(state, id)?;
     let status = field(&record, "status");
     if status != "running" {

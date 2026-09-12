@@ -339,7 +339,10 @@ export function MemoryView() {
             <EmptyState
               className="py-20"
               icon={Search}
-              title="No memories match"
+              // The title follows the description. It said "No memories match"
+              // over "there is nothing stored yet", which reads as a search
+              // that failed rather than a store that is empty.
+              title={filtersActive ? "No memories match" : "No memories yet"}
               description={
                 filtersActive
                   ? "Nothing here matches the current filters."

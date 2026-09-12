@@ -48,6 +48,7 @@ inertia-mock = { path = "crates/inertia-mock" }
 inertia-voice = { path = "crates/inertia-voice" }
 inertia-computers = { path = "crates/inertia-computers" }
 inertia-terminal = { path = "crates/inertia-terminal" }
+inertia-cookies = { path = "crates/inertia-cookies" }
 
 # ── foundation ──────────────────────────────────────────────────────────────
 serde = { version = "1", features = ["derive"] }
@@ -88,6 +89,16 @@ parking_lot = "0.12"
 # API keys wrapped so they cannot be printed by an accidental `{:?}`.
 secrecy = { version = "0.10", features = ["serde"] }
 sha2 = "0.10"
+sha1 = "0.10"
+# Reading a browser's cookie store: SQLite for the file, and the three
+# primitives Chromium seals values with (AES-GCM on Windows, AES-CBC under a
+# PBKDF2-SHA1 key elsewhere).
+rusqlite = { version = "0.32", features = ["bundled"] }
+aes = "0.8"
+aes-gcm = "0.10"
+cbc = "0.1"
+hmac = "0.12"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
 base64 = "0.23"
 
 # ── integrations ────────────────────────────────────────────────────────────
@@ -159,6 +170,7 @@ inertia-openapi = { workspace = true }
 inertia-provider = { workspace = true }
 inertia-store = { workspace = true }
 inertia-terminal = { workspace = true }
+inertia-cookies = { workspace = true }
 inertia-tools = { workspace = true }
 inertia-voice = { workspace = true }
 

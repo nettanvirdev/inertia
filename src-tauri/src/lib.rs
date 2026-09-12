@@ -17,6 +17,7 @@ mod coalesce;
 mod commands;
 mod computer_tools;
 mod computers;
+mod cookies;
 mod crew;
 mod crew_commands;
 mod desktop;
@@ -125,6 +126,13 @@ pub fn run() {
             computers::computer_image,
             computers::computer_build_image,
             computers::computer_catalogue,
+            computers::computer_cancel,
+            // Bringing a signed-in session from this desktop into one of the
+            // two browsers the app owns. Buttons, never tools - see
+            // `cookies.rs`.
+            cookies::cookie_sources,
+            cookies::preview_import_cookies,
+            cookies::computer_import_cookies,
             computers::computer_drive,
             computers::computer_screen,
             // voice

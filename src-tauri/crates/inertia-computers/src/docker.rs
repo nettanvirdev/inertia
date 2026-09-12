@@ -122,13 +122,26 @@ async fn spawn_docker(
     let out = child.stdout.take();
     let err = child.stderr.take();
 
-    let pump = async {
-        // Both pipes at once. Reading one to the end first deadlocks the moment
-        // the other fills its buffer, which for `docker build` is seconds in.
-        tokio::join!(
-            drain(out, "stdout", sink),
-            drain(err, "stderr", sink),
-        )
+    // Written into as the pipes are read, rather than returned at the end, so
+    // that a command killed by the timeout still hands back what it managed to
+    // print. It used to answer with an empty `Output`, which meant a build or a
+    // test run that hung for five minutes showed nothing at all - exactly the
+    // case where the last few lines are the whole story.
+    let held_out = std::sync::Arc::new(parking_lot::Mutex::new(String::new()));
+    let held_err = std::sync::Arc::new(parking_lot::Mutex::new(String::new()));
+
+    let pump = {
+        let held_out = held_out.clone();
+        let held_err = held_err.clone();
+        async move {
+            // Both pipes at once. Reading one to the end first deadlocks the
+            // moment the other fills its buffer, which for `docker build` is
+            // seconds in.
+            tokio::join!(
+                drain(out, "stdout", sink, &held_out),
+                drain(err, "stderr", sink, &held_err),
+            )
+        }
     };
 
     let both = async {
@@ -141,7 +154,8 @@ async fn spawn_docker(
         Err(_) => Ok(Output {
             code: -1,
             timed_out: true,
-            ..Default::default()
+            stdout: held_out.lock().clone(),
+            stderr: held_err.lock().clone(),
         }),
         Ok((stdout, stderr, Err(e))) => {
             let _ = (stdout, stderr);
@@ -158,9 +172,15 @@ async fn spawn_docker(
 
 /// Reads one pipe to the end, reporting as it goes and accumulating the whole.
 ///
-/// Both, not one or the other: the pane paints from the stream, and the caller
-/// reads the finished text off the answer.
-async fn drain<R>(pipe: Option<R>, stream: &str, sink: Option<Sink<'_>>) -> String
+/// Three places, not one: the pane paints from the stream, the caller reads the
+/// finished text off the answer, and `held` keeps a running copy so a command
+/// the timeout kills still has something to show.
+async fn drain<R>(
+    pipe: Option<R>,
+    stream: &str,
+    sink: Option<Sink<'_>>,
+    held: &parking_lot::Mutex<String>,
+) -> String
 where
     R: tokio::io::AsyncRead + Unpin,
 {
@@ -182,6 +202,7 @@ where
                 if let Some(sink) = sink {
                     sink(stream, &text);
                 }
+                held.lock().push_str(&text);
                 whole.push_str(&text);
             }
         }
@@ -843,7 +864,7 @@ impl Provider for DockerProvider {
             .exec(
                 handle,
                 &ExecRequest {
-                    command: "command -v scrot >/dev/null 2>&1 && scrot -o /tmp/screen.png && base64 -w0 /tmp/screen.png".into(),
+                    command: crate::desktop::still(),
                     timeout: Some(Duration::from_secs(30)),
                     ..Default::default()
                 },

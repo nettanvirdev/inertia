@@ -971,6 +971,11 @@ impl Scheduler {
             "type": "routine:finished",
             "routineId": id,
             "run": run,
+            // The schedule, because the run just moved it. Persisted a line
+            // above and never told to anybody, so the row kept pointing at the
+            // run that had already happened - "next run 2 hours ago" - and the
+            // "Next up" tile with it, until the app restarted.
+            "schedule": schedule,
         }));
         run
     }
@@ -1421,7 +1426,6 @@ const MAX_AHEAD_MS: i64 = 366 * 24 * 60 * 60 * 1000;
 /// tools are: `ToolContext` carries the session but not the seat, and a tool
 /// that had to guess which agent called it would schedule the future run as
 /// somebody else.
-#[derive(Debug)]
 pub struct LaterTool {
     layout: Layout,
     agent_id: Option<String>,
@@ -1429,6 +1433,23 @@ pub struct LaterTool {
     agent: Option<String>,
     /// The conversation's own approval dial, carried onto the routine.
     approval: Option<String>,
+    /// Told that a routine was written.
+    ///
+    /// This tool's own output tells the person the routine "will run in its own
+    /// conversation under Routines" - and it did not appear there, because
+    /// nothing announced the write. The Routines screen reads the folder once,
+    /// at launch, and is told about changes afterwards. `inertia_save` does
+    /// announce for the same collection; this one never did.
+    emit: crate::inertia_tools::Emitter,
+}
+
+// By hand: an emitter is a closure and has no `Debug`.
+impl std::fmt::Debug for LaterTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LaterTool")
+            .field("agent_id", &self.agent_id)
+            .finish_non_exhaustive()
+    }
 }
 
 pub fn later_tool(
@@ -1436,12 +1457,14 @@ pub fn later_tool(
     agent_id: Option<String>,
     agent: Option<String>,
     approval: Option<String>,
+    emit: crate::inertia_tools::Emitter,
 ) -> Arc<dyn Tool> {
     Arc::new(LaterTool {
         layout,
         agent_id,
         agent,
         approval,
+        emit,
     })
 }
 
@@ -1608,6 +1631,7 @@ impl Tool for LaterTool {
         .map_err(|error| Error::Other(format!("The routine could not be written: {error}")))?;
 
         let id = id_of(&record);
+        (self.emit)(json!({ "collection": "routines", "id": id, "op": "put" }));
         let written = text_of(&record, "name").unwrap_or_default();
         let as_who = self.agent.clone().unwrap_or(agent_id);
 
@@ -2275,6 +2299,7 @@ mod tests {
             Some("agent-1".into()),
             Some("Atlas".into()),
             Some(approval.into()),
+            std::sync::Arc::new(|_| {}),
         )
         .execute(args, &ctx(layout))
         .await
@@ -2376,7 +2401,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("a temp dir");
         let layout = Layout::new(dir.path());
         let refusal = message(
-            later_tool(layout.clone(), None, None, None)
+            later_tool(layout.clone(), None, None, None, std::sync::Arc::new(|_| {}))
                 .execute(json!({ "brief": "Do it.", "in_minutes": 5 }), &ctx(&layout))
                 .await,
         );

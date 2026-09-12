@@ -135,6 +135,13 @@ pub struct Spec {
     pub cpu: Option<f64>,
     pub memory_gb: Option<f64>,
     pub disk_gb: Option<f64>,
+    /// What to build it from: a snapshot name on Daytona, an image reference
+    /// elsewhere. `None` means the provider's own default.
+    ///
+    /// The New computer dialog has asked for this since it was written and the
+    /// answer had nowhere to go - the field was saved onto the record and the
+    /// provider was never told, so picking a snapshot changed nothing.
+    pub image: Option<String>,
 }
 
 /// A machine, just made.

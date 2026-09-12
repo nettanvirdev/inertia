@@ -100,7 +100,7 @@ fn emit(app: &AppHandle, id: &str, thread_id: &str, mut event: Value) {
 /// `Start` produces nothing: the window synthesises its own `started` from the
 /// id this command returns, and a second one would be a duplicate the reducer
 /// has no case for.
-fn translate(event: &AgentEvent) -> Vec<Value> {
+fn translate(event: &AgentEvent, window: Option<u32>) -> Vec<Value> {
     match event {
         AgentEvent::Start { .. } => vec![],
 
@@ -153,7 +153,17 @@ fn translate(event: &AgentEvent) -> Vec<Value> {
             let mut out = Vec::new();
 
             if let Some(usage) = usage {
-                out.push(json!({ "type": "usage", "usage": tokens(usage) }));
+                // `context` beside the counts, and it is not decoration. The
+                // window reads this to draw the gauge in the chat header and to
+                // decide when a conversation has to be summarised - and it was
+                // never sent, so the gauge never appeared and automatic
+                // compaction never once fired. A long conversation simply ran
+                // until the provider refused it.
+                out.push(json!({
+                    "type": "usage",
+                    "usage": tokens(usage),
+                    "context": context_of(usage, window),
+                }));
             }
 
             // A failure is reported as an error *and* a done. The error is what
@@ -188,6 +198,23 @@ fn tokens(usage: &inertia_core::provider::Usage) -> Value {
         "cachedInput": usage.cache_read_tokens,
         "cacheWrite": usage.cache_write_tokens,
     })
+}
+
+/// How full the window is, for the gauge and for the summariser.
+///
+/// `used` is the whole request as the provider counted it - every input token
+/// including the cached ones, plus what it wrote back, because all of it is in
+/// the transcript the next turn sends. `None` when nobody knows how big the
+/// window is: a gauge against a guessed denominator is worse than no gauge, and
+/// summarising on one would throw away a conversation for no reason.
+fn context_of(usage: &inertia_core::provider::Usage, window: Option<u32>) -> Value {
+    match window {
+        Some(window) if window > 0 => json!({
+            "used": usage.total_input() + usage.output_tokens,
+            "window": window,
+        }),
+        _ => Value::Null,
+    }
 }
 
 /// The word the renderer branches on. It only distinguishes cancellation from
@@ -770,6 +797,7 @@ pub async fn agent_run(
             .and_then(|id| crate::agents::resolve(&workspace.layout, id).ok())
             .map(|agent| agent.name),
         request.approval.clone(),
+        workspace.emit.clone(),
     ));
 
     // What this turn's mode does not hold. The composer's mode pill decides it,
@@ -975,6 +1003,10 @@ pub async fn agent_run(
     let task_id = id.clone();
     let task_thread = request.thread_id.clone();
     let task_model = reference.clone();
+    // How big this model's context is, carried into the event translator. A
+    // window nobody has published stays `None` and the gauge stays hidden,
+    // which is the honest answer rather than a bar measured against a guess.
+    let task_window = inertia_provider::models::context_window(&model_id);
     // What the capture pass will read. Taken now rather than at the end: the
     // turn owns the history by then, and the pass wants what was sent anyway.
     let task_history = turn.history.clone();
@@ -1123,7 +1155,7 @@ pub async fn agent_run(
                             .flatten();
                         }
                     }
-                    for translated in translate(&event) {
+                    for translated in translate(&event, task_window) {
                         for out in buffer.push(translated) {
                             /*
                              * Whose turn it is now - said BEFORE the turn is
@@ -1421,6 +1453,7 @@ pub async fn tools_list(app: AppHandle, state: State<'_, AppState>) -> Result<Va
         None,
         None,
         None,
+        workspace.emit.clone(),
     ));
 
     let registry = crate::state::registry_with(&workspace, gate, state.project(), extra, &[]);
@@ -1521,6 +1554,11 @@ impl inertia_core::tool::PermissionGate for CatalogueGate {
 
 #[cfg(test)]
 mod tests {
+    /// `translate` with no window, which is what most of these are about.
+    fn translate_for_test(event: &super::AgentEvent) -> Vec<super::Value> {
+        super::translate(event, None)
+    }
+
     use super::*;
     use inertia_core::id::ToolCallId;
     use inertia_core::message::ToolCall;
@@ -1601,7 +1639,7 @@ mod tests {
     #[test]
     fn the_start_event_is_not_forwarded() {
         // The window synthesises its own from the id the command returns.
-        let out = translate(&AgentEvent::Start {
+        let out = translate_for_test(&AgentEvent::Start {
             model: "m".into(),
         });
         assert!(out.is_empty());
@@ -1610,11 +1648,11 @@ mod tests {
     #[test]
     fn prose_and_thinking_stay_apart() {
         assert_eq!(
-            types(&translate(&AgentEvent::Delta { text: "hi".into() })),
+            types(&translate_for_test(&AgentEvent::Delta { text: "hi".into() })),
             ["delta"]
         );
         assert_eq!(
-            types(&translate(&AgentEvent::Reasoning { text: "hm".into() })),
+            types(&translate_for_test(&AgentEvent::Reasoning { text: "hm".into() })),
             ["reasoning"]
         );
     }
@@ -1626,7 +1664,7 @@ mod tests {
             name: "read".into(),
             arguments: r#"{"path":"a.txt"}"#.into(),
         };
-        let out = translate(&AgentEvent::ToolStarted {
+        let out = translate_for_test(&AgentEvent::ToolStarted {
             call,
             title: Some("Read a.txt".into()),
         });
@@ -1644,7 +1682,7 @@ mod tests {
             name: "read".into(),
             arguments: String::new(),
         };
-        let out = translate(&AgentEvent::ToolStarted { call, title: None });
+        let out = translate_for_test(&AgentEvent::ToolStarted { call, title: None });
         assert_eq!(out[0]["args"], json!({}));
     }
 
@@ -1657,10 +1695,54 @@ mod tests {
         );
         result.title = Some("Read".into());
         result.metadata = Some(json!({ "error": inertia_core::tool::ERROR_DENIED }));
-        let out = translate(&AgentEvent::ToolFinished { result });
+        let out = translate_for_test(&AgentEvent::ToolFinished { result });
         assert_eq!(out[0]["type"], "tool-end");
         assert_eq!(out[0]["ok"], false);
         assert_eq!(out[0]["metadata"]["error"], "denied");
+    }
+
+    /// The window reads `context` off the usage event to draw the gauge in the
+    /// chat header and to decide when a conversation has to be summarised.
+    /// Nothing sent it for the life of this shell, so neither ever happened:
+    /// a long conversation ran until the provider refused it.
+    #[test]
+    fn the_usage_event_says_how_full_the_window_is() {
+        let usage = inertia_core::provider::Usage {
+            input_tokens: 900,
+            output_tokens: 100,
+            cache_read_tokens: 100,
+            ..Default::default()
+        };
+        let out = super::translate(
+            &AgentEvent::Done {
+                stopped: StopReason::Complete,
+                history: vec![],
+                usage: Some(usage),
+            },
+            Some(200_000),
+        );
+
+        assert_eq!(out[0]["type"], "usage");
+        assert_eq!(out[0]["context"]["window"], 200_000);
+        assert_eq!(
+            out[0]["context"]["used"], 1100,
+            "every input token including the cached ones, plus what it wrote"
+        );
+    }
+
+    /// A gauge measured against a guessed denominator is worse than no gauge,
+    /// and summarising on one would throw a conversation away for no reason.
+    #[test]
+    fn a_model_with_no_published_window_reports_none() {
+        let out = super::translate(
+            &AgentEvent::Done {
+                stopped: StopReason::Complete,
+                history: vec![],
+                usage: Some(inertia_core::provider::Usage::default()),
+            },
+            None,
+        );
+        assert!(out[0]["context"].is_null());
     }
 
     /// The error puts the sentence on screen and settles the running cards; the
@@ -1668,7 +1750,7 @@ mod tests {
     /// believing it is still working.
     #[test]
     fn a_failed_turn_reports_both_an_error_and_a_done() {
-        let out = translate(&AgentEvent::Done {
+        let out = translate_for_test(&AgentEvent::Done {
             stopped: StopReason::Error {
                 message: "the provider refused".into(),
             },
@@ -1682,7 +1764,7 @@ mod tests {
 
     #[test]
     fn an_ordinary_ending_is_just_a_done() {
-        let out = translate(&AgentEvent::Done {
+        let out = translate_for_test(&AgentEvent::Done {
             stopped: StopReason::Complete,
             history: vec![],
             usage: None,
@@ -1695,7 +1777,7 @@ mod tests {
     /// `done` that closes the turn.
     #[test]
     fn usage_is_reported_before_the_turn_closes() {
-        let out = translate(&AgentEvent::Done {
+        let out = translate_for_test(&AgentEvent::Done {
             stopped: StopReason::Complete,
             history: vec![],
             usage: Some(Usage {
@@ -1712,7 +1794,7 @@ mod tests {
     /// Cancellation is the one ending the reducer branches on by name.
     #[test]
     fn cancellation_is_named_so_cards_settle_with_the_right_sentence() {
-        let out = translate(&AgentEvent::Done {
+        let out = translate_for_test(&AgentEvent::Done {
             stopped: StopReason::Cancelled,
             history: vec![],
             usage: None,
@@ -1722,7 +1804,7 @@ mod tests {
 
     #[test]
     fn a_notice_is_a_warning_rather_than_a_failure() {
-        let out = translate(&AgentEvent::Notice {
+        let out = translate_for_test(&AgentEvent::Notice {
             message: "retrying in 2s".into(),
         });
         assert_eq!(out[0]["type"], "warning");

@@ -769,6 +769,26 @@ pub fn observe() -> String {
     observe_command(false)
 }
 
+/// Just the picture, base64, for the still frames the window draws.
+///
+/// ImageMagick's `import`, which is what the sandbox image actually carries -
+/// both providers used to ask for `scrot`, which is not installed, so
+/// `command -v scrot` failed, the answer was empty, and every machine reported
+/// "No display on this machine" while its desktop was running perfectly. The
+/// two fallbacks are for an image somebody built themselves.
+pub fn still() -> String {
+    [
+        "if command -v import >/dev/null 2>&1; then",
+        "  import -window root -define png:compression-level=3 png:- 2>/dev/null | base64 -w0;",
+        "elif command -v scrot >/dev/null 2>&1; then",
+        "  scrot -o /tmp/inertia-screen.png && base64 -w0 /tmp/inertia-screen.png;",
+        "elif command -v xwd >/dev/null 2>&1; then",
+        "  xwd -root -silent | base64 -w0;",
+        "fi",
+    ]
+    .join(" ")
+}
+
 /// The same, with the rulers and the pointer ring, for the model.
 pub fn observe_annotated() -> String {
     observe_command(true)
@@ -1069,6 +1089,23 @@ fn base36(mut value: u64) -> String {
 
 #[cfg(test)]
 mod tests {
+    /// The one that cost every machine its preview.
+    ///
+    /// Both providers asked for `scrot`, which the sandbox image does not
+    /// install - it carries ImageMagick, and the observe path has always used
+    /// `import`. `command -v scrot` failed, the answer came back empty, and the
+    /// chat sidebar said "No display on this machine" about a machine whose
+    /// desktop was running.
+    #[test]
+    fn a_still_is_taken_with_a_tool_the_image_actually_has() {
+        let command = still();
+        assert!(command.contains("import -window root"), "{command}");
+        assert!(command.contains("base64 -w0"), "it has to cross an exec boundary");
+        // The fallbacks are for an image somebody built themselves, and they
+        // come after, not instead.
+        assert!(command.find("import").unwrap() < command.find("scrot").unwrap());
+    }
+
     use super::*;
     use serde_json::json;
 

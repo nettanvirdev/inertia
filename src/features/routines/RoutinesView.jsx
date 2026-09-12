@@ -241,11 +241,30 @@ export function RoutinesView() {
             <StatCell label="Runs today" value={String(stats.runsToday)} hint={absoluteTime(now)} />
           </div>
 
-          {groups.length === 0 ? (
+          {/* Two empty states, because they are two different situations and
+              telling them apart is the whole use of an empty state. A workspace
+              with no routines in it was being told that nothing fit its search
+              and filter combination, under a Clear filters button that cleared
+              filters nobody had set - which reads as a screen that has lost the
+              routine you just watched an agent create. */}
+          {groups.length === 0 && routines.length === 0 ? (
+            <EmptyState
+              icon={Repeat}
+              title="No routines yet"
+              description="A routine is work an agent runs without being asked - a morning summary, a check every ten minutes, a weekly tidy. Agents can write their own, and you can write one here."
+              action={
+                <Button size="sm" onClick={() => setCreating(true)}>
+                  <Plus />
+                  New routine
+                </Button>
+              }
+              className="mt-10"
+            />
+          ) : groups.length === 0 ? (
             <EmptyState
               icon={Repeat}
               title="No routines match"
-              description="Nothing here fits that search and filter combination. Try widening one of them."
+              description={`None of your ${routines.length} routine${routines.length === 1 ? "" : "s"} fit that search and filter combination. Try widening one of them.`}
               action={
                 <Button
                   size="sm"

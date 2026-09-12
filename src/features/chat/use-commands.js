@@ -83,7 +83,7 @@ export function useCommands({ threadId, onModel } = {}) {
             say(
               now
                 ? "Automatic compaction is on: a conversation that nearly fills the model's window is summarised once, visibly. Turn it off with /autocompact off."
-                : "Automatic compaction is off. A conversation too long for the window is still summarised by the agent loop when it has to be - that just happens invisibly, and on every step. Turn it back on with /autocompact on."
+                : "Automatic compaction is off, and nothing else summarises for you: a conversation that outgrows the window will be refused by the provider rather than shortened. Run /compact yourself, or turn this back on with /autocompact on."
             );
             return true;
           }

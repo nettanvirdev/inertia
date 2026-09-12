@@ -112,6 +112,21 @@ export function forgetCatalogue() {
 }
 
 export const composio = {
+  /**
+   * A connection or a catalogue changed, in this window or another.
+   *
+   * The app has emitted this since the first build and nothing subscribed, so
+   * a handshake that went ACTIVE while its dialog was open kept saying it was
+   * waiting until the person closed and reopened the screen - which is the
+   * exact bug the emitter was written to fix. Returns its own unsubscribe, or
+   * a no-op where there is no bridge.
+   */
+  onEvent(callback) {
+    const bridge = api("composioAPI");
+    if (!bridge?.onEvent) return () => {};
+    return bridge.onEvent(callback);
+  },
+
   /** Whether an API key is stored. False, not an error, when there is none. */
   async configured() {
     const bridge = api("composioAPI");

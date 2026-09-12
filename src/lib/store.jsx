@@ -664,11 +664,6 @@ export function AppProvider({ children }) {
       let gauge = null;
       return (event) => {
         if (event.type === "started") return;
-        // The conversation outgrew the model's window and its oldest messages
-        // were summarised away. The name taken from the first message is now
-        // describing something that happened a long way back, so it is written
-        // again from what the thread has become.
-        if (event.type === "warning" && event.kind === "context") nameThread(threadId);
         // How full the window is, from the provider's own count of the last
         // request. On the thread, because it is a fact about the conversation
         // rather than about one message, and the header draws it from there.
@@ -1372,9 +1367,10 @@ export function AppProvider({ children }) {
   /**
    * Draw a line across the conversation and carry a note over it.
    *
-   * The loop already does this when a transcript will not fit, at seventy
-   * percent of the window and without asking. This is the same thing done on
-   * purpose: `/compact` for the moment a person can see the work turning a
+   * The only compaction there is. The agent loop does not do this - a comment
+   * here used to say it did, at seventy percent and without asking, and that
+   * sentence described a design that was never built. Two callers, then:
+   * `/compact` for the moment a person can see the work turning a
    * corner, and the automatic trigger below for the moment the window is
    * nearly full and the alternative is the loop paying for a summary on every
    * single step from here on.
@@ -1428,6 +1424,16 @@ export function AppProvider({ children }) {
             ),
           };
         });
+        // The name was taken from the first message, and that message is now
+        // on the far side of the line just drawn - so the title describes
+        // something the agent can no longer see. Written again from what the
+        // conversation has become.
+        //
+        // This used to be a branch on a `warning` event with `kind: "context"`,
+        // which nothing has ever emitted: compaction is decided here, in the
+        // window, and the backend has no opinion about it. So the rename never
+        // happened once.
+        nameThread(threadId);
         return true;
       } catch (error) {
         setMessages((prev) => {
@@ -1445,7 +1451,7 @@ export function AppProvider({ children }) {
         return false;
       }
     },
-    [messages, threads, agents, chat, noteThread]
+    [messages, threads, agents, chat, noteThread, nameThread]
   );
 
   compactLater.current = compactThread;
@@ -1789,7 +1795,15 @@ export function AppProvider({ children }) {
       setRoutines((prev) =>
         prev.map((r) =>
           r.id === event.routineId
-            ? { ...r, lastRun: run, runHistory: [run, ...(r.runHistory ?? [])].slice(0, 20) }
+            ? {
+                ...r,
+                lastRun: run,
+                runHistory: [run, ...(r.runHistory ?? [])].slice(0, 20),
+                // The run just moved the schedule on. Without carrying it the
+                // row goes on pointing at the run that already happened -
+                // "next run 2 hours ago" - and so does the Next up tile.
+                schedule: event.schedule ?? r.schedule,
+              }
             : r
         )
       );

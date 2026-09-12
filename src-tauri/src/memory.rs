@@ -85,11 +85,19 @@ pub fn arm(state: &AppState, thread_id: &str, history: &[Entry], model_ref: &str
         return;
     };
 
+    let announce = {
+        let emit = workspace.emit.clone();
+        std::sync::Arc::new(move |id: &str, op: &str| {
+            emit(serde_json::json!({ "collection": "memory", "id": id, "op": op }));
+        }) as inertia_memory::tools::Wrote
+    };
+
     let entry = Armed {
         store,
         transcript: transcript(history),
         count: history.len(),
         agent_id: None,
+        announce: Some(announce),
         model: Arc::new(ModelPass::new(
             Arc::clone(&workspace.settings),
             model_ref.to_string(),

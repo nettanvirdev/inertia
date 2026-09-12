@@ -3,7 +3,6 @@ import {
   Camera,
   Cloud,
   Folder,
-  Globe,
   Icon,
   MonitorPlay,
   MoreHorizontal,
@@ -34,7 +33,6 @@ import { computers as machines } from "@/lib/computers";
 import { DesktopPane } from "./DesktopPane";
 import { TerminalPane } from "./TerminalPane";
 import { FilesPane } from "./FilesPane";
-import { BrowserPane } from "./BrowserPane";
 import { SnapshotsDialog } from "./SnapshotsDialog";
 import { AssignAgentsDialog } from "./AssignAgentsDialog";
 import { ImportCookiesDialog, forComputer } from "./ImportCookiesDialog";
@@ -48,11 +46,18 @@ const STATUS_VARIANT = {
   missing: "danger",
 };
 
+/**
+ * The surfaces a machine has.
+ *
+ * There is no Browser tab, and that is on purpose. The machine's browser is
+ * something the agent drives and the Desktop tab already shows - a second
+ * address bar, framed three seconds at a time, was a worse version of the same
+ * screen for a person who has a real browser one pane away.
+ */
 const TABS = [
   { value: "desktop", label: "Desktop", icon: MonitorPlay },
   { value: "terminal", label: "Terminal", icon: Terminal },
   { value: "files", label: "Files", icon: Folder },
-  { value: "browser", label: "Browser", icon: Globe },
 ];
 
 const GB = 1024 ** 3;
@@ -312,14 +317,6 @@ export function ComputerDetail({ computerId }) {
           className="flex h-full min-h-0 animate-fade-in flex-col"
         >
           <FilesPane key={computer.id} computer={computer} />
-        </TabPanel>
-        <TabPanel
-          value="browser"
-          activeValue={tab}
-          idPrefix={`cmp-${computer.id}`}
-          className="flex h-full min-h-0 animate-fade-in flex-col"
-        >
-          <BrowserPane key={computer.id} computer={computer} />
         </TabPanel>
       </ScrollArea>
 

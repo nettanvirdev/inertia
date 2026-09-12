@@ -18,6 +18,7 @@
 //!     with that emptiness.
 
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde::de::DeserializeOwned;
@@ -148,12 +149,18 @@ pub fn write_then_rename(file: &Path, contents: &str) -> Result<()> {
         ensure_dir(parent)?;
     }
 
-    // The pid keeps two processes writing the same file from colliding on the
-    // temp name itself.
+    // The pid separates two processes; the counter separates two writes inside
+    // one. Both halves are needed. Without the counter, two flushes of the same
+    // record race on a single temp name: the first rename moves the file the
+    // second is about to rename, and the second fails with "cannot find the
+    // file specified" naming the *destination*, which reads like a missing
+    // folder and is not. That is what was dropping turn records.
+    static NEXT: AtomicU64 = AtomicU64::new(0);
     let temp = file.with_extension(format!(
-        "{}.{}.tmp",
+        "{}.{}.{}.tmp",
         file.extension().and_then(|e| e.to_str()).unwrap_or(""),
-        std::process::id()
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
     ));
 
     let write = || -> std::io::Result<()> {
@@ -670,5 +677,34 @@ mod tests {
     fn slugs_are_bounded_in_length() {
         let slug = slugify(&"a".repeat(200), "x");
         assert!(slug.len() <= 64, "got {} chars", slug.len());
+    }
+
+    /// Two writes of one record, at once, from one process.
+    ///
+    /// The real case is a turn record: a scheduled write and the write that
+    /// settles the turn can land together. When both used the same temp name
+    /// the loser reported "cannot find the file specified" against the
+    /// destination path and the record was lost.
+    #[test]
+    fn two_writes_of_one_file_at_once_both_land() {
+        let dir = temp();
+        let file = dir.path().join("turn.json");
+
+        let failures: Vec<String> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8)
+                .map(|n| {
+                    let file = file.clone();
+                    scope.spawn(move || write_text(&file, &format!("attempt {n}")))
+                })
+                .collect();
+            handles
+                .into_iter()
+                .filter_map(|handle| handle.join().unwrap().err())
+                .map(|error| error.to_string())
+                .collect()
+        });
+
+        assert!(failures.is_empty(), "{failures:?}");
+        assert!(std::fs::read_to_string(&file).unwrap().starts_with("attempt "));
     }
 }

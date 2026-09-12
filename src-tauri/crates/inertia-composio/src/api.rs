@@ -18,6 +18,16 @@ pub const DEFAULT_BASE_URL: &str = "https://backend.composio.dev";
 /// Every request is abandoned after this.
 const REQUEST_TIMEOUT_SECS: u64 = 30;
 
+/// Rows asked for per page on a cursor-paged endpoint.
+///
+/// A cursor-paged list cannot be fetched in parallel - page two's cursor is in
+/// page one - so the only lever on how long the catalogue takes is how few
+/// round trips it costs. At 100 a catalogue of several hundred apps was six or
+/// more serial requests, each of which can sit for seconds. A server that caps
+/// the limit lower simply returns fewer rows and the cursor still walks, so
+/// asking for more is never wrong, only sometimes ignored.
+const PAGE_SIZE: &str = "500";
+
 // Hard ceilings on paged endpoints. A server that never stops paging cannot
 // hold the app hostage.
 const MAX_TOOLKITS: usize = 3_000;
@@ -185,7 +195,7 @@ impl Composio {
     pub async fn toolkits(&self) -> Result<Vec<Value>> {
         collect_pages(
             |cursor| async move {
-                let mut query = vec![("limit", "100".to_string())];
+                let mut query = vec![("limit", PAGE_SIZE.to_string())];
                 if let Some(cursor) = cursor {
                     query.push(("cursor", cursor));
                 }
@@ -207,7 +217,7 @@ impl Composio {
     pub async fn auth_config_slugs(&self) -> Result<std::collections::BTreeSet<String>> {
         let items = collect_pages(
             |cursor| async move {
-                let mut query = vec![("limit", "100".to_string())];
+                let mut query = vec![("limit", PAGE_SIZE.to_string())];
                 if let Some(cursor) = cursor {
                     query.push(("cursor", cursor));
                 }
@@ -262,7 +272,7 @@ impl Composio {
     pub async fn connected_accounts(&self) -> Result<Vec<Value>> {
         collect_pages(
             |cursor| async move {
-                let mut query = vec![("limit", "100".to_string())];
+                let mut query = vec![("limit", PAGE_SIZE.to_string())];
                 if let Some(cursor) = cursor {
                     query.push(("cursor", cursor));
                 }

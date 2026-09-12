@@ -448,6 +448,7 @@ fn millis_now() -> i64 {
 /// everything would hand them rows they filtered out.
 #[tauri::command]
 pub async fn composio_toolkits(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     query: Option<CatalogueQuery>,
 ) -> Result<Value, String> {
@@ -461,21 +462,56 @@ pub async fn composio_toolkits(
             inertia_store::layout::Document::CacheComposio,
             Value::Null,
         );
-        if let Some(fresh) = usable_catalogue(&stored) {
-            return Ok(fresh);
+        match aged_catalogue(&stored) {
+            Aged::Fresh(fresh) => return Ok(fresh),
+            // Stale is still an answer. Almost every row in a day-old
+            // catalogue is still true, and handing it over now beats holding
+            // somebody in front of a spinner to confirm it. The re-read runs
+            // behind them and the screen redraws when it lands, which is what
+            // the refresh event was always for.
+            Aged::Stale(stale) => {
+                let client = composio_client(&state)?;
+                let behind = app.clone();
+                let layout = layout.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Ok(answer) = fetch_catalogue(&client, &CatalogueQuery::default()).await {
+                        store_catalogue(&layout, &answer);
+                        announce_refresh(&behind, None);
+                    }
+                });
+                return Ok(stale);
+            }
+            Aged::Missing => {}
         }
     }
 
     let client = composio_client(&state)?;
+    let answer = fetch_catalogue(&client, &query).await?;
 
+    if !narrowed {
+        store_catalogue(&layout, &answer);
+    }
+
+    Ok(answer)
+}
+
+/// Ask Composio for the catalogue, narrowed as the caller asked.
+///
+/// The two reads are independent: nothing in the toolkit walk needs to know
+/// which slugs already have an auth config until the rows are being
+/// classified, so they run together. One after the other, the auth-config walk
+/// was pure added wait in front of the list somebody is actually looking at.
+async fn fetch_catalogue(
+    client: &inertia_composio::api::Composio,
+    query: &CatalogueQuery,
+) -> Result<Value, String> {
     // Failing to read the project's auth configs is not a missing catalogue:
     // every row is still there, a few of them classified more pessimistically
     // than they deserve.
-    let configured = client.auth_config_slugs().await.unwrap_or_default();
+    let (configured, toolkits) = tokio::join!(client.auth_config_slugs(), client.toolkits());
+    let configured = configured.unwrap_or_default();
 
-    let items: Vec<Value> = client
-        .toolkits()
-        .await
+    let items: Vec<Value> = toolkits
         .map_err(err)?
         .iter()
         .map(|item| inertia_composio::toolkit::normalise(item, &configured))
@@ -484,39 +520,64 @@ pub async fn composio_toolkits(
         .filter(|row| inertia_composio::toolkit::matches_category(row, &query.category))
         .collect();
 
-    let answer = json!({
+    Ok(json!({
         "items": items,
         "fetchedAt": millis_now(),
         "nextCursor": Value::Null,
-    });
-
-    if !narrowed && !answer["items"].as_array().is_none_or(Vec::is_empty) {
-        // A failed write costs the next launch a fetch and nothing else, so it
-        // is not worth failing the read somebody is waiting on.
-        let _ = inertia_store::collections::write_document(
-            &layout,
-            inertia_store::layout::Document::CacheComposio,
-            &answer,
-        );
-    }
-
-    Ok(answer)
+    }))
 }
 
-/// A stored catalogue, if it has rows and is recent enough to serve.
-fn usable_catalogue(stored: &Value) -> Option<Value> {
-    let items = stored.get("items").and_then(Value::as_array)?;
-    if items.is_empty() {
-        return None;
+/// Keep a whole catalogue for the next launch.
+///
+/// An empty one is not worth keeping, and a failed write costs one fetch and
+/// nothing else - never the read somebody is waiting on.
+fn store_catalogue(layout: &inertia_store::layout::Layout, answer: &Value) {
+    if answer["items"].as_array().is_none_or(Vec::is_empty) {
+        return;
     }
-    let age = millis_now() - stored.get("fetchedAt").and_then(Value::as_i64).unwrap_or(0);
-    if !(0..CATALOGUE_MAX_AGE_MS).contains(&age) {
-        return None;
+    let _ = inertia_store::collections::write_document(
+        layout,
+        inertia_store::layout::Document::CacheComposio,
+        answer,
+    );
+}
+
+/// What a stored catalogue is worth right now.
+#[derive(Debug, PartialEq)]
+enum Aged {
+    /// Recent enough to serve and stop there.
+    Fresh(Value),
+    /// Worth showing, and worth re-reading behind it.
+    Stale(Value),
+    /// Nothing usable stored. Somebody has to wait.
+    Missing,
+}
+
+/// A stored catalogue, and how far it can be trusted.
+///
+/// The age ceiling used to be the line between serving and fetching. It is now
+/// the line between serving quietly and serving while checking: a list of apps
+/// six hours old is not wrong, it is unconfirmed, and confirming it is not
+/// something to make anybody watch.
+fn aged_catalogue(stored: &Value) -> Aged {
+    let Some(items) = stored.get("items").and_then(Value::as_array) else {
+        return Aged::Missing;
+    };
+    if items.is_empty() {
+        return Aged::Missing;
     }
 
-    let mut fresh = stored.clone();
-    fresh["fromCache"] = Value::Bool(true);
-    Some(fresh)
+    let mut answer = stored.clone();
+    answer["fromCache"] = Value::Bool(true);
+
+    let age = millis_now() - stored.get("fetchedAt").and_then(Value::as_i64).unwrap_or(0);
+    // A negative age is a clock that moved backwards, which says nothing about
+    // the rows. Old rather than absent.
+    if (0..CATALOGUE_MAX_AGE_MS).contains(&age) {
+        Aged::Fresh(answer)
+    } else {
+        Aged::Stale(answer)
+    }
 }
 
 /// What one app can do.

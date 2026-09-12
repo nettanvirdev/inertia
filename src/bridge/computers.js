@@ -8,16 +8,13 @@ import { call, subscribe } from "./envelope";
  * record says who owns a machine and the backend picks accordingly, so a screen
  * written against these methods works the same whichever answered.
  *
- * The one method with no backend is `importCookies`: lifting a signed-in
- * session out of a browser profile on this desktop means reading a SQLite
- * cookie store and decrypting it against the platform keychain - DPAPI on
- * Windows, the login keyring elsewhere - and none of the crates that do either
- * are in this workspace yet. It answers a refusal rather than being absent,
- * because `lib/computers.js` binds this namespace once and calls through it
- * without checking each method.
+ * `cookieSources` and `importCookies` lift a signed-in session out of a browser
+ * profile on this desktop and put it in the machine's browser. That means
+ * reading a SQLite cookie store and decrypting it against the platform's own
+ * key - DPAPI on Windows, the keychain on macOS, a published constant on Linux
+ * - which is `crates/inertia-cookies`. It is a button and never a tool; see
+ * `src-tauri/src/cookies.rs` for why.
  */
-const NOT_YET = (what) =>
-  `${what} is not wired up in this build yet. The machine itself works - running commands, files, snapshots, the screen - but this part has no backend.`;
 
 export function computersBridge() {
   return {
@@ -64,8 +61,15 @@ export function computersBridge() {
     buildImage: () => call("computer_build_image"),
     catalogue: (providerId) => call("computer_catalogue", { providerId: providerId ?? null }),
 
-    /** A command already finished by the time `exec` answers, so nothing cancels. */
-    cancel: async () => ({ ok: true, data: { cancelled: false } }),
+    /**
+     * Stop a command that is still running.
+     *
+     * Answers `{cancelled}` - false when there was nothing to stop, which is
+     * the ordinary outcome of pressing Stop as a command finishes. On a Docker
+     * or local machine the process is killed; on Daytona the toolbox already
+     * has the command and this only stops us waiting for it.
+     */
+    cancel: (runId) => call("computer_cancel", { runId }),
 
     /*
      * The live screen, and driving it.
@@ -85,8 +89,9 @@ export function computersBridge() {
      * Empty rather than a refusal: the dialog draws "no browser profiles" from
      * an empty list, which is the truth about what this build can see.
      */
-    cookieSources: async () => ({ ok: true, data: [] }),
-    importCookies: async () => ({ ok: false, error: NOT_YET("Importing cookies") }),
+    cookieSources: () => call("cookie_sources"),
+    importCookies: (id, options) =>
+      call("computer_import_cookies", { id, options: options ?? {} }),
 
     onEvent: (callback) => subscribe("computer:event", callback),
   };

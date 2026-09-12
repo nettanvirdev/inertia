@@ -99,27 +99,50 @@ export function TerminalPane({ computer }) {
 
     append({ stream: "in", text });
 
+    // Whether anything arrived while the command was running. No provider
+    // streams today - every one of them answers in a single piece at the end -
+    // so this is almost always false, and the pane has to print the answer
+    // itself. It used to assume the opposite, which is why a command that
+    // worked printed nothing at all and a command that failed printed only its
+    // exit code.
+    let streamed = false;
+
     const run = runCommand(
       computer.id,
       { command: text, cwd, timeoutMs: 300_000 },
       {
-        onOutput: (chunk) =>
-          append({ stream: chunk.stream === "stderr" ? "err" : "out", text: chunk.text }),
+        onOutput: (chunk) => {
+          streamed = true;
+          append({ stream: chunk.stream === "stderr" ? "err" : "out", text: chunk.text });
+        },
       }
     );
     setRunning(run);
 
     try {
       const result = await run.promise;
-      // The streamed chunks already painted the body, so only the part they
-      // could not say goes here: whether it worked.
+      if (!streamed) {
+        if (result.stdout) append({ stream: "out", text: trimEnd(result.stdout) });
+        if (result.stderr) append({ stream: "err", text: trimEnd(result.stderr) });
+      }
+      // What the output itself cannot say: whether it worked.
       if (result.timedOut) append({ stream: "err", text: "Timed out." });
       else if (result.code !== 0) append({ stream: "note", text: `Exit code ${result.code}` });
+      else if (!streamed && !result.stdout && !result.stderr) {
+        // Silence and a zero is a success, but an empty pane reads like a
+        // command that never ran.
+        append({ stream: "note", text: "No output." });
+      }
     } catch (error) {
       append({ stream: "err", text: error?.message ?? String(error) });
     } finally {
       setRunning(null);
     }
+  }
+
+  /** Drop the trailing newline every shell adds; keep the blank lines inside. */
+  function trimEnd(text) {
+    return String(text).replace(/\s+$/, "");
   }
 
   function onKeyDown(event) {

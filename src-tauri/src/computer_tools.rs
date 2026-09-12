@@ -831,11 +831,18 @@ impl Tool for RunTool {
             .unwrap_or(DEFAULT_TIMEOUT_S)
             .min(MAX_TIMEOUT_S);
 
+        // The machine's own working folder when the model does not name one,
+        // which is what the schema has always promised. Passing `None` through
+        // left the choice to the provider, and the two do not agree: Docker
+        // takes the image WORKDIR, Daytona the sandbox user's home. So a model
+        // that read the description and omitted `cwd` landed somewhere else on
+        // Daytona than the one place its files are.
         let cwd = args
             .get("cwd")
             .and_then(Value::as_str)
             .filter(|value| !value.trim().is_empty())
-            .map(str::to_string);
+            .map_or_else(|| self.0.workdir.clone(), str::to_string);
+        let cwd = Some(cwd).filter(|path| !path.is_empty());
 
         let result = self
             .0

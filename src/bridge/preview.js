@@ -26,20 +26,27 @@ import { call, subscribe } from "./envelope";
  *     nothing in this workspace could test. `browser_read_page` is what the
  *     agent uses instead, and it is better for everything except questions
  *     that are genuinely about pixels.
- *   - `cookieSources` and `importCookies`. Lifting a signed-in session out of
- *     a browser profile on this desktop means reading a SQLite cookie store
- *     and decrypting it against the platform keychain - DPAPI on Windows, the
- *     login keyring elsewhere - and none of the crates that do either are in
- *     this workspace yet. Same answer, and for the same reason, as the
- *     computers bridge gives.
  *
- * `cookieSources` answers an empty list rather than a refusal on purpose: the
- * import dialog draws "no browser profiles" from an empty list, which is the
- * truth about what this build can see, and a rejection there would be an error
- * toast for a dialog the person opened to look around.
+ * `cookieSources` and `importCookies` are real, and they are the same two the
+ * computers bridge offers - one source, two destinations. This one goes
+ * through WebView2's own cookie manager rather than a SQLite file, which is
+ * what lets an `httpOnly` session cookie arrive as one. Every pane shares the
+ * store, so the import is for the pane and not for a tab.
+ *
+ * `cookieSources` answers an empty list rather than a refusal when there is
+ * nothing to read: the dialog draws "no browser profiles" from an empty list,
+ * and a rejection there would be an error toast for a dialog the person opened
+ * to look around.
  */
 const NOT_YET = (what) =>
   `${what} is not wired up in this build yet. The pane itself works - opening pages, reading them, the console and the network log - but this part has no backend.`;
+
+/** Rises once per placement, for the whole window. See `place` below. */
+let placements = 0;
+function nextPlacement() {
+  placements += 1;
+  return placements;
+}
 
 export function previewBridge() {
   return {
@@ -54,7 +61,17 @@ export function previewBridge() {
      * animated open passes through sizes that are positive and unusable.
      */
     place: (id, rect, visible) =>
-      call("preview_place", { id, rect: rect ?? {}, visible: Boolean(visible) }),
+      call("preview_place", {
+        id,
+        rect: rect ?? {},
+        visible: Boolean(visible),
+        // Rising, and compared in the app. These are separate commands
+        // answered concurrently, so the order they are handled in is not the
+        // order they were sent in - and the one that matters most is the last
+        // one, the hide on the way out, which had nothing to correct it if it
+        // lost. That is the white rectangle left over the transcript.
+        seq: nextPlacement(),
+      }),
 
     state: (id) => call("preview_state", { id }),
     list: () => call("preview_list"),
@@ -66,8 +83,8 @@ export function previewBridge() {
     close: (id) => call("preview_close", { id }),
 
     screenshot: async () => ({ ok: false, error: NOT_YET("Photographing the page") }),
-    cookieSources: async () => ({ ok: true, data: [] }),
-    importCookies: async () => ({ ok: false, error: NOT_YET("Importing cookies") }),
+    cookieSources: () => call("cookie_sources"),
+    importCookies: (options) => call("preview_import_cookies", { options: options ?? {} }),
 
     onEvent: (callback) => subscribe("preview:event", callback),
   };

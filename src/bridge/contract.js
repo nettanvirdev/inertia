@@ -183,7 +183,7 @@ export const CONTRACT = {
   previewAPI: {
     status: "partial",
     methods: ["open", "navigate", "history", "place", "state", "list", "screenshot", "consoleLog", "networkLog", "devTools", "close", "cookieSources", "importCookies", "onEvent"],
-    unimplemented: ["screenshot", "importCookies"],
+    unimplemented: ["screenshot"],
   },
 
   computerAPI: {
@@ -192,7 +192,7 @@ export const CONTRACT = {
     // Only the cookie import is left: it needs a SQLite reader and the platform
     // keychain to decrypt what it reads, neither of which this build has. The
     // machine, the image build, the screen and driving it are all live.
-    unimplemented: ["importCookies"],
+    unimplemented: [],
   },
 
   // Sub-agents. `spawn` starts a run and the table behind it is live, so the

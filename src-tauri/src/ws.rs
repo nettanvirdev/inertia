@@ -103,7 +103,13 @@ fn layout(app: &AppHandle, state: &AppState) -> Result<Layout, String> {
         return Ok(workspace.layout.clone());
     }
     let root = stored_root(app).ok_or("No workspace folder is configured yet.")?;
-    state.open_workspace(root.clone())?;
+    // `_for`, with the window attached. This is the path an ordinary launch
+    // takes - the pointer is stored, the first screen asks for data, and the
+    // workspace opens here - and opening it without a window left its emitter
+    // as the one that tells nobody. Every write an agent made then announced
+    // into nothing: a routine or a memory landed on disk correctly and no
+    // screen heard about it until the next launch.
+    state.open_workspace_for(app, root.clone())?;
     Ok(Layout::new(root))
 }
 
@@ -433,7 +439,7 @@ pub fn ws_configure(
     let root = PathBuf::from(report["path"].as_str().unwrap_or_default());
     let manifest = scaffold(&root)?;
     store_root(&app, &root)?;
-    state.open_workspace(root)?;
+    state.open_workspace_for(&app, root)?;
 
     let mut status = ws_status(app.clone());
     if let Value::Object(map) = &mut status {

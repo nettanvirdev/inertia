@@ -269,21 +269,15 @@ impl AppState {
         Self::default()
     }
 
-    pub fn open_workspace(&self, root: std::path::PathBuf) -> Result<(), String> {
-        let workspace = Workspace::open(root)?;
-        *self.workspace.lock() = Some(Arc::new(workspace));
-        // The remembered screenshots belong to the machines of the workspace
-        // that is being left. Kept, they would have an agent told that the
-        // screen "has not changed" against a picture of somebody else's.
-        crate::computer_tools::forget_frames();
-        Ok(())
-    }
-
-    /// The same, with a window to announce writes to.
+    /// Open a workspace, with the window to announce its writes to.
     ///
-    /// Two ways in because there are two: a person opening a folder, and a
-    /// routine firing in a process whose window may never have opened. The
-    /// second must not be prevented from running by the absence of the first.
+    /// There used to be a second way in that took no handle, for "a process
+    /// with no window", and it was what every ordinary launch actually used -
+    /// so `workspace.emit` was the closure that tells nobody, and every write
+    /// an agent made announced into nothing. A routine or a memory landed on
+    /// disk correctly and no screen heard about it until the next launch. The
+    /// handle is not optional now, because there was never a caller that
+    /// genuinely did not have one.
     pub fn open_workspace_for(
         &self,
         app: &AppHandle,
@@ -554,7 +548,21 @@ pub fn registry_with(
             // The other half of the bargain the injected block makes: the
             // prompt carries titles, and these read one in full, write a new
             // one, or throw one away.
-            .with_tools(inertia_memory::tools::all(memory))
+            // Announcing, so a memory an agent writes reaches the Memory
+            // screen without a relaunch. The same emitter the setup tools use.
+            .with_tools(inertia_memory::tools::all_announcing(
+                memory,
+                Some({
+                    let emit = workspace.emit.clone();
+                    std::sync::Arc::new(move |id: &str, op: &str| {
+                        emit(serde_json::json!({
+                            "collection": "memory",
+                            "id": id,
+                            "op": op,
+                        }));
+                    })
+                }),
+            ))
             // Every external source joins the same flat list as the
             // builtins, sorted together by id, so the model cannot tell them
             // apart - and a broken one is dropped rather than taking the turn

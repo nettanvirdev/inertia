@@ -261,13 +261,20 @@ pub(crate) fn read_exec(payload: &Value, duration_ms: u64) -> ExecResult {
             .to_string()
     };
 
+    // Daytona returns one combined stream on some versions and two on others.
+    // `result` is the combined one, and it goes to stdout rather than being
+    // dropped.
+    let stdout = text(&["stdout", "result", "output"]);
+    let stderr = text(&["stderr", "error"]);
+
     ExecResult {
-        code: number(&["exitCode", "code", "exit_code"]).unwrap_or(0) as i32,
-        // Daytona returns one combined stream on some versions and two on
-        // others. `result` is the combined one, and it goes to stdout rather
-        // than being dropped.
-        stdout: text(&["stdout", "result", "output"]),
-        stderr: text(&["stderr", "error"]),
+        // A toolbox version that reports no exit code has not said the command
+        // worked. Assuming zero turned every silent failure into an empty
+        // success - which is how a missing file reads as an empty file.
+        code: number(&["exitCode", "code", "exit_code"])
+            .unwrap_or(if stderr.trim().is_empty() { 0 } else { 1 }) as i32,
+        stdout,
+        stderr,
         duration_ms,
         timed_out: false,
     }
@@ -301,8 +308,26 @@ impl Provider for DaytonaProvider {
 
     async fn create(&self, spec: &Spec) -> Result<Created> {
         let manifest = image::manifest();
+        // What the person picked, then the name the image manifest publishes
+        // for this exact purpose, then the local image reference as a last
+        // resort. It used to be only the last of those: `inertia-sandbox:1.0.0`
+        // is what the container is called on this machine, and Daytona has
+        // never heard of it - the snapshot on the account is
+        // `inertia-sandbox-1.0.0`, which `daytonaSnapshot` has been carrying
+        // in the manifest all along with nothing reading it.
+        let snapshot = spec
+            .image
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .unwrap_or(if manifest.daytona_snapshot.is_empty() {
+                &manifest.reference
+            } else {
+                &manifest.daytona_snapshot
+            });
+
         let mut body = json!({
-            "snapshot": manifest.reference,
+            "snapshot": snapshot,
             "labels": { "inertia": "1", "inertia-id": spec.id },
         });
         // Only when the record asked. A limit the user did not choose is worse
@@ -421,9 +446,20 @@ impl Provider for DaytonaProvider {
 
         // The toolbox takes one command line and no working directory, so the
         // directory is part of the line.
+        // The environment goes in front of the command rather than in the
+        // request body, because the toolbox takes a command line and nothing
+        // else. Without this the `env` map every caller builds was assembled
+        // and dropped on the floor for Daytona machines alone.
+        let exports: String = request
+            .env
+            .iter()
+            .filter(|(name, _)| !name.trim().is_empty())
+            .map(|(name, value)| format!("export {name}={}; ", shell_quote(value)))
+            .collect();
+
         let command = match request.cwd.as_deref().filter(|c| !c.is_empty()) {
-            Some(cwd) => format!("cd {} && {line}", shell_quote(cwd)),
-            None => line.to_string(),
+            Some(cwd) => format!("{exports}cd {} && {line}", shell_quote(cwd)),
+            None => format!("{exports}{line}"),
         };
         let timeout = request.timeout.unwrap_or(DEFAULT_TIMEOUT);
 
@@ -635,7 +671,7 @@ impl Provider for DaytonaProvider {
             .exec(
                 handle,
                 &ExecRequest {
-                    command: "command -v scrot >/dev/null 2>&1 && scrot -o /tmp/screen.png && base64 -w0 /tmp/screen.png".into(),
+                    command: crate::desktop::still(),
                     timeout: Some(Duration::from_secs(30)),
                     ..Default::default()
                 },
@@ -691,6 +727,62 @@ mod tests {
         assert_eq!(old.image.as_deref(), Some("img2"));
     }
 
+    /// The snapshot name Daytona is asked for.
+    ///
+    /// It used to be the local image reference, `inertia-sandbox:1.0.0`, which
+    /// no Daytona account has ever heard of - every create failed. The account
+    /// has `inertia-sandbox-1.0.0`, and the manifest has been carrying that
+    /// name under `daytonaSnapshot` with nothing reading it.
+    #[tokio::test]
+    async fn a_sandbox_is_made_from_the_snapshot_the_account_has() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/sandbox"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "id": "s1", "state": "started",
+            })))
+            .mount(&server)
+            .await;
+
+        let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
+        provider.create(&Spec { id: "c1".into(), ..Default::default() }).await.unwrap();
+
+        let asked: Value = serde_json::from_slice(
+            &server.received_requests().await.unwrap()[0].body,
+        )
+        .unwrap();
+        assert_eq!(asked["snapshot"], json!(image::manifest().daytona_snapshot));
+    }
+
+    /// And what the person picked in the dialog wins over either default.
+    #[tokio::test]
+    async fn the_chosen_snapshot_is_the_one_asked_for() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/sandbox"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "id": "s1", "state": "started",
+            })))
+            .mount(&server)
+            .await;
+
+        let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
+        provider
+            .create(&Spec {
+                id: "c1".into(),
+                image: Some("mine-2.0.0".into()),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+
+        let asked: Value = serde_json::from_slice(
+            &server.received_requests().await.unwrap()[0].body,
+        )
+        .unwrap();
+        assert_eq!(asked["snapshot"], json!("mine-2.0.0"));
+    }
+
     #[test]
     fn an_exec_answer_is_read_under_any_of_its_names() {
         let combined = read_exec(&json!({ "exitCode": 0, "result": "hello" }), 5);
@@ -701,6 +793,18 @@ mod tests {
         assert_eq!(split.code, 2);
         assert_eq!(split.stderr, "bad");
         assert!(!split.ok(), "a non-zero exit is still a result");
+    }
+
+    /// A toolbox version that reports no exit code has not said it worked.
+    /// Reading that as zero turned every silent failure into an empty success.
+    #[test]
+    fn an_answer_with_no_exit_code_is_judged_by_its_stderr() {
+        let quiet = read_exec(&json!({ "result": "fine" }), 5);
+        assert_eq!(quiet.code, 0);
+
+        let complaining = read_exec(&json!({ "stderr": "wget: not found" }), 5);
+        assert_eq!(complaining.code, 1);
+        assert!(!complaining.ok());
     }
 
     #[tokio::test]

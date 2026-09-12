@@ -599,6 +599,10 @@ function ComposioScreen({ query, layout }) {
   const [toolkits, setToolkits] = React.useState(cached?.items ?? []);
   const [fetchedAt, setFetchedAt] = React.useState(cached?.fetchedAt ?? 0);
   const [loading, setLoading] = React.useState(!cached);
+  // The catalogue is the slow half - several hundred apps over paged requests
+  // - and it is the half nobody came for. Its own flag, so the connected apps
+  // draw as soon as they are read and Browse fills in underneath them.
+  const [browsing, setBrowsing] = React.useState(!cached);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState(null);
 
@@ -618,6 +622,21 @@ function ComposioScreen({ query, layout }) {
       alive.current = false;
     };
   }, []);
+
+  // The app saying a connection or the catalogue changed - from a finished
+  // handshake, another window, or an agent connecting an app mid-turn. Only
+  // the stored rows are re-read: the catalogue is a file and a refresh of it
+  // is something a person asks for.
+  React.useEffect(
+    () =>
+      composio.onEvent((event) => {
+        if (!alive.current) return;
+        if (event?.type === "connection" || event?.type === "refresh") {
+          reloadConnections().catch(() => {});
+        }
+      }),
+    [reloadConnections]
+  );
 
   /**
    * Read the connections and the catalogue.
@@ -645,7 +664,12 @@ function ComposioScreen({ query, layout }) {
       if (!alive.current) return;
       setConnections(stored);
       setError(null);
+      // Here, not in the `finally`. The screen used to say it drew the stored
+      // rows first and then waited for the catalogue before drawing anything,
+      // which is the same thing as not drawing them first.
+      setLoading(false);
 
+      setBrowsing(true);
       const catalogue = await composio.toolkits({ refresh });
       if (!alive.current) return;
       setToolkits(catalogue.items ?? []);
@@ -655,6 +679,7 @@ function ComposioScreen({ query, layout }) {
     } finally {
       if (alive.current) {
         setLoading(false);
+        setBrowsing(false);
         setRefreshing(false);
       }
     }
@@ -884,7 +909,7 @@ function ComposioScreen({ query, layout }) {
       <div className={cn("flex min-h-0 flex-1 items-start pt-6", GUTTER)}>
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
           <Spinner size="sm" />
-          Asking Composio what is available
+          Reading this workspace
         </div>
       </div>
     );
@@ -988,7 +1013,12 @@ function ComposioScreen({ query, layout }) {
               </Button>
             }
           >
-            {groups.length ? (
+            {browsing && !groups.length ? (
+              <div className="flex items-center gap-2 py-6 text-[13px] text-muted-foreground">
+                <Spinner size="sm" />
+                Asking Composio what is available
+              </div>
+            ) : groups.length ? (
               <div className="flex flex-col gap-5">
                 {groups.map((group) => (
                   <div key={group.name} className="flex flex-col gap-2">
