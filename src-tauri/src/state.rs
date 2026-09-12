@@ -357,13 +357,6 @@ impl AppState {
         ))
     }
 
-    pub fn workspace_root(&self) -> Option<String> {
-        self.workspace
-            .lock()
-            .as_ref()
-            .map(|w| w.layout.root().display().to_string())
-    }
-
     pub fn register(&self, turn_id: String, running: Running) {
         self.running.lock().insert(turn_id, running);
     }

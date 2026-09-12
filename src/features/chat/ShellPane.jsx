@@ -450,8 +450,10 @@ function PipeTab({ tab, cwd, hidden, onRename, onClose }) {
       if (event.type === "data") {
         stuck.current = atBottom();
         setText((prev) => prev + event.text);
-      } else if (event.type === "done") {
-        setBusy(false);
+      } else if (event.type === "cwd") {
+        // Where the shell ended up, which is the tab's label. This used to
+        // read `done`, a type nothing has ever emitted, so a piped tab kept
+        // the folder it was opened in no matter what it was told to cd into.
         setHere(event.cwd ?? "");
         onRename(tab.id, labelFor({ kind: "sh", serial: tab.serial, cwd: event.cwd }));
       } else if (event.type === "exit") {

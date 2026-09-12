@@ -24,16 +24,3 @@ export const LIBRARY_CATEGORY_META = {
 
 /** The tabs the Library shows, in order. `all` and `conversation` come first. */
 export const LIBRARY_CATEGORIES = ['image', 'document', 'data', 'audio', 'video', 'code'];
-
-/**
- * Empty, and now permanently so.
- *
- * This was a roster of invented artifacts, and it was not merely unused - it was
- * what a brand new workspace got written into it on first open. Which meant a
- * fresh install opened onto someone else's work, and a real folder ended up
- * holding records nobody made and nothing could act on.
- *
- * It survives as an export only because the data barrel re-exports it. Nothing
- * reads it: the Library builds its catalogue out of the conversations.
- */
-export const LIBRARY_ITEMS = [];

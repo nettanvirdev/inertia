@@ -50,6 +50,3 @@ export const COMPUTER_STATUS_META = {
   error: { label: 'Failed', color: 'var(--destructive)', icon: 'TriangleAlert' },
   missing: { label: 'Gone', color: 'var(--destructive)', icon: 'CircleX' },
 };
-
-/** A workspace with no computers in it, which is what a new one has. */
-export const COMPUTERS = [];

@@ -1,231 +1,140 @@
 # Backend API
 
-Every Tauri command the frontend can call, and every event it can listen for.
-This is the whole surface — nothing else crosses the boundary.
+How the frontend and the Rust side talk, and where the authoritative list of
+what they can say lives.
 
-Call commands with `invoke` from `@tauri-apps/api/core`, listen with `listen`
-from `@tauri-apps/api/event`. Wrap each domain in one module under
-`src/lib/api/`, following the pattern in `src/lib/prefs.ts`, so a rename on the
-Rust side touches one file rather than forty components.
+This file is a map, not a catalogue. A hand-written table of two hundred
+commands is a table that is wrong within a week, and the last one was: it
+documented a conversation API the window had stopped calling and closed with a
+list of features that "have no commands yet" — every one of which had shipped.
 
-**Errors arrive as rejected promises**, not as an `{ok, data}` envelope. The
-message is written to be shown to a person as-is.
+## The two authoritative lists
 
-```ts
-try {
-  await invoke("thread_save", { thread });
-} catch (e) {
-  toast(String(e)); // e.g. "No workspace is open."
-}
+- **`src-tauri/src/lib.rs`**, the `generate_handler![...]` block. Every command
+  that exists, grouped and commented. Nothing crosses the boundary that is not
+  in it.
+- **`src/bridge/contract.js`**, the namespaces the window is written against,
+  with each one's methods and whether it is `live`, `partial` or `absent`.
+  `bridge.test.js` holds the shell to it, so a method that is declared and not
+  installed fails a test rather than a click.
+
+Between them sits `src/bridge/`, one module per namespace. A rename on the Rust
+side touches one file there rather than forty components.
+
+## The envelope
+
+The window was written against Electron's preload, where every call answers
+`{ ok: true, data }` or `{ ok: false, error }` and every subscription is a
+synchronous function returning a synchronous unsubscribe. Tauri offers neither.
+`src/bridge/envelope.js` is the entire difference between the two.
+
+```js
+import { call, raw, subscribe } from "./envelope";
+
+const answer = await call("ws_list", { collection: "agents" });
+if (!answer.ok) toast(answer.error);        // a sentence, written for a person
 ```
 
-## Workspace
+`raw` is the same call without the envelope, for the handful of places the
+window reads a plain value (`info?.version`, `result?.saved`). `subscribe`
+turns a Tauri channel into the synchronous unsubscribe the renderer expects.
 
-A workspace must be open before anything else works. Every other command
-rejects with `"No workspace is open."` until one is.
+Errors from a command are `String` on the Rust side, written to be shown as-is.
 
-| Command | Arguments | Returns |
-|---|---|---|
-| `workspace_open` | `{ root: string }` | `string` — the opened path |
-| `workspace_current` | — | `string \| null` |
+## The workspace surface
 
-Opening creates the folder structure if it isn't there, so pointing at an empty
-directory is a valid way to start a new workspace.
+Most screens never name a command. They go through `ws_*`, which speaks in
+collections and documents rather than paths:
 
-## Conversations
+| Command | For |
+|---|---|
+| `ws_list` / `ws_get` / `ws_put` / `ws_patch` / `ws_remove` / `ws_rename` | records in a collection — `agents`, `routines`, `memory`, `threads` |
+| `ws_doc_get` / `ws_doc_set` | a single named document — `models`, `permissions`, `identity` |
+| `ws_secret_*` | the secret store, which holds values `models.json` only names |
+| `ws_file_*` | bytes in the workspace folder |
+| `ws_tree` / `ws_browse` / `ws_list_dir` / `ws_inspect` | the folder, as a folder |
 
-| Command | Arguments | Returns |
-|---|---|---|
-| `threads_list` | — | `Thread[]`, newest first |
-| `thread_save` | `{ thread: Thread }` | — |
-| `thread_delete` | `{ id: string }` | — |
-| `messages_read` | `{ threadId: string, live?: string[] }` | `Message[]` |
-| `messages_save` | `{ threadId: string, messages: Message[] }` | — |
+Records are JSON all the way down. There is no typed Rust mirror of a record,
+on purpose: a mirror is a second definition of the shape, and the half that is
+behind quarantines the user's data as unreadable.
 
-**`live` matters.** Pass the ids of messages this window is still streaming.
-Anything else found mid-stream is assumed abandoned by a crash and is settled —
-marked stopped, with unfinished tool calls failed — so a conversation never
-reopens stuck showing a Stop button with no turn behind it. When loading cold,
-pass nothing.
-
-```ts
-type Thread = {
-  id: string;
-  agentId?: string;
-  title: string;
-  mode: "chat" | "plan" | "autonomous";
-  approval: string;          // "ask" | "edits" | "auto"
-  pinned: boolean;
-  unread: number;
-  updatedAt: string;         // RFC 3339
-  createdAt?: string;
-  preview: string;
-  messageCount: number;
-  computerAttached?: string;
-};
-
-type Message = {
-  id: string;
-  role: "user" | "agent";
-  agentId?: string;
-  content: string;
-  createdAt: string;
-  status?: "sent" | "streaming" | "error";
-  parts?: Part[];
-  stopped?: boolean;
-  error?: string;
-  model?: string;
-};
-
-type Part =
-  | { type: "text"; text: string }
-  | {
-      type: "tool";
-      callId?: string;
-      name: string;
-      arguments: string;     // raw JSON string as the model produced it
-      state: "running" | "done" | "failed";
-      output?: string;
-      ok?: boolean;
-    };
-```
-
-## Settings
-
-| Command | Arguments | Returns |
-|---|---|---|
-| `models_get` | — | `Models` |
-| `models_save` | `{ models: Models }` | — |
-| `models_probe` | `{ providerId: string }` | `ModelInfo[]` |
-| `permissions_get` | — | `Permissions` |
-| `permissions_save` | `{ permissions: Permissions }` | — |
-
-```ts
-type Models = {
-  providers: Provider[];
-  defaultModel: string;      // "anthropic/claude-sonnet-4-5"
-};
-
-type Provider = {
-  id: string;
-  name: string;
-  enabled: boolean;
-  baseUrl: string;
-  apiKeySecret?: string;     // the NAME of a secret, never the key
-  kind?: "anthropic" | "openai";  // inferred from baseUrl when absent
-  headers?: Record<string, string>;
-  models?: { id: string; label: string; context?: number }[];
-};
-
-type Permissions = {
-  workspace: Rule[];
-  agents: Record<string, Rule[]>;
-};
-
-type Rule = {
-  tool: string;              // a glob: "shell", "mcp_*"
-  pattern: string;           // a glob over the argument: "git push *", "*"
-  action: "allow" | "ask" | "deny";
-};
-```
-
-**Never put an API key in `models.json`.** `apiKeySecret` holds the *name* of
-an entry in the workspace's secret store; the value lives elsewhere. This is
-what lets a workspace folder be committed to git or attached to a bug report.
-
-`models_probe` asks the provider what models it offers. An endpoint with no
-model list returns `[]` rather than failing — plenty of gateways don't
-implement the route, and the user can still type a model id.
+**`workspace:changed`** is emitted whenever a record or document is written —
+by a screen, by an agent mid-turn, or by a routine. Every screen listens; it is
+what makes a memory an agent just saved appear without a relaunch.
 
 ## Running a turn
 
-```ts
-const { turnId } = await invoke<{ turnId: string }>("agent_send", {
-  threadId,
-  text,
-  model: "anthropic/claude-sonnet-4-5",  // optional; defaults to defaultModel
-  agentId: undefined,                     // optional
-});
+```js
+const { data } = await agent.run({ threadId, text, model, agentId, mode, approval });
+// data.id — the turn id. Returns immediately.
 ```
 
-`agent_send` **returns immediately** with a turn id. The turn runs in the
-background and reports through events. Do not await the reply — awaiting would
-block the bridge for the whole turn and there would be nothing to stream.
+The turn runs in the background and reports on **`agent:event`**. Awaiting it
+would block the bridge for the whole turn, and there would be nothing to
+stream. `agent_cancel`, `agent_steer` and `agent_active` address a turn by that
+id; `agent_active` is what lets a reopened window tell a quiet turn from a dead
+one.
 
-`agent_stop({ turnId })` → `boolean`. Cancels the turn, drops the in-flight
-provider request, and refuses any approval card still on screen. Returns false
-if that turn already finished.
-
-The backend persists the conversation when the turn ends, so a window closed
-mid-turn still leaves the messages on disk.
-
-### Listening
-
-```ts
-import { listen } from "@tauri-apps/api/event";
-
-const stop = await listen("agent:event", ({ payload }) => {
-  if (payload.turnId !== turnId) return;   // several turns can run at once
-  switch (payload.type) { /* ... */ }
-});
-```
-
-Every event carries `turnId` and `threadId` alongside its own fields.
+Every event carries the turn and thread it belongs to.
 
 | `type` | Fields | Meaning |
 |---|---|---|
-| `start` | `model` | the turn began |
 | `step` | `step` | one provider call plus its tools; 1-based |
 | `delta` | `text` | prose, as it arrives — append it |
 | `reasoning` | `text` | visible reasoning |
-| `toolStarted` | `call`, `title?` | a call is about to run |
-| `toolFinished` | `result` | it finished; match by `result.callId` |
-| `notice` | `message` | something was worked around; not a failure |
-| `done` | `stopped`, `history`, `usage?` | terminal |
+| `steer` | `text` | something typed mid-turn, echoed where it reached the model |
+| `tool-start` | `callId`, `name`, `title`, `args` | a call is about to run |
+| `tool-end` | `callId`, `ok`, `output`, `metadata`, `durationMs` | it finished |
+| `warning` | `kind`, `message` | worked around; not a failure |
+| `usage` | `usage`, `context` | token counts, and how full the window is |
+| `error` | `message` | the turn failed; a `done` follows |
+| `done` | `stopped`, `usage` | terminal |
 
-Pair `toolStarted` with `toolFinished` **by call id, not by order** — calls in
-one batch finish in whatever order they finish. Every finished call is
-guaranteed to have been announced first.
+Pair `tool-start` with `tool-end` **by call id, not by order** — calls in one
+batch finish in whatever order they finish.
 
-`stopped` is `{ reason: "complete" | "maxSteps" | "error" | "cancelled" |
-"refused", message? }`. Only `error` is a failure; `cancelled` is the user
-pressing Stop and should not be shown as one.
+`stopped` is `complete`, `maxSteps`, `error`, `cancelled` or `refused`. Only
+`error` is a failure; `cancelled` is the person pressing Stop.
 
-## Approvals
+`context` on the `usage` event is what draws the gauge in the chat header and
+what decides when a conversation has to be summarised. A turn that does not
+send it is a conversation that runs until the provider refuses it.
 
-When a tool needs permission the backend emits `permission:ask` and the call
-blocks until answered.
+## The two things that suspend a tool
 
-```ts
-type Ask = {
-  id: string;
-  key: string;       // "shell", "edit", "read", "doom_loop"
-  target: string;    // the exact thing — the command, the file path
-  always?: string;   // present only when "always allow" is meaningful
-};
+A tool can stop mid-call and wait for a person: an approval, or a question the
+model asked. Both arrive on `agent:event` tagged with a `channel` rather than
+on channels of their own — one subscription, so a window cannot end up
+listening for answers and missing questions.
 
-await invoke("permission_respond", { id, answer: "allow" });
-// "allow" | "allowAlways" | "deny"
+```js
+// channel: "permission", type: "asked"
+{ channel: "permission", type: "asked", id, question: { key, target, always? } }
+await agent.reply(id, "allow");        // "allow" | "allowAlways" | "reject"
 ```
 
-Three things to get right:
+- **Show `target` verbatim.** It is the exact command or path, and it is what a
+  rule would be written against. Paraphrasing it means approving something
+  other than what runs.
+- **Offer "always" only when `always` is present.** Choosing it writes a rule
+  into the workspace permissions.
+- **No answer is a refusal.** A dismissed card or a closed window denies.
 
-- **Show `target` verbatim.** It is the exact command or path, and it is what
-  a permission rule would be written against. Paraphrasing it in the UI means
-  the user approves something different from what runs.
-- **Offer "always allow" only when `always` is present.** When absent there is
-  nothing sensible to remember, and `allowAlways` behaves as a plain allow.
-  Choosing it writes a rule into the workspace permissions.
-- **No answer is a refusal.** If the card is dismissed or the window closes,
-  the call is denied. Never default to allow.
+`permission_waiting` and `agent_questions_waiting` replay what is still open,
+so a reopened window draws the cards it walked away from.
 
-A `doom_loop` ask means the model has made the same call with the same
-arguments several times running. It is asking whether to keep going, and the
-honest default is no.
+## Every event channel
 
-## What isn't here yet
-
-MCP servers, OpenAPI imports, Composio connections, routines, memory, agents
-and skills are specified and the storage layout reserves their folders, but
-they have no commands yet. They will follow this same shape: one command group,
-one event channel, camelCase fields.
+| Channel | Bridge | Carries |
+|---|---|---|
+| `agent:event` | `agentAPI` | a turn, plus permission and question asks |
+| `workspace:changed` | `workspaceAPI` | a record or document was written |
+| `computer:event` | `computerAPI` | a machine's state, and its screen |
+| `terminal:event` | `terminalAPI` | `data`, `cwd`, `exit`, `reveal` |
+| `preview:event` | `previewAPI` | the browser pane: navigation, console, network |
+| `crew:event` | `crewAPI` | what the team is doing |
+| `routine:event` | `routineAPI` | a routine started, finished, or was rescheduled |
+| `composio:event` | `composioAPI` | a connection or the catalogue changed |
+| `llm:event` | `llmAPI` | a bare completion, streaming |
+| `notify:event` | `notifyAPI` | something finished while the person was elsewhere |
+| `hooks:run` | `hooksAPI` | a lifecycle hook fired |

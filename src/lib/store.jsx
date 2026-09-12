@@ -29,15 +29,7 @@ import { defaultRules } from "@shared/tools";
 import { useToast } from "@/components/ui/toast";
 import { ANY } from "@shared/permission";
 import { PREFERENCE_DEFAULTS } from "@/lib/appearance";
-import {
-  ACTIVITY,
-  AGENTS,
-  CURRENT_USER,
-  MEMORIES,
-  MESSAGES,
-  ROUTINES,
-  THREADS,
-} from "@/data";
+import { CURRENT_USER } from "@/data";
 
 const AppContext = createContext(null);
 
@@ -176,10 +168,10 @@ export function AppProvider({ children }) {
    */
   const [activeThreadId, setActiveThreadId] = usePersistentState(
     PREF.activeThreadId,
-    THREADS[0]?.id ?? null,
+    null,
     (v) => v === null || typeof v === "string"
   );
-  const [activeAgentId, setActiveAgentId] = useState(AGENTS[0]?.id ?? null);
+  const [activeAgentId, setActiveAgentId] = useState(null);
 
   // Read once, at the first render, and never written here: the effect below
   // keeps it, and the profile overrules it the moment it arrives.
@@ -204,16 +196,16 @@ export function AppProvider({ children }) {
   const [commandOpen, setCommandOpen] = useState(false);
 
   // ── data ────────────────────────────────────────────────────────────────
-  const [agents, setAgents] = useState(AGENTS);
-  const [threads, setThreads] = useState(THREADS);
-  const [messages, setMessages] = useState(MESSAGES);
-  const [routines, setRoutines] = useState(ROUTINES);
-  const [memories, setMemories] = useState(MEMORIES);
+  const [agents, setAgents] = useState([]);
+  const [threads, setThreads] = useState([]);
+  const [messages, setMessages] = useState({});
+  const [routines, setRoutines] = useState([]);
+  const [memories, setMemories] = useState([]);
   // Machines are not seeded and are not mirrored from here. The main process
   // owns them, because it is the only thing that can see whether the container
   // behind a record is still running.
   const [computers, setComputers] = useState([]);
-  const [activity, setActivity] = useState(ACTIVITY);
+  const [activity, setActivity] = useState([]);
   // The permission document, in exactly the shape the main process reads back
   // out of `settings.permissions`: one workspace ruleset every agent inherits,
   // plus the overrides an agent wrote for itself. Both halves are flat arrays of
@@ -410,13 +402,9 @@ export function AppProvider({ children }) {
     if (view !== "chat") discardTemporary();
   }, [view, discardTemporary]);
 
-  // Resolved against the agents the workspace actually has, not the seed list:
-  // the folder wins, so an agent written by hand is a real agent and a seeded
-  // one that has been deleted is not. Looking the id up in `AGENTS` addressed
-  // every new thread to a teammate the folder had never heard of, which is how
-  // New chat opened on "Ready when you are" with no starters and someone
-  // else's computer in the side panel. A workspace with no agents at all is
-  // allowed; the thread is simply addressed to nobody until one exists.
+  // Resolved against the agents the workspace actually has. A workspace with
+  // no agents at all is allowed; the thread is simply addressed to nobody
+  // until one exists.
   /**
    * Which teammate New chat starts with.
    *
@@ -1953,7 +1941,7 @@ export function AppProvider({ children }) {
     const name = draft.name || "Untitled agent";
     const agent = {
       status: "idle",
-      model: agents[0]?.model ?? AGENTS[0]?.model,
+      model: agents[0]?.model,
       computerId: null,
       description: "",
       systemPrompt: "",

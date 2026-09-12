@@ -33,7 +33,6 @@ mod memory;
 mod notify;
 mod permission;
 mod platform;
-mod prefs;
 mod preview;
 mod project;
 mod prompt;
@@ -75,12 +74,6 @@ pub fn run() {
         // run since the app started, across every thread.
         .manage(std::sync::Arc::new(inertia_hooks::Recorder::new()))
         .invoke_handler(tauri::generate_handler![
-            // window chrome
-            platform::window::get_monitor_work_area,
-            platform::window::animate_window_to,
-            // pre-workspace preferences
-            prefs::load_preferences,
-            prefs::save_preferences,
             // the small desktop errands
             desktop::app_info,
             desktop::app_fetch_image,
@@ -166,9 +159,6 @@ pub fn run() {
             project::project_create,
             project::project_decline,
             project::project_decide,
-            // workspace
-            commands::workspace_open,
-            commands::workspace_current,
             // the generic workspace surface the renderer is written against:
             // it names collections and documents, never paths
             ws::ws_status,
@@ -200,23 +190,10 @@ pub fn run() {
             ws::ws_file_write_bytes,
             ws::ws_file_read_image,
             ws::ws_file_remove,
-            // conversations
-            commands::threads_list,
-            commands::thread_save,
-            commands::thread_delete,
-            commands::messages_read,
-            commands::messages_save,
-            // settings
-            commands::models_get,
-            commands::models_save,
-            commands::models_probe,
-            commands::permissions_get,
-            commands::permissions_save,
             // MCP servers
             commands::mcp_list,
             commands::mcp_save,
             commands::mcp_delete,
-            commands::mcp_connect_all,
             integrations::mcp_connect,
             integrations::mcp_disconnect,
             integrations::mcp_test,
@@ -227,15 +204,12 @@ pub fn run() {
             commands::openapi_import,
             commands::openapi_list,
             commands::openapi_delete,
-            commands::openapi_load_all,
             integrations::openapi_update,
             integrations::openapi_operations,
             integrations::openapi_set_operations,
             integrations::openapi_details,
             integrations::openapi_test,
             // Composio
-            commands::composio_status,
-            commands::composio_set_key,
             commands::composio_start_connection,
             commands::composio_refresh,
             commands::composio_reconnect,
@@ -316,9 +290,6 @@ pub fn run() {
             routines::routine_describe,
             routines::routine_tick,
             turn::tools_invalidate,
-            commands::agent_send,
-            commands::agent_stop,
-            commands::permission_respond,
         ])
         .setup(|app| {
             for (_, window) in tauri::Manager::webview_windows(app) {

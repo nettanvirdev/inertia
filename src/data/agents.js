@@ -1,20 +1,11 @@
 /**
- * The persistent AI teammates the single user works with.
- * Ids are referenced by threads, routines, memories, activity and permissions.
- */
-
-/**
- * Empty on purpose.
+ * How an agent's status is drawn.
  *
- * This was a roster of invented teammates, and it was not merely unused - it was
- * what a brand new workspace got written into it on first open. Which meant a
- * fresh install opened onto someone else's work, and a real folder ended up
- * holding records nobody made and nothing could act on.
- *
- * The app handles an empty workspace everywhere; that is what the first launch
- * should look like.
+ * The invented teammates that used to sit here are gone - the agents on screen
+ * are the workspace's own, read back from `agents/`. What is left is the
+ * vocabulary: one entry per status, so the dot beside a name means the same
+ * thing on every screen that draws one.
  */
-export const AGENTS = [];
 
 /**
  * Status, as tokens rather than hex.
@@ -38,24 +29,3 @@ export const AGENT_STATUS_META = {
   idle: { label: "Idle", color: "var(--muted-foreground)", icon: "Moon" },
   offline: { label: "Offline", color: "var(--border-strong)", icon: "PowerOff" },
 };
-
-export function getAgentById(id) {
-  return AGENTS.find((b) => b.id === id);
-}
-
-export function getAgentByHandle(handle) {
-  const normalized = handle.startsWith("@") ? handle : `@${handle}`;
-  return AGENTS.find((b) => b.handle === normalized);
-}
-
-export function getAgentsByStatus(status) {
-  return AGENTS.filter((b) => b.status === status);
-}
-
-export function getActiveAgents() {
-  return AGENTS.filter((b) => b.status === "online" || b.status === "busy");
-}
-
-export function getAgentsForComputer(computerId) {
-  return AGENTS.filter((b) => b.computerId === computerId);
-}

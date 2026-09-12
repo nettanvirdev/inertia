@@ -1,19 +1,10 @@
 /**
- * Audit log (newest first) plus the per-agent permission matrix.
- */
-
-/**
- * Empty on purpose.
+ * How a line of the audit log is labelled, and how loud it is.
  *
- * This was a roster of invented events, and it was not merely unused - it was
- * what a brand new workspace got written into it on first open. Which meant a
- * fresh install opened onto someone else's work, and a real folder ended up
- * holding records nobody made and nothing could act on.
- *
- * The app handles an empty workspace everywhere; that is what the first launch
- * should look like.
+ * The log itself is the workspace's - written as a turn runs and read back by
+ * the Activity screen. This is the vocabulary the screen filters and colours
+ * it with.
  */
-export const ACTIVITY = [];
 
 export const ACTIVITY_CATEGORY_META = {
   permission: { label: 'Permission', icon: 'ShieldAlert' },
@@ -41,20 +32,3 @@ export const SEVERITY_META = {
   warning: { label: 'Warning', color: 'var(--warning)', wash: 'var(--warning-wash)', icon: 'TriangleAlert' },
   danger: { label: 'Blocked', color: 'var(--destructive)', wash: 'var(--destructive-wash)', icon: 'OctagonAlert' },
 };
-
-export function getActivityByAgent(agentId) {
-  return ACTIVITY.filter((a) => a.agentId === agentId);
-}
-
-export function getActivityByCategory(category) {
-  return ACTIVITY.filter((a) => a.category === category);
-}
-
-export function getActivityByComputer(computerId) {
-  return ACTIVITY.filter((a) => a.computerId === computerId);
-}
-
-export function getBlockedActivity() {
-  return ACTIVITY.filter((a) => a.severity === 'danger');
-}
-

@@ -8,8 +8,20 @@
 //! Errors are returned as `String` because that is what reaches the frontend as
 //! a rejected promise. The messages are written for a person to read, not for a
 //! developer to grep.
-
-
+//!
+//! What is left here is the three tool sources - MCP servers, OpenAPI imports,
+//! Composio connections - and `agent_send`, which is the odd one out: it is not
+//! registered as a command and no window calls it. The routine runner does, in
+//! Rust, because a routine's turn is started by a tick loop rather than by
+//! someone pressing send. The chat's own turns go through `turn::agent_run`.
+//! Two turn engines is one more than there should be, and closing that is a
+//! change of its own.
+//!
+//! The conversation, settings and permission commands that used to live here
+//! are gone. The window reads all three through the generic workspace surface
+//! in `ws.rs`, and had done for long enough that `permissions_save` was writing
+//! a differently shaped file than the tool path read - two writers of one
+//! document, one of them unreachable.
 
 use futures::StreamExt;
 use inertia_core::tool::ToolRegistry;
@@ -19,14 +31,12 @@ use inertia_core::SessionId;
 use inertia_composio::provider::ConnectionRecord;
 use inertia_mcp::client::ServerRecord;
 use inertia_openapi::provider::{Auth, Credential, ImportRecord};
-use inertia_store::conversations::{Message, Part, Status, Thread, ToolState};
+use inertia_store::conversations::{Message, Part, Status, ToolState};
 use inertia_store::transcript::to_entries;
-use inertia_store::{Models, Permissions};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::permission::Answer;
 use crate::state::{gate_for, provider_for, AppState, Running};
 
 /// The channel every turn event is emitted on.
@@ -38,121 +48,9 @@ pub const AGENT_EVENT: &str = "agent:event";
 
 // ── workspace ───────────────────────────────────────────────────────────
 
-#[tauri::command]
-pub fn workspace_open(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    root: String,
-) -> Result<String, String> {
-    // Opened with a window attached, so a record written from inside a turn -
-    // an agent saving another agent, a routine editing itself - redraws the
-    // screen the same way the screen's own save does.
-    state.open_workspace_for(&app, std::path::PathBuf::from(&root))?;
-    Ok(root)
-}
-
-#[tauri::command]
-pub fn workspace_current(state: State<'_, AppState>) -> Option<String> {
-    state.workspace_root()
-}
-
 // ── conversations ───────────────────────────────────────────────────────
 
-#[tauri::command]
-pub fn threads_list(state: State<'_, AppState>) -> Result<Vec<Thread>, String> {
-    Ok(state.workspace()?.conversations.list_threads())
-}
-
-#[tauri::command]
-pub fn thread_save(state: State<'_, AppState>, thread: Thread) -> Result<(), String> {
-    state
-        .workspace()?
-        .conversations
-        .write_thread(&thread)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn thread_delete(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state
-        .workspace()?
-        .conversations
-        .delete_thread(&id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn messages_read(
-    state: State<'_, AppState>,
-    thread_id: String,
-    live: Option<Vec<String>>,
-) -> Result<Vec<Message>, String> {
-    // `live` names messages the window is still streaming. Anything else found
-    // mid-stream was abandoned by a crash and is settled on the way out, so a
-    // conversation never reopens stuck showing "Stop".
-    Ok(state
-        .workspace()?
-        .conversations
-        .read_messages(&thread_id, &live.unwrap_or_default()))
-}
-
-#[tauri::command]
-pub fn messages_save(
-    state: State<'_, AppState>,
-    thread_id: String,
-    messages: Vec<Message>,
-) -> Result<(), String> {
-    state
-        .workspace()?
-        .conversations
-        .write_messages(&thread_id, &messages)
-        .map_err(|e| e.to_string())
-}
-
 // ── settings ────────────────────────────────────────────────────────────
-
-#[tauri::command]
-pub fn models_get(state: State<'_, AppState>) -> Result<Models, String> {
-    Ok(state.workspace()?.settings.models())
-}
-
-#[tauri::command]
-pub fn models_save(state: State<'_, AppState>, models: Models) -> Result<(), String> {
-    state
-        .workspace()?
-        .settings
-        .save_models(&models)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn permissions_get(state: State<'_, AppState>) -> Result<Permissions, String> {
-    Ok(state.workspace()?.settings.permissions())
-}
-
-#[tauri::command]
-pub fn permissions_save(
-    state: State<'_, AppState>,
-    permissions: Permissions,
-) -> Result<(), String> {
-    state
-        .workspace()?
-        .settings
-        .save_permissions(&permissions)
-        .map_err(|e| e.to_string())
-}
-
-/// Asks a provider what models it offers.
-#[tauri::command]
-pub async fn models_probe(
-    state: State<'_, AppState>,
-    provider_id: String,
-) -> Result<Vec<inertia_core::ModelInfo>, String> {
-    let workspace = state.workspace()?;
-    // Any model id under the provider will do; only the provider half is used.
-    let (provider, _) = provider_for(&workspace.settings, &format!("{provider_id}/probe"))?;
-    provider.list_models().await.map_err(|e| e.to_string())
-}
 
 // ── MCP servers ─────────────────────────────────────────────────────────
 
@@ -233,47 +131,6 @@ pub fn mcp_delete(state: State<'_, AppState>, id: String) -> Result<(), String> 
     workspace.delete_mcp_record(&id)
 }
 
-/// Connects every enabled server.
-///
-/// Called after a workspace opens. Failures are recorded against their records
-/// rather than propagated: one misconfigured server must not stop the others
-/// from coming up.
-#[tauri::command]
-pub async fn mcp_connect_all(state: State<'_, AppState>) -> Result<Vec<ServerRecord>, String> {
-    let workspace = state.workspace()?;
-    let mut results = Vec::new();
-
-    for mut record in workspace.mcp_records() {
-        if !record.enabled {
-            record.status = "disabled".into();
-            results.push(record);
-            continue;
-        }
-
-        match workspace
-        .mcp
-        .add(crate::integrations::with_secrets(&workspace.layout, &record))
-        .await
-    {
-            Ok(tool_count) => {
-                record.status = "connected".into();
-                record.error = String::new();
-                record.tool_count = tool_count;
-            }
-            Err(message) => {
-                record.status = "failed".into();
-                record.error = message;
-                record.tool_count = 0;
-            }
-        }
-
-        let _ = workspace.save_mcp_record(&record);
-        results.push(record);
-    }
-
-    Ok(results)
-}
-
 // ── OpenAPI imports ─────────────────────────────────────────────────────
 
 /// Imports a document from a URL or from pasted text.
@@ -334,33 +191,6 @@ pub fn openapi_delete(state: State<'_, AppState>, id: String) -> Result<(), Stri
     workspace.delete_openapi(&id)
 }
 
-/// Re-reads every stored document. Called after a workspace opens.
-#[tauri::command]
-pub fn openapi_load_all(state: State<'_, AppState>) -> Result<Vec<ImportRecord>, String> {
-    let workspace = state.workspace()?;
-    let mut loaded = Vec::new();
-
-    for mut record in workspace.openapi_records() {
-        let Some(document) = workspace.read_openapi_spec(&record.id) else {
-            record.error = "The stored document is missing.".into();
-            loaded.push(record);
-            continue;
-        };
-
-        let credential = resolve_openapi_credential(&workspace, &record);
-        match workspace.openapi.add(record.clone(), &document, credential) {
-            Ok(count) => {
-                record.tool_count = count;
-                record.error = String::new();
-            }
-            Err(message) => record.error = message,
-        }
-        loaded.push(record);
-    }
-
-    Ok(loaded)
-}
-
 /// Looks up the key an import's auth refers to, at the last possible moment.
 pub(crate) fn resolve_openapi_credential(
     workspace: &crate::state::Workspace,
@@ -382,31 +212,6 @@ pub(crate) fn resolve_openapi_credential(
 }
 
 // ── Composio ────────────────────────────────────────────────────────────
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ComposioStatus {
-    pub configured: bool,
-    pub connections: Vec<ConnectionRecord>,
-}
-
-#[tauri::command]
-pub fn composio_status(state: State<'_, AppState>) -> Result<ComposioStatus, String> {
-    let workspace = state.workspace()?;
-    Ok(ComposioStatus {
-        configured: crate::integrations::composio_configured_for(&state)?,
-        connections: workspace.composio_records(),
-    })
-}
-
-/// Points the provider at a key held in the secret store.
-#[tauri::command]
-pub fn composio_set_key(state: State<'_, AppState>, secret: String) -> Result<bool, String> {
-    let workspace = state.workspace()?;
-    let key = workspace.settings.secrets().get(&secret).map(str::to_string);
-    workspace.composio.set_key(key);
-    Ok(workspace.composio.has_key())
-}
 
 /// Begins connecting an app, returning the URL the user must visit.
 #[tauri::command]
@@ -618,11 +423,6 @@ pub async fn composio_load_all(state: State<'_, AppState>) -> Result<Vec<Connect
 }
 
 // ── permission answers ──────────────────────────────────────────────────
-
-#[tauri::command]
-pub fn permission_respond(state: State<'_, AppState>, id: String, answer: Answer) {
-    state.answer_permission(&id, answer);
-}
 
 // ── running a turn ──────────────────────────────────────────────────────
 
@@ -865,11 +665,6 @@ pub async fn agent_send(
     });
 
     Ok(TurnStarted { turn_id })
-}
-
-#[tauri::command]
-pub fn agent_stop(state: State<'_, AppState>, turn_id: String) -> bool {
-    state.stop(&turn_id)
 }
 
 /// Builds the two stored messages a turn produces, as it streams.

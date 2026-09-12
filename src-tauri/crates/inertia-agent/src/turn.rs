@@ -28,7 +28,7 @@ use futures::StreamExt;
 use inertia_core::message::{AssistantEntry, Entry, ThinkingBlock, ToolCall, ToolEntry};
 use inertia_core::provider::{ChatRequest, Provider, StreamEvent, Usage};
 use inertia_core::tool::{PermissionGate, PermissionRequest, ToolContext, ToolRegistry};
-use inertia_core::{SessionId, ToolCallId};
+use inertia_core::SessionId;
 
 use crate::event::{AgentEvent, StopReason};
 use crate::steer::Steer;
@@ -559,11 +559,6 @@ fn user_entry(text: &str) -> Entry {
 /// the last thing the model reads, or the framing is what it answers.
 fn steer_entry(text: &str) -> Entry {
     user_entry(&format!("{STEER_NOTE}\n\n{text}"))
-}
-
-/// Mints a call id for callers constructing a tool call by hand.
-pub fn new_call_id() -> ToolCallId {
-    ToolCallId::new()
 }
 
 #[cfg(test)]

@@ -1,11 +1,15 @@
-//! Native window chrome: rounded corners, the monitor work area, and the
-//! maximize/restore animation.
+//! Native window chrome: rounded corners.
 //!
 //! The window is frameless (`decorations: false`), which means the app draws
 //! its own title bar and therefore owns behaviour the OS would normally
-//! provide. Each function here is the cross-platform seam for one such
-//! behaviour; the Windows implementation reaches for Win32 and every other
-//! platform gets a defensible fallback.
+//! provide. This is the cross-platform seam for the one such behaviour Tauri
+//! does not cover: the Windows implementation reaches for Win32 and every
+//! other platform gets a defensible fallback.
+//!
+//! Moving, resizing and maximising are Tauri's own window API, driven from
+//! `bridge/app.js`. They were commands here once, tweening the window rect a
+//! frame at a time, back when the title bar was Electron chrome that could not
+//! reach the window itself.
 
 // Tauri returns an HWND from whatever version of the `windows` crate IT
 // depends on, which need not be the version this crate depends on - and two
@@ -44,130 +48,3 @@ pub fn apply_rounded_corners(window: &tauri::WebviewWindow) {
 
 #[cfg(not(target_os = "windows"))]
 pub fn apply_rounded_corners(_window: &tauri::WebviewWindow) {}
-
-// The window is frameless, so maximize/restore is animated by tweening the
-// window rect rather than calling the native maximize (which would snap
-// instantly and can't be interrupted mid-tween). That animation needs the true
-// usable area of the monitor - excluding the taskbar - which Tauri's own JS
-// API does not expose, so this reaches for it directly via Win32.
-#[cfg(target_os = "windows")]
-#[tauri::command]
-pub fn get_monitor_work_area(window: tauri::WebviewWindow) -> Option<(i32, i32, i32, i32)> {
-    use windows::Win32::Graphics::Gdi::{
-        GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
-    };
-
-    let hwnd = hwnd_of(&window)?;
-    unsafe {
-        let hmonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        let mut info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-            ..Default::default()
-        };
-        if GetMonitorInfoW(hmonitor, &mut info).as_bool() {
-            let rc = info.rcWork;
-            Some((rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top))
-        } else {
-            None
-        }
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-#[tauri::command]
-pub fn get_monitor_work_area(_window: tauri::WebviewWindow) -> Option<(i32, i32, i32, i32)> {
-    None
-}
-
-// ── the maximize / restore animation ────────────────────────────────────────
-// This used to live in the frontend, tweening with requestAnimationFrame and
-// calling setPosition + setSize over IPC every frame. Three things made that
-// visibly rough, and all three are gone by doing it here:
-//
-//   - setPosition and setSize are two separate SetWindowPos calls, so every
-//     single frame the window existed for an instant at its new origin with
-//     its old size. That shear is the flicker.
-//   - sixty IPC round-trips a second, each awaited, means the frame interval
-//     is however long the round-trip took rather than a steady 8ms.
-//   - the tween finished by calling the native maximize(), which re-snapped
-//     the window to the OS's own maximized rect - a few pixels off the work
-//     area we had just animated to. That is the jump right at the end.
-//
-// So: one atomic SetWindowPos per frame, from a thread, and no native
-// maximize at all. "Maximized" here means "occupying the work area", which is
-// what it looked like anyway, and nothing re-snaps when the tween lands.
-#[cfg(target_os = "windows")]
-#[tauri::command]
-pub async fn animate_window_to(
-    window: tauri::WebviewWindow,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    duration_ms: u64,
-) -> Result<(), String> {
-    use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER};
-
-    let hwnd = hwnd_of(&window).ok_or("no window handle")?;
-    let position = window.outer_position().map_err(|e| e.to_string())?;
-    let size = window.outer_size().map_err(|e| e.to_string())?;
-
-    let (x0, y0) = (position.x, position.y);
-    let (w0, h0) = (size.width as i32, size.height as i32);
-
-    // HWND is a raw pointer and therefore not Send, so carry it across the
-    // thread boundary as an integer and rebuild it there.
-    let raw = hwnd.0 as isize;
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let hwnd = windows::Win32::Foundation::HWND(raw as *mut std::ffi::c_void);
-        let started = std::time::Instant::now();
-        let duration = duration_ms.max(1) as f32;
-
-        loop {
-            let t = (started.elapsed().as_millis() as f32 / duration).min(1.0);
-            // Matches --ease-out in globals.css: fast off the trigger, settles
-            // without overshoot. Kept identical so window motion and in-app
-            // motion read as the same system.
-            let e = 1.0 - (1.0 - t).powi(3);
-
-            let cx = x0 + ((x - x0) as f32 * e).round() as i32;
-            let cy = y0 + ((y - y0) as f32 * e).round() as i32;
-            let cw = w0 + ((width - w0) as f32 * e).round() as i32;
-            let ch = h0 + ((height - h0) as f32 * e).round() as i32;
-
-            unsafe {
-                let _ = SetWindowPos(hwnd, None, cx, cy, cw, ch, SWP_NOZORDER | SWP_NOACTIVATE);
-            }
-
-            if t >= 1.0 {
-                break;
-            }
-            // ~120Hz. Finer than the compositor needs, but the cost is a few
-            // extra SetWindowPos calls rather than a few extra IPC hops.
-            std::thread::sleep(std::time::Duration::from_millis(8));
-        }
-    })
-    .await
-    .map_err(|e| e.to_string())
-}
-
-#[cfg(not(target_os = "windows"))]
-#[tauri::command]
-pub async fn animate_window_to(
-    window: tauri::WebviewWindow,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    _duration_ms: u64,
-) -> Result<(), String> {
-    // No smooth path off Windows; land on the target in one step.
-    use tauri::{PhysicalPosition, PhysicalSize};
-    window
-        .set_position(PhysicalPosition::new(x, y))
-        .map_err(|e| e.to_string())?;
-    window
-        .set_size(PhysicalSize::new(width as u32, height as u32))
-        .map_err(|e| e.to_string())
-}

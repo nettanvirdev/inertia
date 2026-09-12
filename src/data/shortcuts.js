@@ -185,14 +185,6 @@ function resolveComposerCombo(shortcut, sendOnEnter) {
   return shortcut.combo;
 }
 
-/** The catalogue as the user's own settings make it. */
-export function getShortcuts({ sendOnEnter = true } = {}) {
-  if (sendOnEnter) return SHORTCUTS;
-  return SHORTCUTS.map((s) =>
-    s.scope === 'composer' ? { ...s, combo: resolveComposerCombo(s, false) } : s,
-  );
-}
-
 /** Shortcuts grouped for the reference sheet, in declaration order. */
 export function getShortcutGroups(options) {
   const groups = [];

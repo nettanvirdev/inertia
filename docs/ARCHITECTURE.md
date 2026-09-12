@@ -39,7 +39,7 @@ checkable; neither was being checked.
 | `agentAPI` | live — turns, tools, permissions, grants, group conversations (the room, the floor, `invite`/`handover`/`part`), turn records and a thread's history, summarising for `/compact`, steering a running turn, and the questions a tool asks mid-call |
 | `llmAPI` | live — providers, models, test, and the one-shot streaming `chat` that titles a thread and compacts a conversation |
 | `voiceAPI` | live — ElevenLabs: quota, voices, models, speech, transcription |
-| `computerAPI` | live — Docker, Daytona and local machines, the sandbox image built from a Dockerfile compiled into the binary, the live screen and driving it. Importing a browser profile's cookies is the one part left |
+| `computerAPI` | live — Docker, Daytona and local machines, the sandbox image built from a Dockerfile compiled into the binary, the live screen and driving it, and carrying a signed-in session onto a machine from a browser profile on this desktop |
 | `terminalAPI` | live — a real pty per tab, the shell the rest of the app uses, working-directory reports, and `terminal_read` so the agent can see what the person ran |
 | `previewAPI` | live — a child webview layered over the window, with navigation, history, console and network logs, and nine tools to drive it. A Tauri webview cannot photograph a page, so there is no screenshot |
 | `crewAPI` | live — the background-crew panel over a real table of runs (`spawn`/`collect`/`team`/`wait`/`followup`/`interrupt`/`agent_send`). Pausing and restarting a run answer honestly that the machinery is not there |
@@ -55,20 +55,21 @@ checkable; neither was being checked.
 |---|---|---|
 | `inertia-core` | domain types, errors, permission engine, every trait seam | 61 |
 | `inertia-tools` | registry pipeline, schema validator, match ladder, truncation, and the tools themselves: reading, writing, editing, patching, searching, listing, a PowerShell-backed shell with background commands, worktrees, task lists, plans, presenting, and asking a language server | 239 |
-| `inertia-provider` | Anthropic Messages and OpenAI chat-completions, streaming, translation | 106 |
-| `inertia-store` | atomic writes, workspace layout, generic record CRUD, frontmatter and SKILL.md, secrets, conversations, settings | 115 |
+| `inertia-provider` | Anthropic Messages and OpenAI chat-completions, streaming, translation | 113 |
+| `inertia-store` | atomic writes, workspace layout, generic record CRUD, frontmatter and SKILL.md, secrets, conversations, settings | 116 |
 | `inertia-agent` | the turn loop, step budget, repetition guard, prompt assembly, the four conversation modes and what each withholds, the group floor, one transcript seen from one seat, and steering a turn that is already running | 121 |
 | `inertia-hooks` | the hook file, the matcher, running a handler, merging verdicts | 51 |
-| `inertia-memory` | scope and duplicate rules, BM25 recall, the injected block under a byte budget, the capture pass, the three memory tools, and an MCP memory server as an alternative store | 82 |
+| `inertia-memory` | scope and duplicate rules, BM25 recall, the injected block under a byte budget, the capture pass, the three memory tools, and an MCP memory server as an alternative store | 85 |
 | `inertia-mcp` | JSON-RPC, stdio and streamable-HTTP transports, handshake, tools as a provider | 48 |
 | `inertia-openapi` | JSON/YAML specs, `$ref` resolution, operations as tools, auth | 53 |
 | `inertia-composio` | API client, paging, connections, actions as tools | 36 |
 | `inertia-voice` | ElevenLabs client: quota, voices, models, speech, transcription | 12 |
-| `inertia-computers` | the machine seam with Docker, Daytona and local providers, the sandbox image, and the desktop half: observing a screen, driving it, opening and launching | 84 |
+| `inertia-computers` | the machine seam with Docker, Daytona and local providers, the sandbox image, and the desktop half: observing a screen, driving it, opening and launching | 88 |
 | `inertia-mock` | scripted provider, recording gate and tools | 15 |
 | `inertia-lsp` | JSON-RPC framing, server discovery, diagnostics after an edit, and the questions `grep` cannot answer | 46 |
 | `inertia-terminal` | a pty per tab, a grid emulator for what ConPTY paints, and working-directory reports | 29 |
-| app (`src/`) | window chrome, command surface, UI permission gate, delta coalescing, the group room and its three tools, `task` and the crew, the seven `inertia_*` setup tools, skills, routines, turn records, failures, questions, snapshots, the tray, and on-demand tool loading | 363 |
+| `inertia-cookies` | a browser profile on this desktop, read and decrypted, and written into a sandbox's own browser. App-bound v20 cookies (Chrome/Edge 127+) are refused rather than guessed at | 23 |
+| app (`src/`) | window chrome, command surface, UI permission gate, delta coalescing, the group room and its three tools, `task` and the crew, the seven `inertia_*` setup tools, skills, routines, turn records, failures, questions, snapshots, the tray, and on-demand tool loading | 379 |
 
 One rule about the app crate's own tests, because it costs an hour to find:
 **never build an `AppState` inside a `#[cfg(test)]` there.** Doing so links
@@ -78,7 +79,7 @@ runs - so every test in the crate fails, none of them for its own reason. Build
 what the test needs directly (`Workspace::open`, `Rooms::default`), and take an
 emitter or a small trait where a type would otherwise want an `AppHandle`.
 
-1,461 tests, no clippy warnings. `cargo run -p inertia-devkit` runs the whole
+1,515 tests, no clippy warnings. `cargo run -p inertia-devkit` runs the whole
 agent loop headless against mocks, and
 
 ```
@@ -113,8 +114,7 @@ to move the offending call up into the app crate, not to add the import.
 src-tauri/
   Cargo.toml            workspace root, and the Tauri app package
   src/                  the shell: window chrome, commands, wiring
-    platform/window.rs  Win32 chrome (rounded corners, work area, animation)
-    prefs.rs            pre-workspace preferences
+    platform/window.rs  Win32 chrome: the rounded corner, and nothing else
   crates/
     inertia-core        domain types + the traits everything else implements
     inertia-store       the on-disk workspace: sessions, settings, records
@@ -127,6 +127,9 @@ src-tauri/
     inertia-composio    Composio actions as a ToolProvider
     inertia-voice       ElevenLabs: speech in, speech out
     inertia-computers   machines an agent can drive (docker, daytona, local)
+    inertia-terminal    a real pty per tab, and what it has said so far
+    inertia-cookies     a signed-in session, read off this desktop and carried
+    inertia-lsp         a language server's answers, where an edit needs them
     inertia-agent       the turn loop; depends on traits, never on impls
     inertia-mock        fake impls of every trait
     inertia-devkit      headless binary: the agent wired to mocks

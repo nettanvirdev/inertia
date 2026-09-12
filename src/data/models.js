@@ -160,27 +160,3 @@ export const MODELS = [
 export function getModelById(id) {
   return MODELS.find((m) => m.id === id);
 }
-
-/** @returns {object|undefined} */
-export function getProviderById(id) {
-  return PROVIDERS.find((p) => p.id === id);
-}
-
-/** Models grouped under their provider, connected providers first. */
-export function getModelsByProvider() {
-  return PROVIDERS.map((provider) => ({
-    provider,
-    models: MODELS.filter((m) => m.providerId === provider.id),
-  })).sort(
-    (a, b) => Number(b.provider.connected) - Number(a.provider.connected),
-  );
-}
-
-/** Rough blended cost per 1M tokens assuming a 3:1 input/output mix. */
-export function estimateBlendedPrice(modelId) {
-  const model = getModelById(modelId);
-  if (!model) return 0;
-  return Number(
-    (model.inputPrice * 0.75 + model.outputPrice * 0.25).toFixed(2),
-  );
-}

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use crate::record::{self, INJECT_BUDGET_BYTES, INJECT_MAX, MAX_SUMMARY};
+use crate::record::{self, INJECT_MAX, MAX_SUMMARY};
 
 /// Words that carry no signal.
 ///
@@ -331,11 +331,6 @@ pub fn for_prompt<'a>(
         spent += line.len();
     }
     kept
-}
-
-/// The default budget, for callers with no setting in hand.
-pub fn default_budget() -> usize {
-    INJECT_BUDGET_BYTES
 }
 
 fn use_count(memory: &Value) -> i64 {
