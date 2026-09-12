@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SetupTitlebar } from "@setup/components/SetupTitlebar";
 import { useInstallProgress } from "@setup/useInstallProgress";
-import { Mark } from "@/onboarding/Mark";
-import { Alert, Check, Loader, X } from "@/lib/icons";
+import { Mark } from "@setup/components/Mark";
+import { TriangleAlert as Alert, Check, Loader, X } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type UninstallInfo = { productName: string; version: string; installDir: string };

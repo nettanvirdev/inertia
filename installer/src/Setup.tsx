@@ -3,8 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { SetupTitlebar } from "@setup/components/SetupTitlebar";
 import { useInstallProgress } from "@setup/useInstallProgress";
-import { Mark } from "@/onboarding/Mark";
-import { Alert, ArrowRight, Check, Folder, Loader } from "@/lib/icons";
+import { Mark } from "@setup/components/Mark";
+import { TriangleAlert as Alert, ArrowRight, Check, Folder, Loader } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type SetupInfo = { productName: string; version: string; defaultDir: string };

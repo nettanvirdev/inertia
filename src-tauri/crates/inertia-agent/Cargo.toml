@@ -1,0 +1,25 @@
+[package]
+name = "inertia-agent"
+version.workspace = true
+edition.workspace = true
+description = "The agent turn loop. Depends on trait seams only - never on a concrete provider, tool, or store."
+
+[lints]
+workspace = true
+
+# Note what is *not* here: no reqwest, no inertia-provider, no inertia-tools,
+# no inertia-store. This crate orchestrates traits. If it ever needs to name a
+# concrete implementation, the design has gone wrong.
+[dependencies]
+inertia-core = { workspace = true }
+async-stream = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+inertia-mock = { workspace = true }
+tempfile = { workspace = true }
+inertia-tools = { workspace = true }
+tokio = { workspace = true }

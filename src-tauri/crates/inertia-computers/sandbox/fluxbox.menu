@@ -1,0 +1,4 @@
+[begin] (Inertia)
+  [exec] (Browser) {inertia-browser}
+  [exec] (Terminal) {xterm -bg #1d1f21 -fg #E8E8EA -cr #E8E8EA -title Terminal}
+[end]

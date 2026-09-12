@@ -1,0 +1,10 @@
+# Assets Folder
+
+Place your static assets here:
+
+- Images (`.png`, `.jpg`, `.svg`, `.webp`)
+- Fonts (`.woff`, `.woff2`, `.ttf`)
+- Icons
+- Any other static files
+
+These files will be copied to the build output.

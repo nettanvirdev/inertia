@@ -1,0 +1,25 @@
+[package]
+name = "inertia-core"
+version.workspace = true
+edition.workspace = true
+description = "Domain types and the trait seams every other Inertia crate implements."
+
+[lints]
+workspace = true
+
+# Deliberately thin. This crate is depended on by everything, so every
+# dependency added here is a dependency the whole workspace inherits - and a
+# type from it becomes part of the public seam. No HTTP client, no filesystem,
+# no runtime.
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+futures = { workspace = true }
+uuid = { workspace = true }
+jiff = { workspace = true }
+schemars = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

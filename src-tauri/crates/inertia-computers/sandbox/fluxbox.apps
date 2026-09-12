@@ -1,0 +1,18 @@
+# A browser that opens at 800x600 in the corner wastes most of the screen and
+# every coordinate the model reads is of a window it has to scroll. Maximized
+# is the only sensible default for a machine nobody is sitting at.
+[app] (class=Chromium)
+  [Maximized] {yes}
+[end]
+[app] (class=chromium)
+  [Maximized] {yes}
+[end]
+[app] (class=Google-chrome)
+  [Maximized] {yes}
+[end]
+[app] (class=Firefox)
+  [Maximized] {yes}
+[end]
+[app] (class=XTerm)
+  [Maximized] {no}
+[end]

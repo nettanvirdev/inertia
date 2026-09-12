@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- The same policy the app itself runs under, so this page is a
+         faithful stand-in: a thing that renders here and not there is the
+         one bug this page exists to catch. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; frame-src http://127.0.0.1:* https://*.daytonaproxy01.net https://*.daytona.work"
+    />
+    <title>Inertia rendering preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./preview.jsx"></script>
+  </body>
+</html>

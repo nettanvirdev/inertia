@@ -1,0 +1,21 @@
+[package]
+name = "inertia-terminal"
+version.workspace = true
+edition.workspace = true
+description = "The terminal the person types in: a pty per conversation, and the screen it paints."
+
+[lints]
+workspace = true
+
+[dependencies]
+# The pty itself. Pinned through the workspace like every other shared
+# dependency, so this crate and anything else that reaches for a pty cannot
+# end up on two versions of the same ConPTY binding.
+portable-pty = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

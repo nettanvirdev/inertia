@@ -1,0 +1,27 @@
+[package]
+name = "inertia-provider"
+version.workspace = true
+edition.workspace = true
+description = "Provider implementations: Anthropic Messages and OpenAI-compatible chat completions."
+
+[lints]
+workspace = true
+
+[dependencies]
+inertia-core = { workspace = true }
+async-stream = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+wiremock = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+futures = { workspace = true }

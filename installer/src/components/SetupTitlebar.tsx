@@ -1,5 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minus, X } from "@/lib/icons";
+import { Minus, X } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 /**

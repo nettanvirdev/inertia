@@ -111,6 +111,45 @@ fn relaunch_from_temp() -> bool {
     }
 }
 
+/// Take the app out of `HKCU\...\Run`, if it put itself there.
+///
+/// Only when the value points inside the folder being removed. The name is the
+/// product's, and something else on this machine may legitimately own an entry
+/// by that name; deleting it because the strings matched would be this
+/// uninstaller breaking an application it has nothing to do with.
+#[cfg(windows)]
+fn forget_autostart(dir: &std::path::Path) {
+    const RUN_KEY: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+
+    let Ok(query) = std::process::Command::new("reg")
+        .args(["query", RUN_KEY, "/v", PRODUCT_NAME])
+        .output()
+    else {
+        return;
+    };
+    if !query.status.success() {
+        // No entry, which is the normal case: the setting is off by default.
+        return;
+    }
+
+    // `reg query` prints the value's data on the same line as its name. A
+    // case-insensitive compare because the registry stores whatever spelling
+    // was written and Windows paths do not care.
+    let printed = String::from_utf8_lossy(&query.stdout).to_lowercase();
+    let ours = dir.display().to_string().to_lowercase();
+    if !printed.contains(&ours) {
+        return;
+    }
+
+    let _ = std::process::Command::new("reg")
+        .args(["delete", RUN_KEY, "/v", PRODUCT_NAME, "/f"])
+        .output();
+}
+
+/// Nothing to forget anywhere else: the Run key is Windows' own idea.
+#[cfg(not(windows))]
+fn forget_autostart(_dir: &std::path::Path) {}
+
 #[tauri::command]
 fn app_mode() -> &'static str {
     "uninstall"
@@ -173,6 +212,14 @@ fn uninstall(app: &tauri::AppHandle, wipe_settings: bool) -> Result<(), String> 
     // behind on purpose, so finish that off here.
     let _ = std::fs::remove_file(dir.join("uninstall.exe"));
     let _ = std::fs::remove_dir_all(&dir);
+
+    // The Run key, if the app was ever set to start with Windows.
+    //
+    // The fourth of the rules in the README: one owner, one mechanism, the
+    // registry is the state, and the uninstaller takes it away. Without this
+    // last one an uninstalled app leaves an entry pointing at a path that no
+    // longer exists, and Windows tries to launch it at every login.
+    forget_autostart(&dir);
 
     if wipe_settings {
         // Where `app_config_dir()` resolves for the installed app: Tauri uses

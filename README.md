@@ -96,10 +96,10 @@ The product name, version and binary name are read out of the app's own
 the app cannot leave the installer writing to a stale folder - it fails the
 build instead.
 
-### Deliberately absent: "start when Windows starts"
+### "Start when Windows starts"
 
-The installer does not offer it, and nothing here writes a Run key or a
-Startup shortcut. That is on purpose.
+The app owns this and the installer does not go near it. That split is the
+whole point.
 
 The failure it avoids is the one everybody hits: an installer checkbox writes
 autostart one way, and the app's own settings toggle writes it another, so
@@ -108,19 +108,22 @@ installer created. The app then keeps launching at login while its own
 settings screen truthfully reports that it will not, and no amount of
 re-toggling fixes it - the toggle is reading the wrong thing.
 
-If autostart is wanted later, the rules that keep it honest are:
+So there are four rules, and all four hold:
 
 - **One owner: the app.** Never the installer, never a shortcut dropped in
-  `shell:startup` by a build script.
+  `shell:startup` by a build script. The switch in Settings is the only thing
+  that writes it.
 - **One mechanism.** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
-  is the whole of it. Not that *and* a Startup folder shortcut, and not a
-  scheduled task as well.
-- **The registry is the state, not a JSON flag.** The settings toggle should
-  read the actual key every time it is shown, so the UI cannot claim one thing
-  while Windows does another. A cached `autostart: false` in
-  `preferences.json` is exactly how the two drift apart.
-- **The uninstaller removes it.** Otherwise an uninstalled app leaves a Run
-  entry pointing at a path that no longer exists.
+  is the whole of it, through `tauri-plugin-autostart`. Not that *and* a
+  Startup folder shortcut, and not a scheduled task as well.
+- **The registry is the state, not a JSON flag.** The toggle asks the OS every
+  time it is drawn and nothing is cached, so the UI cannot claim one thing
+  while Windows does another. A stored `launchAtLogin: false` is exactly how
+  the two drift apart, which is why nothing stores one.
+- **The uninstaller removes it**, and only when the entry points inside the
+  folder it is removing - something else on the machine may own an entry by
+  the same name, and deleting that because the strings matched would be this
+  uninstaller breaking an application it has nothing to do with.
 
 ### macOS: the normal thing
 

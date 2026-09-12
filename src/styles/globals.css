@@ -2,22 +2,42 @@
 
 /* ──────────────────────────────────────────────────────────────────────────────
  * INERTIA - Design DNA, app-palette 1.0
- * Ported from the Inertia study app's theme. Two authored palettes, dark first.
- * Every token below MUST exist in both :root (light) and .dark (dark). This
- * file is the single place to retheme the entire app.
+ * Two authored palettes, dark first. Every token below MUST exist in both
+ * :root (light) and .dark (dark). This file is the single place to retheme
+ * the entire app.
+ *
+ * ## The one rule that changed
+ *
+ * The old DNA was borderless and shadowless: things separated by being a step
+ * on the surface ladder, and nothing else. That works while the steps are
+ * visible, and in this palette light's are not - the ground is #ffffff and the
+ * raised surface is #fffeff, which is the same colour to any eye and a step
+ * apart in name only. So light now separates with a hairline and a shadow, and
+ * the palette says so itself: cardSecondary carries the note that on #ffffff
+ * the border and shadow are required.
+ *
+ * Dark keeps the old behaviour, because it can - #181818 under #1f1f21 under
+ * #2a2a2a is three steps you can actually see. Its shadows are far heavier in
+ * the palette (0.55 alpha against light's 0.12) and still read as almost
+ * nothing, which is the point: a component asks for elevation once and each
+ * mode answers it the way that mode can.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 @custom-variant dark (&:is(.dark *));
 
 /* ── motion ──────────────────────────────────────────────────────────────────
- * The durations and curves every animation in the app is built from.
+ * The durations and curves every animation in the app is built from. Echoed
+ * from `lib/motion.js`, which times the same things in JavaScript; a test
+ * fails if the two disagree, because a menu unmounted at 150ms by React and
+ * faded over 200ms by CSS is a menu that vanishes mid-fade.
  *
- * Three rules:
+ * Three rules, and the rest of this file's motion keeps to them:
  *   - move only transform and opacity, which the compositor animates alone;
  *     a height that has to change uses grid rows (see `.collapse-fold`);
  *   - decelerate in, and leave faster than you arrived;
  *   - reduced motion removes travel and scale, and keeps a short fade so
- *     nothing appears without warning.
+ *     nothing appears without warning. One block, near the end of the file,
+ *     handles both the app's own switch and the operating system's.
  * ─────────────────────────────────────────────────────────────────────────── */
 :root {
   --motion-instant: 80ms;
@@ -35,54 +55,138 @@
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
+/* `.light` exists so a subtree can ask for the light palette while the app is
+   dark - which the theme previews in Settings need, and which nothing else in
+   this file could express. `.dark` was always a class; light was only ever the
+   default, so there was no way to say "this corner, in the other theme", and
+   the previews kept a copy of the palette instead. The copy went stale the
+   first time the palette moved, and the picker offered a theme the app no
+   longer had.
+
+   Two selectors, one rule - so a light value is still written down exactly
+   once, whether it is the default or a preview tile asking for it. */
 :root,
 .light {
-  color-scheme: light;
+  /* The ink every translucent thing is mixed from - hovers, scrims, the
+     hairline that has to hold over a backdrop nobody can predict. Written as
+     channels rather than a colour so alpha can be applied per rung; one line,
+     and the entire hover language moves with the palette. */
+  --ink: 51 53 55;
 
-  --ink: 35 38 42;
-
-  --background: #fbfbf9;
-  --foreground: #23262a;
-  --foreground-secondary: #4c5158;
-  --muted-foreground: #62676e;
-  --heading: #16191c;
+  --background: #ffffff;
+  --foreground: #333537;
+  /* The rung the app never had. Everything that was not the sentence you are
+     reading used to fall all the way to --muted-foreground, which is why
+     secondary text and disabled text looked identical. */
+  --foreground-secondary: #5c6063;
+  /* #6b7075, not the palette's #8b9096.
+     Everything that is not the sentence you are reading falls to this rung -
+     handles, roles, timestamps, counts, section labels, the whole second layer
+     of the interface - and #8b9096 on white is 3.4:1. That is under the 4.5
+     that body text needs, and light was carrying it in a hundred places while
+     dark's #8a8a8a sits at 5.4:1 on its own ground. The two modes were not the
+     same design; one of them was just faint. 5.0:1 on the ground and 4.6:1 on
+     a card, which is the same weight dark already had. */
+  --muted-foreground: #6b7075;
+  --heading: #333537;
 
   /* ── surface ladder ───────────────────────────────────────────────────────
-   * Light runs downward: the ground is the brightest thing on screen, so a
-   * surface sitting on it is darker, and "lighter" means nearer the ground. */
-  --card: #f4f4f1;
-  --card-foreground: #23262a;
-  --card-lighter: #ffffff;
-  --card-subtle: #f4f4f1;
-  --card-raised: #ffffff;
-  --card-darker: #f0f0ec;
-  --muted: #eaeae5;
-  --user-message-background: #f4f4f1;
+   * Light runs downward. The ground is the brightest thing on screen, so a
+   * surface sitting on it is darker, and "lighter" means nearer the ground.
+   * ground #ffffff · lighter #fffeff · subtle #f9fbfd · well #f4f4f4 · card #eff3f8 */
+  --card: #eff3f8;
+  --card-foreground: #333537;
+  --card-lighter: #fffeff;
+  /* Both of these used to lean on a hairline to be seen at all - #f9fbfd is
+     half a step off white, and #fffeff is not a step. With the edges gone the
+     fill is the whole card, so each one moves to a rung the eye can actually
+     find: the resting card is the palette's card colour, and the one under
+     the cursor is a further step down. */
+  --card-subtle: #eff3f8;
+  --card-raised: #e4eaf2;
+  /* A well, not a card: the inset a code block or a preview is cut into. */
+  --card-darker: #f4f4f4;
+  /* "Held" - the state a control rests in while its menu is open. Derived one
+     step below the card rather than taken from the palette, which has no rung
+     there: surface.tertiary (#f4f4f4) is lighter than the card it would have
+     to read as pressed against. */
+  --muted: #e4eaf2;
+  --user-message-background: #f4f4f4;
 
-  --sidebar: #f5f5f2;
-  --sidebar-foreground: #23262a;
-  --sidebar-border: #e7e7e2;
-  --titlebar: #f5f5f2;
+  --sidebar: #eff3f8;
+  --sidebar-foreground: #333537;
+  --sidebar-border: #e2e8f0;
+  --titlebar: #eff3f8;
 
-  --border: #e7e7e2;
-  --border-strong: #d6d6cf;
-  --border-subtle: #f0f0ec;
+  --border: #e2e8f0;
+  --border-strong: #cfd7e2;
+  --border-subtle: #eef2f7;
 
-  --input: #f1f1ed;
-  --input-border: #e0e0d9;
-  --input-hover: #ebebe6;
-  --input-focus: #e5e5df;
-  --input-foreground: #23262a;
-  --input-placeholder: #6d727a;
+  /* ── fields ───────────────────────────────────────────────────────────────
+   * Recessed, and this is where the two modes stop being the same design.
+   *
+   * Dark raises a field: #2a2a2a on #181818 is a lit surface and needs nothing
+   * else. Light cannot raise anything, because the ground is already white -
+   * so light presses the field INTO the page instead, and the tint is what
+   * makes it a field. That is also how every native light interface does it,
+   * and it is why #fffeff was wrong: one step above white is not a step.
+   *
+   * The hairline stays, quietly, for the case the fill cannot cover: a field
+   * sitting on a card is already a tint on a tint, and there the edge is what
+   * separates them. */
+  --input: #e9edf3;
+  --input-border: #d5dce6;
+  /* A field with no edge has to answer hover and focus with the only thing it
+     has left, which is its own fill. Two steps down from the resting tint,
+     small enough that a field does not flash when you tab through a form.
 
-  --icon: #23262a;
-  --icon-muted: #666b72;
+     The whole ladder sits one rung lower than it did. At #f2f4f8 the resting
+     field was four points off white: legible on a screenshot, invisible on a
+     real monitor at a real angle, and that is the only state a field is in
+     while you are looking for it. */
+  --input-hover: #e2e7ef;
+  --input-focus: #dae1ec;
+  --input-foreground: #333537;
+  /* A placeholder is not body text, but it still has to be readable enough to
+     tell you what the field wants. */
+  --input-placeholder: #797e85;
+
+  /* ── icons ────────────────────────────────────────────────────────────────
+   * --icon-surface is the inverted chip: a solid grey pill, light-on-dark in
+   * light mode and dark-on-light in dark, for a control that has to be found
+   * rather than discovered.
+   *
+   * The palette gives it twice - as icon.background and as surface.tertiary -
+   * and the two agree in dark (#959595 under #2b2b2b) but not in light, where
+   * surface.tertiary is #f4f4f4 and text.onAccentSurface is #efefef: 1.03:1,
+   * which is not a colour pair, it is an invisible one. So the chip follows
+   * icon.background, which works in both modes, and light's surface.tertiary
+   * is used where its brightness makes sense - as the well above. */
+  --icon: #333537;
+  --icon-muted: #6f7276;
   --icon-surface: #7e7e7e;
   --icon-surface-foreground: #efefef;
 
-  --popover: #ffffff;
-  --popover-foreground: #23262a;
+  --popover: #fffeff;
+  --popover-foreground: #333537;
 
+  /* ── status ───────────────────────────────────────────────────────────────
+   * The one family the palette does not define, and the app cannot do without:
+   * a run failed, a check passed, something is waiting. It was Tailwind's stock
+   * red-500 / emerald-500 / amber-500 / blue-500 at various alphas, in about a
+   * hundred and seventy places - colours drawn for a white page, sitting next
+   * to greys that are tinted the other way, at a saturation that made a badge
+   * the loudest thing on any screen it appeared on.
+   *
+   * Three tokens each, because status is used three ways and one colour cannot
+   * be all of them. `base` is the solid dot or bar. `ink` is text on a normal
+   * surface, and is dark in light mode and light in dark - it has to clear
+   * 4.5:1, which a dot colour never does. `wash` is the tinted pill behind that
+   * ink, thin in light and heavier in dark, because the same alpha over #ffffff
+   * and over #1f1f21 are not the same tint.
+   *
+   * Red is deliberately absent: --destructive above IS the red, and a second
+   * one named --danger would be two reds one refactor away from disagreeing. */
   --destructive: #d94841;
   --destructive-foreground: #ffffff;
   --destructive-ink: #b42318;
@@ -100,11 +204,53 @@
   --info-ink: #175cd3;
   --info-wash: color-mix(in srgb, var(--info) 10%, transparent);
 
+  /* -- syntax ------------------------------------------------------------
+   *
+   * Code in a message is read, not skimmed, and a wall of one colour is the
+   * difference between reading a diff and hunting through it. Nine hues, each
+   * doing one job, on the subtle card the code block sits on.
+   *
+   * They are their own tokens rather than reuses of the status colours: green
+   * here means "a string", not "it worked", and the day someone tunes the
+   * success green for a badge, every string in every transcript should not
+   * move with it. Chosen to clear 4.5:1 on --card-subtle in this mode. */
+  --syntax-comment: #7b8794;
+  --syntax-string: #0a7a4e;
+  --syntax-number: #a35200;
+  --syntax-keyword: #9333a8;
+  --syntax-function: #2563c9;
+  --syntax-type: #0e6f8a;
+  --syntax-property: #b8452f;
+  --syntax-operator: #6b7280;
+  --syntax-meta: #6d4aca;
+  --syntax-added: #067647;
+  --syntax-removed: #b42318;
+
+  /* -- diagrams ----------------------------------------------------------
+   *
+   * A Mermaid diagram is drawn from these, so it follows the theme instead of
+   * arriving as a white rectangle at night. Only the four that differ between
+   * the modes are tokens; the diagram's text and its background are the
+   * ordinary foreground and card colours, used directly. */
+  --diagram-node: var(--card);
+  --diagram-group: color-mix(in srgb, var(--foreground) 3%, transparent);
+  --diagram-note: color-mix(in srgb, var(--warning) 12%, var(--card));
+  --diagram-line: color-mix(in srgb, var(--foreground) 42%, transparent);
+
+  /* ── elevation ────────────────────────────────────────────────────────── */
   --shadow-sm: 0 1px 2px rgba(51, 53, 55, 0.06), 0 1px 3px rgba(51, 53, 55, 0.04);
   --shadow-md: 0 4px 12px rgba(51, 53, 55, 0.08);
   --shadow-lg: 0 12px 32px rgba(51, 53, 55, 0.12);
 
-  --fill-whisper: rgb(var(--ink) / 0.015);
+  /* ── derived fills: the ink at a rung of alpha ────────────────────────────
+   * These were rgb(0 0 0 / a). Pure black over a blue-tinted ground greys it,
+   * so a hover cooled the surface it was meant to lift. The ink is the text
+   * colour, which is the same hue family as everything it lands on. */
+  /* 0.015 was not a surface, it was a rumour: 1.5% of near-black on a white
+     ground is #fbfbfb, which no eye separates from the page. Every card drawn
+     with it - a verdict panel, a tool call, a plan - read as loose text with
+     odd padding rather than as a thing on a surface. */
+  --fill-whisper: rgb(var(--ink) / 0.04);
   --fill-nav: rgb(var(--ink) / 0.025);
   --fill-nav-active: rgb(var(--ink) / 0.03);
   --fill-control: rgb(var(--ink) / 0.03);
@@ -115,20 +261,67 @@
   --fill-secondary-hover: rgb(var(--ink) / 0.08);
   --fill-track: rgb(var(--ink) / 0.15);
 
+  /* The same ladder, measured against a field instead of the ground.
+   *
+   * Everything above is calibrated for a control sitting on the ground or on
+   * a card. A field is already a tint - light presses it in, dark lifts it -
+   * so 3% of the ink on top of that is not a step anybody can see, and the
+   * controls in the composer either whispered or reached for --muted, which
+   * is the HELD colour and in dark is exactly --input. That is why the mode
+   * and approval pills were solid on white and invisible on black.
+   *
+   * A subtree that is a field sets these over --fill-control, --fill-nav and
+   * --muted, and every control inside it keeps the classes it already had. */
   --fill-field: rgb(var(--ink) / 0.06);
   --fill-field-hover: rgb(var(--ink) / 0.09);
 
+  /* The palette's state.hover and state.active are not tokens of their own
+     here. They are 0.06 and 0.10 of the ink in dark, 0.04 and 0.08 in light -
+     which is exactly --fill-secondary and --fill-secondary-hover above. Naming
+     them a second time would put two hovers in the file, and the day the two
+     drift apart is the day two things on one screen highlight differently. */
+  /* 0.55, not the palette's 0.20.
+     A focus ring has to be visible against whatever it is drawn on, and 0.20
+     of this ink over white is 1.44:1 - fainter than the 1.19:1 hairline the
+     control already had, so focusing a field changed almost nothing. 0.55 is
+     the alpha that reaches 3:1, which is what WCAG 2.2 asks of a focus
+     indicator, and it measures 2.8-3.0:1 on every surface a field sits on in
+     this theme. Dark needs less for the same result, and gets it below. */
   --focus-ring: rgb(var(--ink) / 0.55);
   --scrim: rgb(var(--ink) / 0.40);
 
-  --overlay: #ffffff;
-  --overlay-edge: #e2e2dc;
+  /* ── floating layers ──────────────────────────────────────────────────────
+   * A menu no longer has to be a step DOWN to be visible. It used to: with no
+   * edge and no shadow, stepping was the only tool, and there is no headroom
+   * above white. Now the sheet is the raised surface it always wanted to be,
+   * and the hairline and the shadow do the separating. */
+  --overlay: #fffeff;
+  --overlay-edge: #e2e8f0;
 
+  /* ── controls ─────────────────────────────────────────────────────────────
+   * app-controls 1.0. The edge a control draws around itself, which is not the
+   * edge a card draws: a card is separating two surfaces, a control is stating
+   * that it can be clicked.
+   *
+   * The spec says one tenth of the ink, and app-controls only has a light
+   * mode, so nothing there had to hold in two. It does not: a tenth of #333537
+   * over white is 1.19:1 and a tenth of #f7f7f7 over #181818 is 1.31:1, which
+   * is why an unchecked checkbox read as an empty space in light and as a box
+   * in dark. 0.14 in light is 1.29:1 - the same control, weighted the same
+   * way, rather than the same number twice. */
   --control-border: rgb(var(--ink) / 0.14);
   --control-hover: rgb(var(--ink) / 0.02);
   --control-pressed: rgb(var(--ink) / 0.05);
+  /* The thumb of a segmented control. Almost nothing - it is riding on a track
+     that is already a step down, so the edge is only there to stop the thumb
+     from dissolving into the track at the corners. */
   --thumb-border: rgb(var(--ink) / 0.05);
 
+  /* A switch that is off. The spec names a fixed grey (#c4c4c4) rather than an
+     alpha, and in light that is right - a translucent track over a white card
+     and over a grey one are two different greys, and a switch has to look the
+     same everywhere. Dark cannot use it: #c4c4c4 is brighter than this theme's
+     ON state, so an off switch would be the louder of the two. */
   --switch-off: #c4c4c4;
   --switch-off-hover: #afafaf;
 
@@ -136,64 +329,85 @@
   --destructive-pressed: #ba2623;
 
   /* ── the radius ramp ──────────────────────────────────────────────────────
-   * xs 3 · sm 6 · md 12 · lg 16, proportional rather than subtractive so the
-   * whole ramp holds its shape at any --radius. */
+   * xs 3 · sm 6 · md 12 · lg 16, from app-controls, and proportional rather
+   * than subtractive. `calc(var(--radius) - 4px)` collapsed: at the Sharp
+   * setting (6px) every step below lg landed at 2px or less and the whole ramp
+   * flattened into one corner. Multipliers hold their proportions at any
+   * --radius, which is what makes the setting a setting.
+   *
+   * The checkbox's 2.7px and the segmented control's 11px are the ramp's own
+   * notes calling them out; they are 3 and 12 here. */
   --radius: 1rem;
 
   --spacing: 0.25rem;
 
-  /* ── shell geometry ────────────────────────────────────────────────────── */
+  /* ── shell geometry (also drives the fixed layers) ────────────────────── */
+  --rail-collapsed: 2.75rem;
+  --rail-expanded: 17rem;
+  --app-rail-w: var(--rail-expanded);
+  --header-h: 3.5rem;
   --titlebar-h: 2rem;
+  --content-max: 47.5rem;
 }
 
+/* The same in the other direction: the theme class on <html>, and also how a
+   preview tile paints a dark app inside a light one. */
 .dark {
-  color-scheme: dark;
+  --ink: 247 247 247;
 
-  --ink: 230 233 237;
+  --background: #181818;
+  --foreground: #f7f7f7;
+  --foreground-secondary: #b4b4b4;
+  --muted-foreground: #8a8a8a;
+  --heading: #ffffff;
 
-  --background: #17191c;
-  --foreground: #e6e9ed;
-  --foreground-secondary: #c3c8ce;
-  --muted-foreground: #a0a6ae;
-  --heading: #f2f5f8;
+  /* Dark runs upward, the way it always has:
+     ground #181818 · subtle #181819 · card #1f1f21 · lighter #2a2a2a */
+  --card: #1f1f21;
+  --card-foreground: #f7f7f7;
+  --card-lighter: #2a2a2a;
+  --card-subtle: #1f1f21;
+  --card-raised: #2a2a2a;
+  /* A step BELOW the ground, not level with it. The palette's darkest surface
+     is #181819, which is the ground to one decimal place - so a code block or
+     a preview cut into a full-bleed pane had no bottom at all. Light already
+     worked this way (#f4f4f4 under #ffffff); this is dark saying the same
+     thing. */
+  --card-darker: #131314;
+  --muted: #2a2a2a;
+  --user-message-background: #2a2a2a;
 
-  /* Dark runs upward: ground #181818 · card #1f1f21 · lighter #2a2a2a */
-  --card: #1e2024;
-  --card-foreground: #e6e9ed;
-  --card-lighter: #282b30;
-  --card-subtle: #1e2024;
-  --card-raised: #282b30;
-  --card-darker: #131417;
-  --muted: #282b30;
-  --user-message-background: #282b30;
+  --sidebar: #1f1f21;
+  --sidebar-foreground: #f7f7f7;
+  --sidebar-border: #2a2a2a;
+  --titlebar: #1f1f21;
 
-  --sidebar: #1b1d21;
-  --sidebar-foreground: #e6e9ed;
-  --sidebar-border: #2a2d33;
-  --titlebar: #1b1d21;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3c;
+  --border-subtle: #232325;
 
-  --border: #2a2d33;
-  --border-strong: #3b4048;
-  --border-subtle: #232529;
+  --input: #313133;
+  --input-border: #343436;
+  --input-hover: #37373a;
+  --input-focus: #3d3d41;
+  --input-foreground: #f7f7f7;
+  --input-placeholder: #8a8a8a;
 
-  --input: #2b2e34;
-  --input-border: #383c43;
-  --input-hover: #32363d;
-  --input-focus: #3a3f47;
-  --input-foreground: #e6e9ed;
-  --input-placeholder: #9aa0a8;
-
-  --icon: #e6e9ed;
-  --icon-muted: #a0a6ae;
+  --icon: #f7f7f7;
+  --icon-muted: #959595;
   --icon-surface: #959595;
   --icon-surface-foreground: #2b2b2b;
 
-  --popover: #25282d;
-  --popover-foreground: #e6e9ed;
+  --popover: #2a2a2a;
+  --popover-foreground: #f7f7f7;
 
   --destructive: #da463c;
   --destructive-foreground: #ffffff;
   --destructive-ink: #fda29b;
+  /* Heavier than light's 10%. A tint is a fraction of the distance between the
+     surface and the colour, and on #1f1f21 that distance is travelled in the
+     other direction - 10% of a red over near-black is not a pink pill, it is a
+     surface nobody can see is tinted at all. */
   --destructive-wash: color-mix(in srgb, var(--destructive) 18%, transparent);
 
   --success: #47cd89;
@@ -208,11 +422,33 @@
   --info-ink: #84caff;
   --info-wash: color-mix(in srgb, var(--info) 18%, transparent);
 
+  /* Lighter and less saturated than the light set: the same hue that reads as
+     ink on white is a glare on near-black, and code is the longest run of
+     coloured text on any screen here. */
+  --syntax-comment: #7f858f;
+  --syntax-string: #98c379;
+  --syntax-number: #d19a66;
+  --syntax-keyword: #c792ea;
+  --syntax-function: #7cb3f5;
+  --syntax-type: #5cc6d0;
+  --syntax-property: #e5867d;
+  --syntax-operator: #9aa1ab;
+  --syntax-meta: #b08cf0;
+  --syntax-added: #75e0a7;
+  --syntax-removed: #fda29b;
+
+  --diagram-node: var(--card-raised);
+  --diagram-group: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --diagram-note: color-mix(in srgb, var(--warning) 16%, var(--card-raised));
+  --diagram-line: color-mix(in srgb, var(--foreground) 38%, transparent);
+
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
 
-  --fill-whisper: rgb(var(--ink) / 0.02);
+  /* Same problem, and dark needs slightly more of it: a light film over a dark
+     ground carries less apparent contrast than the same film over a pale one. */
+  --fill-whisper: rgb(var(--ink) / 0.05);
   --fill-nav: rgb(var(--ink) / 0.035);
   --fill-nav-active: rgb(var(--ink) / 0.04);
   --fill-control: rgb(var(--ink) / 0.035);
@@ -223,20 +459,31 @@
   --fill-secondary-hover: rgb(var(--ink) / 0.10);
   --fill-track: rgb(var(--ink) / 0.18);
 
+  /* A rung firmer than light, the way every other pair here is: white laid
+     over #2a2a2a covers less ground than black laid over #f2f4f8. */
   --fill-field: rgb(var(--ink) / 0.07);
   --fill-field-hover: rgb(var(--ink) / 0.10);
 
   --focus-ring: rgb(var(--ink) / 0.38);
+  /* Black, not the ink: dimming a dark room with a light scrim washes it out.
+     This is the one state the palette gives a different colour rather than a
+     different alpha, and it is right to. */
   --scrim: rgb(0 0 0 / 0.6);
 
-  --overlay: #25282d;
-  --overlay-edge: #3b4048;
+  /* #2a2a2a is also the top of the surface ladder, so a menu opening over a
+     raised card is the same colour as the card. That used to be fatal and is
+     not any more: the hairline is border.strong, a full step above anything it
+     can cover, and the shadow under it is the heaviest in the file. */
+  --overlay: #2a2a2a;
+  --overlay-edge: #3a3a3c;
 
   --control-border: rgb(var(--ink) / 0.1);
   --control-hover: rgb(var(--ink) / 0.03);
   --control-pressed: rgb(var(--ink) / 0.07);
   --thumb-border: rgb(var(--ink) / 0.05);
 
+  /* See the light block: the fixed grey is unusable here, so dark keeps the
+     translucent track it always had. */
   --switch-off: rgb(var(--ink) / 0.18);
   --switch-off-hover: rgb(var(--ink) / 0.26);
 
@@ -260,6 +507,11 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-sidebar: var(--sidebar);
+  /* The composer is the one field big enough to be a surface rather than a
+     control, so it takes the rail's colour instead of the field ladder's: the
+     two largest calm areas of the window, reading as one. An alias, not a
+     palette entry - there is nothing here for a theme to set separately. */
+  --color-composer: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-user-message-background: var(--user-message-background);
   --color-heading: var(--heading);
@@ -294,15 +546,17 @@
   --color-overlay-edge: var(--overlay-edge);
   --color-scrim: var(--scrim);
 
-  /* `ring-ring` rather than a hardcoded alpha - the palette gives focus a
-     different alpha per mode, which a fixed value cannot express. */
+  /* `ring-ring` rather than 68 copies of `ring-foreground/20`. The palette
+     gives focus a different alpha per mode (0.28 dark, 0.20 light), which a
+     hardcoded /20 cannot express - and a focus ring too faint in one mode is
+     the accessibility bug nobody files. */
   --color-ring: var(--focus-ring);
 
-  /* No --radius-window here on purpose. The window corner belongs to the
-     compositor: Windows rounds the frame (and clips what's painted inside it)
-     at its own radius, which tracks DPI and the OS version. Rounding the shell
-     in CSS as well just cuts the content on a second, tighter curve and leaves
-     a crescent of whatever is behind the window showing between the two. */
+  /* The window's own corner, named once so the shell and the titlebar that
+     caps it can never round by different amounts. Only applies while the
+     window is restored - maximised and full screen are square, because the
+     screen's own corners are what the window is meeting there. */
+  --radius-window: 12px;
 
   --radius-xs: calc(var(--radius) * 0.1875);
   --radius-sm: calc(var(--radius) * 0.375);
@@ -320,19 +574,44 @@
   --color-destructive-pressed: var(--destructive-pressed);
 
   /* ── the interface face ───────────────────────────────────────────────────
-   * The platform's own system face first, then Inter as the one thing that
-   * might be installed on a machine that has neither. On macOS this IS the
-   * system face; on Windows it's Segoe UI Variable, what every native app
-   * there is set in. */
+   * SF Pro first, then each platform's own, and Inter last as the one thing
+   * that might be installed on a machine that has neither.
+   *
+   * It is named, not shipped. The window's CSP allows a bundled font
+   * (`font-src 'self'`), so this could have been a real file - but SF Pro is
+   * licensed for building interfaces on Apple's platforms, not for putting in
+   * a Windows installer, and a font that renders on one machine and 404s on
+   * another is worse than a stack that quietly lands somewhere good. On macOS
+   * this IS the system face; on Windows it is Segoe UI Variable, which is what
+   * every native app there is set in. */
   --font-sans:
     "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
     "Segoe UI Variable Text", "Segoe UI", Inter, "Inter var", system-ui,
     Roboto, "Helvetica Neue", Arial, sans-serif;
 
+  /* The code face, as one name. The theme block is `inline`, which means
+     Tailwind bakes this stack straight into the `font-mono` utility rather
+     than pointing it at the variable - so the rule further down is what
+     actually lets the setting move it, and this is only the default. */
   --font-mono:
     "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", "Cascadia Mono",
     Menlo, Consolas, "Liberation Mono", monospace;
 }
+
+/* ── spacing ────────────────────────────────────────────────────────────────
+ * app-controls defines a 2px grid whose token number is the unit count, not
+ * the pixel value (space-12 is 24px, which is worth reading twice). No tokens
+ * are added for it, because Tailwind's own scale already lands on every step:
+ *
+ *   space-1  2px   p-0.5      space-8   16px   p-4
+ *   space-2  4px   p-1        space-12  24px   p-6
+ *   space-4  8px   p-2        space-16  32px   p-8
+ *   space-6  12px  p-3        space-24  48px   p-12
+ *
+ * A second set of names for the same numbers is how two spacing systems end up
+ * in one codebase. What did have to change is Compact density, which scaled
+ * --spacing to 0.215rem and put every step on a fraction of a pixel; it is 3px
+ * now, so the grid survives the setting. */
 
 @layer base {
   html {
@@ -345,9 +624,14 @@
     height: 100%;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: var(--font-sans);
     overflow: hidden;
+    /* Transparent on purpose. The window itself is frameless and transparent,
+       so the app's background belongs to the shell element, which rounds its
+       own corners - painting it here instead would square them off again by
+       filling the window right out to its edges. */
+    background: transparent;
   }
   button,
   [role="button"] {
@@ -367,10 +651,14 @@
   *::-webkit-scrollbar {
     display: none;
   }
+  /* The whole icon set is re-weighted from here - the SVGs carry no stroke
+     width of their own. 1.5 at 16px; a touch heavier at 12-14px, where 1.5
+     starts to disappear against 12px text. */
+  /* The viewBox carries 1.2 units of padding on every side (see icon-base),
+     so a user unit is 24/26.4 of what it used to be. 1.65 here renders at the
+     same 1.5 the set was drawn for - the glyph just sits smaller in its box. */
   .icon {
     stroke-width: 1.65;
-    shape-rendering: geometricPrecision;
-    flex: none;
   }
   .icon[class~="size-3"],
   .icon[class*="size-3.5"] {
@@ -411,65 +699,524 @@
 }
 
 /* One recipe for every floating sheet, so a menu, a select and a dialog can
-   never drift apart in elevation. The edge is INSET, so it costs no layout. */
+   never drift apart in elevation. Background and hairline in a single
+   declaration, because a component adding `shadow-lg` beside this would
+   silently erase the edge - box-shadow is one property, not a list you can
+   append to.
+
+   The edge is INSET, so it costs no layout and cannot be clipped by a scroll
+   container the way an outward ring is.
+
+   No drop shadow. A menu anchored to the control you just clicked does not
+   need to be told apart from the page - you know where it came from, because
+   you opened it - and a 32px blur under every small sheet turned a row of
+   pickers into a row of smudges. The edge and the surface step do the work
+   the shadow was doing, and they do it identically in both themes. A toast is
+   the exception and keeps its shadow: see `overlay-plain` below. */
 @utility overlay-surface {
   background-color: var(--overlay);
   box-shadow: inset 0 0 0 1px var(--overlay-edge);
 }
 
+/* The same sheet without the hairline. A toast is not anchored to anything the
+   user clicked, so the edge that helps a menu read as attached to its trigger
+   only reads as a box drawn around a sentence. It keeps the shadow: a toast
+   floats over whatever happens to be under it, which is the one case the
+   surface ladder cannot plan for. */
 @utility overlay-plain {
   background-color: var(--overlay);
   box-shadow: var(--shadow-lg);
 }
 
-/* The dimmed ground behind a dialog. Full-bleed and square: the window's
-   corner is rounded by the compositor, which clips everything painted here,
-   so a scrim that tried to round itself would only pull away from an edge
-   the OS has already cut. */
+/* The dimmed ground behind a dialog. This was `bg-black/70` in four places,
+   which is a dark-mode value: over a white app it reads as a power cut rather
+   than as a modal. Light gets its own, mixed from the ink. */
 @utility scrim {
   background-color: var(--scrim);
+  /* The window is frameless and transparent, and its corners are rounded by the
+     shell element inside `#root`. Every scrim is a full-bleed layer portaled to
+     the body - outside that shell - so painting it to `inset: 0` filled the four
+     corners the shell had carefully left empty, and the whole window went square
+     the moment any dialog opened.
+
+     So a scrim carries the same shape as the shell: the same radius, and the
+     same one-pixel inset, or it would paint a hairline halo just outside the
+     rounded edge. The margin composes with the `inset-0` every caller already
+     sets rather than fighting it. */
+  border-radius: var(--radius-window);
+  margin: 1px;
+}
+
+/* Maximised, there is no rounding to match: the shell drops its own radius and
+   its inset, and so does everything laid over it. */
+:root[data-window="maximized"] .scrim {
+  border-radius: 0;
+  margin: 0;
 }
 
 /* ── cards, as the palette defines them ───────────────────────────────────
- * One utility each, so "what is a card" is answered here rather than in
- * thirty class lists that will drift apart. */
+ * componentDefaults, one utility each, so "what is a card" is answered here
+ * rather than in thirty class lists that will drift apart. Each is background,
+ * edge and elevation together - asking for a card should not also mean
+ * remembering which of the three it needs this week. */
+/* A group of settings rows, as one surface.
+ *
+ * The pattern every desktop settings screen uses and this app did not: rows
+ * banded together in a single card, split by hairlines, rather than a stack of
+ * separate floating cards. Twelve cards down a pane is twelve rectangles
+ * competing for the same attention, and no way to see which three belong
+ * together; one card with twelve rows is a list, and the eye reads a list.
+ *
+ * No edge in either mode - this is `--card`, which is a real step off the
+ * ground in both (#eff3f8 on white, #1f1f21 on #181818). That is the whole
+ * reason to use this rung rather than the subtle one: it separates by being a
+ * different colour, so nothing has to be drawn around it. */
 @utility card-surface {
   background-color: var(--card);
 }
+
+/* The raised card, which is what a subtle one becomes on hover.
+ *
+ * A step of colour and nothing else. This used to be a near-invisible fill
+ * propped up by an edge and a shadow, which meant the hover you actually saw
+ * was the outline appearing - a card that grows a border under the cursor,
+ * twenty times down a list. Now the card simply gets darker in light and
+ * lighter in dark, which is the same gesture the pills and rows already make. */
 @utility card-surface-raised {
   background-color: var(--card-raised);
 }
+
+/* The quiet one: the resting card. No edge, no elevation - twenty of these in
+   a list with an outline each is a grid, not a list. */
 @utility card-surface-subtle {
   background-color: var(--card-subtle);
 }
 
 /* The inverted chip - solid grey, light-on-dark in light mode and the reverse
-   in dark. */
+   in dark. Deliberately the only high-contrast fill in the system that is not
+   the accent, so that it stays worth using. */
 @utility icon-surface {
   background-color: var(--icon-surface);
   color: var(--icon-surface-foreground);
 }
 
 /* ── appearance ───────────────────────────────────────────────────────────
- * `--accent-solid` is absent by default on purpose: the base design has no
- * accent colour at all, and falling back to the foreground is what every
- * loud button already looked like before an accent existed. */
+ * Set from `lib/appearance.js`. Each one has a fallback that is exactly what
+ * the app looked like before the setting existed, so a workspace with no
+ * appearance saved renders identically to one from before this feature.
+ *
+ * `--accent-solid` is absent by default on purpose: the original design has no
+ * accent colour at all, and "Ink" is not a colour choice, it is the absence of
+ * one. Every rule below falls back to the foreground, which is what the app
+ * always used. */
+
 @utility accent-fill {
   background-color: var(--accent-solid, var(--foreground));
   color: var(--accent-on, var(--background));
 }
+
 @utility accent-ink {
   color: var(--accent-solid, var(--foreground));
 }
 
+/* A transcript line, at the size and measure the reader chose. */
+@utility chat-text {
+  font-size: var(--chat-font-size, 14px);
+}
+
+@utility chat-measure {
+  max-width: var(--chat-measure, 72ch);
+}
+
+/* The four rules below are deliberately unlayered.
+ *
+ * Tailwind puts its utilities in `@layer utilities`, and unlayered CSS beats
+ * any layer - which is the only way a setting can override a size or a leading
+ * that a component hardcoded as a class. The alternative was editing every
+ * transcript component to read a preference, which is exactly the coupling the
+ * token approach exists to avoid. */
+
+/* A message's leading. `leading-relaxed` sits on the same elements as
+   `chat-text` in the transcript, and this is what outranks it. */
+.chat-text {
+  line-height: var(--chat-line-height, 1.625);
+}
+
+/* Every monospaced thing in the app, pointed back at the token.
+   `@theme inline` compiles `font-mono` to a literal stack, so without this the
+   setting would move the variable and nothing on screen - which is precisely
+   the failure the appearance module exists to prevent. */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Code, wherever it is set as a block. The fallback is the 12.5px the code
+   block was drawn at before the size was adjustable. */
+pre code {
+  font-size: var(--code-font-size, 12.5px);
+}
+
+/* Flat transcript: the same bubble with its tint removed. Nothing else moves,
+   because the padding and the corner are what keep a long message from butting
+   against the reply below it. */
+:root[data-transcript="flat"] {
+  --user-message-background: transparent;
+}
+
+
+/* -- grounds ----------------------------------------------------------------
+ * The palettes, one per theme, chosen in Settings > Appearance.
+ *
+ * There is no block for "default" and there must not be: the default palette
+ * is `:root` and `.dark` above, and a second copy of it here is a copy that
+ * goes stale the first time either is retuned. `applyAppearance` removes the
+ * attribute for the default rather than setting it.
+ *
+ * Each block moves the ground and the surfaces built on it, and nothing else.
+ * Status colours, syntax, accents and diagrams are deliberately untouched -
+ * "sepia" is a reading preference, not a different design, and a palette that
+ * restyled an error badge would make the app unreadable in a different way
+ * each time. Everything translucent follows on its own, because the hovers and
+ * hairlines are all `rgb(var(--ink) / a)` and --ink moves with the ground.
+ *
+ * Two selectors per block, matching the pattern `:root, .light` uses at the
+ * top of this file: the first is the window, the second is a preview tile
+ * asking for a theme the window is not currently in.
+ * -------------------------------------------------------------------------- */
+
+/* Warm off-white. The calmest for long reading. */
+:root[data-light-palette="paper"]:not(.dark),
+:root[data-light-palette="paper"] .light {
+  --ink: 51 49 46;
+
+  --background: #fbfaf7;
+  --foreground: #33312e;
+  --foreground-secondary: #5d5a54;
+  --muted-foreground: #6d6a63;
+  --heading: #33312e;
+
+  --card: #f2efe9;
+  --card-lighter: #fffefb;
+  --card-subtle: #f2efe9;
+  --card-raised: #e8e4da;
+  --card-darker: #f0ede6;
+  --muted: #e8e4da;
+  --user-message-background: #f0ede6;
+
+  --sidebar: #f2efe9;
+  --sidebar-border: #e5e1d8;
+  --titlebar: #f2efe9;
+
+  --border: #e5e1d8;
+  --border-strong: #d3cec1;
+  --border-subtle: #f0ede6;
+
+  --input: #ece8df;
+  --input-border: #dcd7cb;
+  --input-hover: #e5e0d4;
+  --input-focus: #ded8c9;
+  --input-placeholder: #7b776e;
+
+  --icon: #33312e;
+  --icon-muted: #6f6c65;
+  --popover: #fffefb;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(60, 54, 44, 0.06), 0 1px 3px rgba(60, 54, 44, 0.04);
+  --shadow-md: 0 4px 12px rgba(60, 54, 44, 0.08);
+  --shadow-lg: 0 12px 32px rgba(60, 54, 44, 0.12);
+}
+
+/* Cream and brown ink. The least tiring over several hours. */
+:root[data-light-palette="sepia"]:not(.dark),
+:root[data-light-palette="sepia"] .light {
+  --ink: 59 50 41;
+
+  --background: #f6efe2;
+  --foreground: #3b3229;
+  --foreground-secondary: #63594c;
+  --muted-foreground: #71665a;
+  --heading: #3b3229;
+
+  --card: #ece2ce;
+  --card-lighter: #fbf6ec;
+  --card-subtle: #ece2ce;
+  --card-raised: #e1d5bc;
+  --card-darker: #e9dfca;
+  --muted: #e1d5bc;
+  --user-message-background: #e9dfca;
+
+  --sidebar: #ece2ce;
+  --sidebar-border: #ddd1b8;
+  --titlebar: #ece2ce;
+
+  --border: #ddd1b8;
+  --border-strong: #c9bb9d;
+  --border-subtle: #e7dcc6;
+
+  --input: #e6dbc4;
+  --input-border: #d5c8ad;
+  --input-hover: #dfd3b8;
+  --input-focus: #d7c9ab;
+  --input-placeholder: #7e7264;
+
+  --icon: #3b3229;
+  --icon-muted: #726757;
+  --popover: #fbf6ec;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(70, 55, 35, 0.06), 0 1px 3px rgba(70, 55, 35, 0.04);
+  --shadow-md: 0 4px 12px rgba(70, 55, 35, 0.08);
+  --shadow-lg: 0 12px 32px rgba(70, 55, 35, 0.12);
+}
+
+/* A soft grey ground with white surfaces. No large bright area to glare. */
+:root[data-light-palette="mist"]:not(.dark),
+:root[data-light-palette="mist"] .light {
+  --ink: 47 51 54;
+
+  --background: #eef0f2;
+  --foreground: #2f3336;
+  --foreground-secondary: #575d62;
+  --muted-foreground: #666d73;
+  --heading: #2f3336;
+
+  --card: #ffffff;
+  --card-lighter: #ffffff;
+  --card-subtle: #ffffff;
+  --card-raised: #f7f9fa;
+  --card-darker: #e5e8eb;
+  --muted: #e2e6ea;
+  --user-message-background: #ffffff;
+
+  --sidebar: #e8ebee;
+  --sidebar-border: #dadee3;
+  --titlebar: #e8ebee;
+
+  --border: #dadee3;
+  --border-strong: #c4cad1;
+  --border-subtle: #e4e7eb;
+
+  --input: #ffffff;
+  --input-border: #d3d8de;
+  --input-hover: #f6f8fa;
+  --input-focus: #eef2f6;
+  --input-placeholder: #757c82;
+
+  --icon: #2f3336;
+  --icon-muted: #6b7176;
+  --popover: #ffffff;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(40, 45, 50, 0.06), 0 1px 3px rgba(40, 45, 50, 0.04);
+  --shadow-md: 0 4px 12px rgba(40, 45, 50, 0.08);
+  --shadow-lg: 0 12px 32px rgba(40, 45, 50, 0.12);
+}
+
+/* A blue-black ground. Deeper, without going to pure black. */
+:root[data-dark-palette="midnight"].dark,
+:root[data-dark-palette="midnight"] .dark {
+  --ink: 228 232 240;
+
+  --background: #12151c;
+  --foreground: #e4e8f0;
+  --foreground-secondary: #aeb6c4;
+  --muted-foreground: #848d9e;
+  --heading: #ffffff;
+
+  --card: #1b1f29;
+  --card-lighter: #262b38;
+  --card-subtle: #1b1f29;
+  --card-raised: #262b38;
+  --card-darker: #0d1016;
+  --muted: #262b38;
+  --user-message-background: #262b38;
+
+  --sidebar: #1b1f29;
+  --sidebar-border: #262b38;
+  --titlebar: #1b1f29;
+
+  --border: #262b38;
+  --border-strong: #363d4e;
+  --border-subtle: #1f242f;
+
+  --input: #2c3240;
+  --input-border: #333a4a;
+  --input-hover: #363d4e;
+  --input-focus: #3d4557;
+  --input-placeholder: #848d9e;
+
+  --icon: #e4e8f0;
+  --icon-muted: #949cad;
+  --popover: #262b38;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+/* Warm and neutral, the blue taken out. The one for late at night. */
+:root[data-dark-palette="graphite"].dark,
+:root[data-dark-palette="graphite"] .dark {
+  --ink: 233 230 225;
+
+  --background: #1a1917;
+  --foreground: #e9e6e1;
+  --foreground-secondary: #b6b1a8;
+  --muted-foreground: #8c877e;
+  --heading: #fffdf9;
+
+  --card: #242320;
+  --card-lighter: #2f2d29;
+  --card-subtle: #242320;
+  --card-raised: #2f2d29;
+  --card-darker: #141311;
+  --muted: #2f2d29;
+  --user-message-background: #2f2d29;
+
+  --sidebar: #242320;
+  --sidebar-border: #2f2d29;
+  --titlebar: #242320;
+
+  --border: #2f2d29;
+  --border-strong: #403d38;
+  --border-subtle: #282622;
+
+  --input: #35332e;
+  --input-border: #3a3832;
+  --input-hover: #3d3a34;
+  --input-focus: #45423b;
+  --input-placeholder: #8c877e;
+
+  --icon: #e9e6e1;
+  --icon-muted: #9a948a;
+  --popover: #2f2d29;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+/* Near-black, for an OLED panel or a dark room. */
+:root[data-dark-palette="ink"].dark,
+:root[data-dark-palette="ink"] .dark {
+  --ink: 230 230 230;
+
+  --background: #0a0a0a;
+  --foreground: #e6e6e6;
+  --foreground-secondary: #a8a8a8;
+  --muted-foreground: #808080;
+  --heading: #ffffff;
+
+  --card: #161616;
+  --card-lighter: #212121;
+  --card-subtle: #161616;
+  --card-raised: #212121;
+  --card-darker: #000000;
+  --muted: #212121;
+  --user-message-background: #212121;
+
+  --sidebar: #121212;
+  --sidebar-border: #222222;
+  --titlebar: #121212;
+
+  --border: #222222;
+  --border-strong: #333333;
+  --border-subtle: #1a1a1a;
+
+  --input: #242424;
+  --input-border: #2b2b2b;
+  --input-hover: #2e2e2e;
+  --input-focus: #363636;
+  --input-placeholder: #808080;
+
+  --icon: #e6e6e6;
+  --icon-muted: #909090;
+  --popover: #212121;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+/* High contrast pulls secondary text toward the foreground instead of naming a
+   new colour, so it lands correctly in both themes and stays correct if either
+   palette is ever retuned. */
+:root[data-contrast="high"] {
+  --muted-foreground: color-mix(in srgb, var(--foreground) 82%, transparent);
+  --border: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none !important;
+  }
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+@utility edge-fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 12px,
+    black calc(100% - 16px),
+    transparent 100%
+  );
+}
+
 /* ── overlay choreography (ease-out only, no bounce) ──────────────────────────
- * An anchored sheet must look like it came OUT OF the control that opened it:
- * a short travel on the placement axis, a touch of scale, and a duration short
- * enough to still read as one gesture rather than a window appearing. */
+ * An anchored sheet must look like it came OUT OF the control that opened it.
+ * Three things together do that, and all three have to agree:
+ *   · transform-origin, set in pixels by useAnchoredPosition, aimed at the
+ *     trigger rather than at a corner of the panel;
+ *   · a few pixels of travel away from the trigger, on the placement axis,
+ *     handed over as --overlay-in-x/y by the same hook;
+ *   · a short duration - past ~180ms the eye stops reading it as one gesture
+ *     and starts reading it as a window appearing.
+ * ───────────────────────────────────────────────────────────────────────────── */
 @keyframes inertia-in {
   from {
     opacity: 0;
-    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.94);
+    transform: translate3d(
+        var(--overlay-in-x, 0px),
+        var(--overlay-in-y, 0px),
+        0
+      )
+      scale(0.94);
   }
   to {
     opacity: 1;
@@ -483,7 +1230,12 @@
   }
   to {
     opacity: 0;
-    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.96);
+    transform: translate3d(
+        var(--overlay-in-x, 0px),
+        var(--overlay-in-y, 0px),
+        0
+      )
+      scale(0.96);
   }
 }
 @keyframes inertia-fade-in {
@@ -512,6 +1264,8 @@
     transform: translateY(0);
   }
 }
+/* A mark answering a click: a tick, a dot, a badge. Scales up from nothing
+   with a hair of overshoot, so it lands rather than appears. */
 @keyframes inertia-pop-in {
   from {
     opacity: 0;
@@ -532,12 +1286,16 @@
     opacity: 0.45;
   }
 }
+/* A light travelling left to right across the letters. Used for the handful of
+   actions that report themselves only while they are happening and then leave
+   nothing behind, so the movement is the whole of the feedback. */
 @keyframes inertia-shimmer {
   to {
     background-position: -200% 0;
   }
 }
 
+/* decelerating, monotonic - fast off the trigger, no overshoot */
 @utility animate-overlay-in {
   animation: inertia-in var(--motion-base) var(--ease-out);
 }
@@ -562,6 +1320,26 @@
 @utility animate-soft-pulse {
   animation: inertia-pulse 1.6s ease-in-out infinite;
 }
+/* The gradient is clipped to the glyphs, so the text itself carries the light
+   rather than sitting on a moving band. Falls back to plain muted text when the
+   clip is unsupported and when motion is reduced, both of which are readable. */
+/**
+ * The transcript, smaller, for a column beside the conversation.
+ *
+ * `zoom` rather than a font size, because the thing being shrunk is a whole
+ * rendering - prose, tool cards, diffs, badges, the padding that holds them
+ * apart - and every one of those is sized in its own units. A font size would
+ * have shrunk the words and left the cards around them at full size, which is
+ * worse than not shrinking anything.
+ *
+ * Chromium computes layout at the zoomed size, so a tool card measures its own
+ * title against the narrower column it is actually in rather than against the
+ * one it would have had.
+ */
+@utility chat-scale {
+  zoom: 0.85;
+}
+
 @utility text-shimmer {
   background-image: linear-gradient(
     100deg,
@@ -581,10 +1359,15 @@
 
 /* ── the fold ────────────────────────────────────────────────────────────────
  * `<Collapse>`. A grid with one row, transitioned between 0fr and 1fr: the
- * content decides what 1fr means, so nothing is measured, and the browser
- * does one layout per frame rather than a paint of everything below. */
+ * content decides what 1fr means, so nothing is measured, and the browser does
+ * one layout per frame rather than a paint of everything below. Opacity rides
+ * along so the first frames of a fold are not a slice of text under a lid.
+ * The states come from `usePresence`; "entering" is the frame before "open",
+ * which is what gives the transition a start. */
 .collapse-fold {
   display: grid;
+  /* The fold sits in a flex column more often than not, and a flex item's
+     minimum width is its content's too - the same overflow one level up. */
   min-width: 0;
   grid-template-rows: 0fr;
   opacity: 0;
@@ -603,10 +1386,12 @@
 .collapse-fold[data-state="closed"] {
   display: none;
 }
-.collapse-fold > * {
-  overflow: hidden;
-  min-height: 0;
-}
+
+/* ── the way out ─────────────────────────────────────────────────────────────
+ * The overlays keep themselves mounted for one beat after closing (see
+ * `usePresence`) and mark it on `data-state`; these are the exits. Shorter
+ * than the arrivals, and a leaving layer takes no pointer events, or a click
+ * meant for what is under a closing menu lands on the menu. */
 [data-state="closing"].animate-overlay-in {
   animation: inertia-out var(--motion-exit) var(--ease-in) forwards;
   pointer-events: none;
@@ -616,46 +1401,74 @@
   animation: inertia-fade-out var(--motion-exit) ease-out forwards;
   pointer-events: none;
 }
+
+/* The fold is promoted for the frames it moves, so the first of them is not
+   spent rasterising it. Only these two states, and nothing on the entrance
+   utilities: the compositor already promotes an element for as long as its
+   opacity or transform is animating, and a `will-change` left on the class
+   would outlive the animation - a permanent texture in GPU memory for every
+   row that ever slid in, which a transcript of a thousand rows cannot afford. */
 .collapse-fold[data-state="entering"],
 .collapse-fold[data-state="closing"] {
   will-change: transform, opacity;
 }
 
+/* ── smooth scrolling ────────────────────────────────────────────────────────
+ * Programmatic scrolls - jumping to the bottom of a transcript, keeping the
+ * active option in view, a tab strip following its selection - glide instead
+ * of cutting. A call that passes `behavior: "auto"` still cuts, which is what
+ * a scroll-position restore relies on. Wheel and trackpad input is smoothed
+ * by the compositor already and is not affected by this. */
 .scroll-smooth {
   scroll-behavior: smooth;
 }
 
-/* ── window ──────────────────────────────────────────────────────────────────
- * The shell settling after the system has moved the frame - maximised,
- * restored, resized by the animated titlebar controls. Opacity alone, and
- * deliberately no scale: a webview cannot smoothly rescale its own layout, so
- * this only softens the frame the reflow lands in. */
-@keyframes inertia-window-settle {
-  from {
-    opacity: 0.86;
-  }
-  to {
-    opacity: 1;
-  }
-}
-[data-settling="true"] {
-  animation: inertia-window-settle var(--motion-slow) var(--ease-out);
-}
-
-/* Tauri frameless-window drag region. Kept as classes (rather than relying on
-   `data-tauri-drag-region`'s built-in double-click-to-maximize) so the
-   titlebar can drive its own animated maximize/restore instead. */
-.titlebar-drag {
-  -webkit-app-region: drag;
-}
-.titlebar-no-drag {
-  -webkit-app-region: no-drag;
-}
-
 /* ── reduced motion ──────────────────────────────────────────────────────────
+ * One set of rules for both switches: the app's own, which `appearance.js`
+ * publishes as `data-reduce-motion` on the root, and the operating system's.
  * What is reduced is travel and scale - nothing slides, grows or folds. What
- * stays is a short opacity fade, because a menu that is simply there on one
- * frame is more startling than one that fades in over a tenth of a second. */
+ * stays is a short opacity fade on the things that appear and disappear,
+ * because a menu that is simply there on one frame is more startling than one
+ * that fades in over a tenth of a second; and colour transitions, because a
+ * hover that snaps reads as broken rather than calm. */
+:root[data-reduce-motion="true"] {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--motion-reduced) !important;
+    animation-iteration-count: 1 !important;
+    animation-name: none !important;
+    transition-property: color, background-color, border-color, fill, stroke, opacity !important;
+    transition-duration: var(--motion-reduced) !important;
+    transition-timing-function: ease-out !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-overlay-in,
+  .animate-fade-in,
+  .animate-slide-up {
+    animation-name: inertia-fade-in !important;
+  }
+  [data-state="closing"].animate-overlay-in,
+  [data-state="closing"].animate-fade-in,
+  [data-state="closing"].animate-slide-up {
+    animation-name: inertia-fade-out !important;
+    animation-fill-mode: forwards !important;
+  }
+  /* The fold becomes a fade: the row snaps to its size and the content fades
+     in over it, so a section still appears rather than pops. */
+  .collapse-fold {
+    transition-property: opacity !important;
+  }
+  /* A spinner is not motion in the sense anyone means; it is the only sign
+     something is happening, and a frozen spinner is a hang. */
+  .animate-spin-slow,
+  .animate-spin {
+    animation-name: inertia-spin !important;
+    animation-duration: 900ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -679,9 +1492,13 @@
     animation-name: inertia-fade-out !important;
     animation-fill-mode: forwards !important;
   }
+  /* The fold becomes a fade: the row snaps to its size and the content fades
+     in over it, so a section still appears rather than pops. */
   .collapse-fold {
     transition-property: opacity !important;
   }
+  /* A spinner is not motion in the sense anyone means; it is the only sign
+     something is happening, and a frozen spinner is a hang. */
   .animate-spin-slow,
   .animate-spin {
     animation-name: inertia-spin !important;
@@ -690,48 +1507,233 @@
   }
 }
 
-/* ── the gutter ────────────────────────────────────────────────────────────
- * One number, used by every panel, so chrome and content start at the same
- * distance from the panel's edge instead of drifting apart one `px-3` at a
- * time. */
-@utility panel-gutter {
-  padding-inline: 0.75rem;
+/* Electron frameless window drag regions */
+.titlebar-drag {
+  -webkit-app-region: drag;
 }
-@utility panel-inset {
-  margin-inline: 0.75rem;
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
 }
 
-/* ── the mark ────────────────────────────────────────────────────────────────
- * The product logo's entrance. Longer and softer than `animate-pop-in`: that
- * curve is tuned for a 14px glyph swapping inside a button, and the same
- * overshoot on a 56px mark reads as a bounce rather than as arrival. */
-@keyframes inertia-mark-in {
+/* -- syntax highlighting ---------------------------------------------------
+ *
+ * Applied by `markdown/highlight.js`, which hands back spans of one kind each.
+ * Plain CSS rather than a `@utility` family because the class comes off a map
+ * at runtime, and Tailwind can only generate what it can find in the source.
+ * A kind with no rule here simply inherits, which is what `plain` wants. */
+.tok-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.tok-string {
+  color: var(--syntax-string);
+}
+.tok-number {
+  color: var(--syntax-number);
+}
+.tok-keyword {
+  color: var(--syntax-keyword);
+}
+.tok-function {
+  color: var(--syntax-function);
+}
+.tok-type {
+  color: var(--syntax-type);
+}
+.tok-property {
+  color: var(--syntax-property);
+}
+.tok-operator {
+  color: var(--syntax-operator);
+}
+.tok-punctuation {
+  color: var(--syntax-operator);
+}
+.tok-tag {
+  color: var(--syntax-property);
+}
+.tok-attribute {
+  color: var(--syntax-number);
+}
+.tok-meta {
+  color: var(--syntax-meta);
+}
+.tok-added {
+  color: var(--syntax-added);
+}
+.tok-removed {
+  color: var(--syntax-removed);
+}
+
+/* ── the composer's text surface ──────────────────────────────────────────
+ *
+ * A contenteditable rather than a textarea, so that `@nova` can be drawn as a
+ * pill in the sentence where it was typed instead of appearing twice - once as
+ * text and again as a chip in a row above the field.
+ *
+ * Plain CSS rather than a `@utility`, because the pills are built by hand in
+ * mention-dom.js: a class attached to a node by `document.createElement` is
+ * invisible to Tailwind's scanner, so utilities used only there would be
+ * compiled away.
+ */
+.prompt-editor {
+  position: relative;
+  width: 100%;
+  outline: none;
+  white-space: pre-wrap;
+  /* Long paths and URLs are ordinary things to paste in here, and a word with
+     no break in it would otherwise push the whole composer wider than the
+     column it lives in. */
+  overflow-wrap: anywhere;
+  /* It grows with the text and then scrolls, which is what `autoResize` with a
+     `maxRows` did for the textarea this replaced. */
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+/* The placeholder is OUT OF THE FLOW, which is the whole point.
+   In the flow it is a box inside the editable, and the browser will happily
+   park the caret after it - so an empty composer showed the cursor sitting at
+   the end of "Message Inertia Dev...", several centimetres from where typing
+   would actually begin. Absolutely positioned it has no position in the text
+   for a caret to take.
+
+   `inset: 0` places it against the padding box and `padding: inherit` puts the
+   text back where the real first character will be, so the placeholder and the
+   sentence that replaces it start on exactly the same pixel.
+
+   Emptiness is reported by the component rather than guessed at with `:empty`:
+   both selectors that look like they would work get it wrong once the trailing
+   sentinel <br> exists. */
+.prompt-editor[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+
+.prompt-pill {
+  /* inline-BLOCK, not inline-flex, and the difference is the whole reason a
+     mention used to float above the line it was in. A flex box takes its
+     baseline from its first item, and the first item here is the face - a box
+     with no text in it, whose baseline is its bottom edge. The browser then
+     sat that bottom edge on the sentence's baseline and lifted the name with
+     it. An inline-block takes its baseline from the text inside it, so the
+     name in the pill sits on the same line as the words either side. */
+  display: inline-block;
+  /* Baseline-aligned and only slightly taller than the line, so a sentence
+     with three mentions in it still reads as a sentence rather than as a row
+     of buttons. */
+  vertical-align: baseline;
+  margin: 0 0.05em;
+  padding: 0.1em 0.45em;
+  border-radius: 0.6em;
+  background-color: var(--fill-secondary);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--foreground);
+  font-size: 0.92em;
+  /* Its own line, tighter than the paragraph's. Inheriting the prose
+     line-height made the pill's box as tall as the whole line, so a mention
+     read as a button dropped into the sentence rather than as a word in it. */
+  line-height: 1.25;
+  white-space: nowrap;
+  /* One object, not a run of characters: this is what makes a single backspace
+     take the whole mention. */
+  user-select: none;
+}
+
+.prompt-pill[data-kind="skill"] {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+}
+
+.prompt-pill-icon,
+.prompt-pill-glyph,
+.prompt-pill-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  /* Centred on the middle of the letters rather than sat on the line they
+     stand on. `middle` rather than a nudge off the baseline because these
+     boxes have text nested inside them, and a box like that reports the
+     baseline of that inner text as its own - which put the face half a line
+     too low. The gap is a margin because an inline-block has no flex gap. */
+  vertical-align: middle;
+  margin-right: 0.34em;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  /* The agent's colour as a wash with its ink on top - the recipe the avatar
+     uses everywhere else, so a pill and a header agree about who this is. */
+  background-color: color-mix(in srgb, var(--pill-tint, var(--foreground)) 16%, transparent);
+  color: var(--pill-tint, var(--foreground));
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.prompt-pill-glyph svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+/*
+ * The face a sent message draws is a real <AgentAvatar>, so it arrives at the
+ * size its own scale gives it - 20px, taller than the line it is sitting in,
+ * which is what pushed the sentence apart. Sized here in the pill's own ems
+ * instead, so it grows and shrinks with the text around it, and lifted off the
+ * baseline by the same amount as the composer's icons so the two pills are
+ * one object seen twice.
+ */
+.prompt-pill .prompt-pill-face {
+  /* Barely taller than a capital letter: the face is there to say which agent
+     this is, not to be a button in the middle of a sentence. */
+  width: 0.95em;
+  height: 0.95em;
+  /* Centred on the letters, the same way and for the same reason. */
+  vertical-align: middle;
+  margin-right: 0.3em;
+  flex-shrink: 0;
+}
+
+/* Whatever is inside that circle - a picture, a glyph, two initials - fills it
+   rather than keeping the size the avatar's own scale gave it. */
+.prompt-pill .prompt-pill-face > * {
+  width: 100%;
+  height: 100%;
+  font-size: 0.55em;
+}
+
+/* A share of the circle rather than a size of its own: the glyph inside a
+   pill's face is drawn at the avatar's scale otherwise, and overflows it. */
+.prompt-pill .prompt-pill-face svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* ── window ──────────────────────────────────────────────────────────────────
+ * The shell settling after the system has moved the frame - maximised,
+ * restored, taken fullscreen. `App` marks the shell `data-settling` for
+ * `MOTION.slow` and the contents come up from a shade under full, so the
+ * reflow to the new frame is watched rather than suffered. Opacity alone, and
+ * deliberately no scale: the browser pane is a native view placed over a hole
+ * in this window, and it cannot follow a CSS transform - a shell that shrank
+ * by a hair would leave the page it holds standing still at full size. Under
+ * reduced motion the global rule drops the keyframe, and the shell is simply
+ * in the new shape. */
+@keyframes inertia-window-settle {
   from {
-    opacity: 0;
-    transform: translate3d(0, 4px, 0) scale(0.84);
+    opacity: 0.86;
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
-.mark-logo {
-  animation: inertia-mark-in 520ms var(--ease-spring) both;
-}
-
-/* ── the walkthrough's step rail ─────────────────────────────────────────────
- * A dot per step. The active one stretches into a pill rather than growing in
- * both axes, so the rail's height never moves while the flow advances. */
-@utility step-dot {
-  height: 0.375rem;
-  width: 0.375rem;
-  border-radius: 999px;
-  background-color: var(--fill-track);
-  transition:
-    width var(--motion-base) var(--ease-out),
-    background-color var(--motion-base) var(--ease-out);
-}
-@utility step-dot-active {
-  width: 1.25rem;
-  background-color: var(--accent-solid, var(--foreground));
+[data-settling="true"] {
+  animation: inertia-window-settle var(--motion-slow) var(--ease-out);
 }

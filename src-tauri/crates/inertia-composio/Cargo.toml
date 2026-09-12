@@ -1,0 +1,23 @@
+[package]
+name = "inertia-composio"
+version.workspace = true
+edition.workspace = true
+description = "Composio-connected apps as a tool provider."
+
+[lints]
+workspace = true
+
+[dependencies]
+inertia-core = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+inertia-mock = { workspace = true }
+wiremock = { workspace = true }

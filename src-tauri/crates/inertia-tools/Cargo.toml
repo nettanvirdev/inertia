@@ -1,0 +1,24 @@
+[package]
+name = "inertia-tools"
+version.workspace = true
+edition.workspace = true
+description = "The tool registry, argument schemas, and the builtin tools."
+
+[lints]
+workspace = true
+
+[dependencies]
+inertia-core = { workspace = true }
+inertia-lsp = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+tokio = { workspace = true }
+ignore = { workspace = true }
+globset = { workspace = true }
+regex = { workspace = true }
+
+[dev-dependencies]
+inertia-mock = { workspace = true }
+tempfile = { workspace = true }

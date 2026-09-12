@@ -1,0 +1,22 @@
+[package]
+name = "inertia-hooks"
+version.workspace = true
+edition.workspace = true
+description = "Lifecycle hooks: the user's own programs, run at named moments of a turn"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+inertia-store = { path = "../inertia-store" }
+jiff = { workspace = true }
+parking_lot = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

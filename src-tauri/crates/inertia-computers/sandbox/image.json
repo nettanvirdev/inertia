@@ -1,0 +1,17 @@
+{
+  "name": "inertia-sandbox",
+  "tag": "1.0.0",
+  "dockerfile": "Dockerfile",
+  "workdir": "/workspace",
+  "user": "agent",
+  "shell": [
+    "/bin/bash",
+    "-lc"
+  ],
+  "display": ":99",
+  "geometry": "1600x900",
+  "base": "Debian 12",
+  "daytonaFallbackImage": "debian:12-slim",
+  "registry": "nettanvirdev/inertia-sandbox:1.0.0",
+  "daytonaSnapshot": "inertia-sandbox-1.0.0"
+}

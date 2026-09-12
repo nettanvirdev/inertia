@@ -1,11 +1,131 @@
+# The Tauri app crate doubles as the Cargo workspace root, so every Rust file
+# in the project lives under `src-tauri/` and `cargo tauri` still finds its
+# manifest where it expects to. The app crate itself is deliberately thin: it
+# owns window chrome, the Tauri command surface, and the wiring that picks
+# which concrete implementation of each trait the app runs with. Everything
+# with real logic in it lives in `crates/` and knows nothing about Tauri.
+[workspace]
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+
+# Warn, not deny: a lint that fails the build is a lint people disable at the
+# crate root. Each member opts in with `[lints] workspace = true`.
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+unreachable_pub = "warn"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+# The ones that catch real defects rather than style opinions.
+await_holding_lock = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+todo = "warn"
+dbg_macro = "warn"
+inefficient_to_string = "warn"
+needless_pass_by_value = "warn"
+implicit_clone = "warn"
+
+# Pinned once here so ten crates cannot drift onto three different versions of
+# serde and silently stop sharing types.
+[workspace.dependencies]
+inertia-core = { path = "crates/inertia-core" }
+inertia-store = { path = "crates/inertia-store" }
+inertia-provider = { path = "crates/inertia-provider" }
+inertia-tools = { path = "crates/inertia-tools" }
+inertia-hooks = { path = "crates/inertia-hooks" }
+inertia-memory = { path = "crates/inertia-memory" }
+inertia-mcp = { path = "crates/inertia-mcp" }
+inertia-lsp = { path = "crates/inertia-lsp" }
+inertia-openapi = { path = "crates/inertia-openapi" }
+inertia-composio = { path = "crates/inertia-composio" }
+inertia-agent = { path = "crates/inertia-agent" }
+inertia-mock = { path = "crates/inertia-mock" }
+inertia-voice = { path = "crates/inertia-voice" }
+inertia-computers = { path = "crates/inertia-computers" }
+inertia-terminal = { path = "crates/inertia-terminal" }
+
+# ── foundation ──────────────────────────────────────────────────────────────
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+async-trait = "0.1"
+# thiserror in the library crates, anyhow only at the app edge. A library that
+# returns anyhow forces every caller to match on strings.
+thiserror = "2"
+anyhow = "1"
+futures = "0.3"
+futures-util = "0.3"
+async-stream = "0.3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util", "process", "sync", "time", "signal"] }
+tokio-util = { version = "0.7", features = ["io"] }
+
+# ── network ─────────────────────────────────────────────────────────────────
+# rustls rather than native-tls: no OpenSSL to find at build time on Windows,
+# and one less thing that differs between the dev machine and the installer.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "charset", "http2"] }
+eventsource-stream = "0.2"
+url = "2"
+percent-encoding = "2"
+# Retry with jitter for provider rate limits, rather than a hand-rolled sleep
+# loop that every provider would reimplement slightly differently.
+backon = "1"
+
+# ── data ────────────────────────────────────────────────────────────────────
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+# jiff over chrono/time: correct by construction around time zones and civil
+# time, and its RFC 3339 round-tripping is exactly what the on-disk records
+# need.
+jiff = { version = "0.2", features = ["serde"] }
+# Tool input schemas are derived from the Rust structs that parse them, so a
+# schema and its parser cannot drift apart.
+schemars = { version = "1", features = ["preserve_order"] }
+dashmap = "6"
+parking_lot = "0.12"
+# API keys wrapped so they cannot be printed by an accidental `{:?}`.
+secrecy = { version = "0.10", features = ["serde"] }
+sha2 = "0.10"
+base64 = "0.23"
+
+# ── integrations ────────────────────────────────────────────────────────────
+# The official MCP SDK. Reimplementing the protocol by hand would be a
+# liability the moment the spec revs.
+rmcp = "3"
+# The maintained fork; `serde_yaml` itself is deprecated. Most specs in the
+# wild are YAML, so this is not optional.
+serde_yaml_ng = "0.10"
+
+# ── file and text work, for the builtin tools ───────────────────────────────
+# The ripgrep crates, so search honours .gitignore the way the user expects.
+ignore = "0.4"
+grep-searcher = "0.1"
+globset = "0.4"
+regex = "1"
+similar = "3"
+notify = "8"
+portable-pty = "0.9"
+
+# ── observability ───────────────────────────────────────────────────────────
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+
+# ── testing ─────────────────────────────────────────────────────────────────
+tempfile = "3"
+insta = { version = "1", features = ["json", "redactions"] }
+wiremock = "0.6"
+rstest = "0.27"
+tokio-test = "0.4"
+
 [package]
 name = "inertia"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+edition.workspace = true
+description = "Inertia"
+authors = ["Inertia"]
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
@@ -18,10 +138,51 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `unstable` is what makes a child webview reachable at all: `Window::add_child`
+# and `WebviewBuilder` are behind it, and the browser pane is a child webview
+# layered over this window. `devtools` so the pane's own developer tools button
+# works in a release build, where the page being inspected is somebody else's.
+tauri = { version = "2", features = ["tray-icon", "image-png", "unstable", "devtools"] }
 tauri-plugin-opener = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+inertia-core = { workspace = true }
+inertia-computers = { workspace = true }
+inertia-hooks = { workspace = true }
+inertia-lsp = { workspace = true }
+inertia-memory = { workspace = true }
+inertia-agent = { workspace = true }
+inertia-composio = { workspace = true }
+inertia-mcp = { workspace = true }
+inertia-openapi = { workspace = true }
+inertia-provider = { workspace = true }
+inertia-store = { workspace = true }
+inertia-terminal = { workspace = true }
+inertia-tools = { workspace = true }
+inertia-voice = { workspace = true }
+
+async-trait = { workspace = true }
+base64 = { workspace = true }
+futures = { workspace = true }
+jiff = { workspace = true }
+reqwest = { workspace = true }
+parking_lot = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+tauri-plugin-dialog = "2.7.3"
+tauri-plugin-clipboard-manager = "2.3.3"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+# The scripted provider and permission gate. A dev-dependency rather than a
+# real one on purpose: the shipping binary must not be able to reach for a
+# mock, and the tests that drive  end to end need one.
+inertia-mock = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging"] }

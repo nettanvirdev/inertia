@@ -12,11 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "inertia",
-        "width": 1000,
-        "height": 700,
-        "minWidth": 480,
-        "minHeight": 360,
+        "title": "Inertia",
+        "width": 1320,
+        "height": 860,
+        "minWidth": 940,
+        "minHeight": 620,
+        "center": true,
         "decorations": false,
         "transparent": false
       }

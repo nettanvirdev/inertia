@@ -1,0 +1,33 @@
+[package]
+name = "inertia-mcp"
+version.workspace = true
+edition.workspace = true
+description = "MCP servers as a tool provider."
+
+[lints]
+workspace = true
+
+# No SDK dependency, deliberately. The wire format is framing plus a map of
+# pending requests, and owning it means the failure modes that actually bite -
+# a server printing a banner to stdout, a tool call that legitimately takes ten
+# minutes - are handled the way this app needs.
+[dependencies]
+inertia-core = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+inertia-mock = { workspace = true }
+tempfile = { workspace = true }
+
+# Spawned by the integration tests as a real child process, so the stdio
+# transport is exercised over real pipes rather than against a mock object.
+[[bin]]
+name = "fake-mcp-server"
+path = "src/bin/fake-mcp-server.rs"

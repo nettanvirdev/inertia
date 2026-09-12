@@ -1,0 +1,90 @@
+#!/bin/sh
+#
+# Chromium, with the flags a container needs and the state a restart leaves.
+#
+# The agent never calls the binary directly. It calls this, and so does
+# xdg-open through the .desktop file, so a page opened by the agent and a page
+# opened by a document handler land in the same window with the same profile.
+#
+# ## The flags
+#
+# `--no-sandbox` deserves its paragraph. Chromium isolates renderers with a
+# user namespace, and a container cannot always nest one: Docker Desktop's
+# kernel refuses the clone and Chromium exits pointing at a package whose
+# installation does not fix it. The choice is not "sandboxed browser or not",
+# it is "a browser or no browser", inside a disposable container that already
+# has its own filesystem and its own network - which is the boundary that was
+# protecting the user. `--test-type` then suppresses the yellow infobar that
+# --no-sandbox raises, which is not cosmetic: the bar is 40px tall, it pushes
+# the page down, and every coordinate the model reads off a screenshot is
+# wrong until something dismisses a bar that nothing can click.
+#
+# `--disable-dev-shm-usage` because /dev/shm is 64MB in a container and
+# Chromium fills it on an ordinary page, then dies in a way that reads as a
+# crash rather than as a full disk.
+#
+# ## The crash state
+#
+# A container that is stopped kills Chromium without letting it write a clean
+# exit. On the next start it shows "Chrome didn't shut down correctly" across
+# the top of whatever the agent was trying to read, and a session-restore
+# bubble on top of that. The flags suppress the bubbles; only editing the
+# profile suppresses the bar, because the bar is driven by a field in
+# Preferences that says the last exit was a crash. It was. Nobody needs to
+# know.
+set -eu
+
+AGENT_HOME="${HOME:-/home/agent}"
+
+# One profile per display, so a second screen does not fight the first over the
+# same singleton lock.
+case "${DISPLAY:-:99}" in
+  :[0-9][0-9]*) PROFILE="$AGENT_HOME/.browser-profiles/chromium-${DISPLAY#:}" ;;
+  *) PROFILE="$AGENT_HOME/.browser-profiles/chromium" ;;
+esac
+mkdir -p "$PROFILE"
+
+BIN="$(command -v chromium || command -v chromium-browser || true)"
+if [ -z "$BIN" ]; then
+  echo "chromium is not installed" >&2
+  exit 1
+fi
+
+# A caller may name its own profile; if it does, that is the one to repair.
+USER_DATA_DIR_SET=0
+ACTUAL_PROFILE="$PROFILE"
+PREV_WAS_USER_DATA_DIR=0
+for arg in "$@"; do
+  if [ "$PREV_WAS_USER_DATA_DIR" -eq 1 ]; then
+    ACTUAL_PROFILE="$arg"
+    PREV_WAS_USER_DATA_DIR=0
+  fi
+  case "$arg" in
+    --user-data-dir=*) ACTUAL_PROFILE="${arg#*=}"; USER_DATA_DIR_SET=1 ;;
+    --user-data-dir) PREV_WAS_USER_DATA_DIR=1; USER_DATA_DIR_SET=1 ;;
+  esac
+done
+
+clear_crash_state() {
+  f="$1"
+  [ -f "$f" ] || return 0
+  sed -E \
+    's/"exit_type"[[:space:]]*:[[:space:]]*"Crashed"/"exit_type":"Normal"/g; s/"exited_cleanly"[[:space:]]*:[[:space:]]*false/"exited_cleanly":true/g' \
+    "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+}
+
+# Only when no instance is running. A SingletonLock means a live browser owns
+# this profile, and rewriting its Preferences underneath it corrupts them.
+if [ -d "$ACTUAL_PROFILE" ] && [ ! -e "$ACTUAL_PROFILE/SingletonLock" ] && [ ! -L "$ACTUAL_PROFILE/SingletonLock" ]; then
+  find "$ACTUAL_PROFILE" \( -name Preferences -o -name 'Local State' \) -type f 2>/dev/null |
+    while IFS= read -r f; do
+      clear_crash_state "$f" 2>/dev/null || rm -f "${f}.tmp"
+    done || true
+fi
+
+FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=basic --disable-features=Translate,MediaRouter --start-maximized"
+
+if [ "$USER_DATA_DIR_SET" -eq 0 ]; then
+  exec "$BIN" $FLAGS --user-data-dir="$PROFILE" "$@"
+fi
+exec "$BIN" $FLAGS "$@"

@@ -1,0 +1,19 @@
+[package]
+name = "inertia-lsp"
+version.workspace = true
+edition.workspace = true
+description = "Language servers: the wire protocol, one client per server, and the diagnostics that come back on an edit."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
