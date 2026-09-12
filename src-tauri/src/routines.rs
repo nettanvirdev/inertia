@@ -632,7 +632,8 @@ pub trait Runner: Send + Sync + std::fmt::Debug {
 /// Everything a turn started by a routine is told.
 #[derive(Debug, Clone)]
 pub struct Run {
-    pub routine_id: String,
+    /// The conversation the run writes into, which is `routine-<id>`: the
+    /// routine it came from is carried by that rather than repeated here.
     pub thread_id: String,
     pub agent_id: Option<String>,
     /// The playbook, as the user's message.
@@ -677,10 +678,13 @@ pub trait Workspaces: Send + Sync + std::fmt::Debug {
     fn layout(&self) -> Option<Layout>;
 }
 
-/// One workspace, for a test or a tool that already holds the folder.
+/// One workspace, for a test that already holds the folder. The app resolves
+/// the workspace on every pass instead, so nothing outside a test builds this.
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub struct OneWorkspace(pub Layout);
 
+#[cfg(test)]
 impl Workspaces for OneWorkspace {
     fn layout(&self) -> Option<Layout> {
         Some(self.0.clone())
@@ -726,6 +730,7 @@ impl Scheduler {
 
     /// Shorter waits, for a test that must not take fifteen minutes to find out
     /// that a hung run is stopped.
+    #[cfg(test)]
     pub fn with_waits(mut self, poll: Duration, timeout: Duration) -> Self {
         self.poll = poll;
         self.timeout = timeout;
@@ -889,7 +894,6 @@ impl Scheduler {
         let thread = self.open_thread(layout, routine, &thread_id, &started_at);
 
         let request = Run {
-            routine_id: id.clone(),
             thread_id: thread_id.clone(),
             agent_id: text_of(routine, "agentId"),
             text: playbook(routine),
@@ -1955,7 +1959,7 @@ mod tests {
         async fn start(&self, run: &Run) -> std::result::Result<Started, String> {
             self.started.lock().push(run.clone());
             Ok(Started {
-                turn_id: format!("turn-{}", run.routine_id),
+                turn_id: format!("turn-{}", run.thread_id),
                 message_id: Some("msg-1".into()),
             })
         }
@@ -2092,7 +2096,7 @@ mod tests {
             .filter_map(|event| event.get("type").and_then(Value::as_str))
             .collect();
         assert_eq!(kinds, vec!["routine:started", "routine:finished"]);
-        assert_eq!(events[0]["turnId"], json!("turn-morning"));
+        assert_eq!(events[0]["turnId"], json!("turn-routine-morning"));
         assert_eq!(events[1]["run"]["status"], json!("success"));
     }
 
@@ -2204,7 +2208,7 @@ mod tests {
 
         let run = bench.scheduler.run_now("hangs").await.expect("a run");
         assert_eq!(run["status"], json!("warning"));
-        assert_eq!(bench.runner.cancelled.lock().clone(), vec!["turn-hangs"]);
+        assert_eq!(bench.runner.cancelled.lock().clone(), vec!["turn-routine-hangs"]);
         // And the routine is no longer in flight, so it can be run again.
         assert!(bench.scheduler.run_now("hangs").await.is_ok());
     }

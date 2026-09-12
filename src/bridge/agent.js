@@ -58,6 +58,7 @@ export function agentBridge() {
 
     // The other thing that suspends a tool: the model asking the person a
     // question. Same mechanism as an approval card, on the same channel.
+    questions: (sessionId) => call("agent_questions_waiting", { sessionId: sessionId ?? null }),
     answer: (id, value) => call("agent_answer", { id, value: String(value ?? "") }),
     dismiss: (id) => call("agent_dismiss", { id }),
 

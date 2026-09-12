@@ -436,6 +436,22 @@ impl Tool for QuestionTool {
 
 /* -- the commands the window answers with -------------------------------- */
 
+/// What the model has already asked, when a window opens mid-turn.
+///
+/// The twin of `permission_waiting`, and needed for the same reason: the card
+/// lives in the window and the question lives here, so a reload leaves a tool
+/// blocked on an answer nobody can give. Not covered by rejoining the turn's
+/// events - a question is emitted on its own channel and is not part of the
+/// reply being replayed - so without this the one card that cannot be
+/// recovered is the one explicitly waiting on the person.
+#[tauri::command]
+pub fn agent_questions_waiting(
+    state: State<'_, AppState>,
+    session_id: Option<String>,
+) -> Vec<Value> {
+    state.questions.pending(session_id.as_deref())
+}
+
 /// The person answered a question. `value` is the chosen label or their text.
 ///
 /// Broadcast against one process-wide table rather than addressed to a turn:

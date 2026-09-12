@@ -487,22 +487,13 @@ pub fn provider_for(
     Ok((provider, model.to_string()))
 }
 
-/// Assembles the tool registry for one turn.
+/// Assembles the tool registry for one turn, plus the tools that exist only
+/// for this turn, minus the ones this turn's mode does not hold.
 ///
 /// `project` is the folder the turn works in, which the memory tools need and
 /// no other builtin does: a memory saved with `scope: "project"` has to land in
 /// the right project's own folder, and one saved against the wrong one is
 /// filed where it will never be recalled.
-pub fn registry_for(
-    workspace: &Arc<Workspace>,
-    gate: Arc<dyn PermissionGate>,
-    project: Option<std::path::PathBuf>,
-) -> Arc<Registry> {
-    registry_with(workspace, gate, project, Vec::new(), &[])
-}
-
-/// The same, plus tools that exist only for this turn, minus the ones this
-/// turn's mode does not hold.
 ///
 /// The group tools are the first case: they hold the conversation and the seat
 /// they were built for, and a turn in a conversation that is not a room has no

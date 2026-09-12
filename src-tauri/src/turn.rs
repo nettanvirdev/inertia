@@ -1232,15 +1232,33 @@ pub fn agent_cancel_all(state: State<'_, AppState>) -> Value {
 
 /// What survived a reload.
 ///
-/// The window asks this when a turn has gone quiet, because it cannot tell a
-/// wedged turn from a slow one by watching. An empty answer is what lets it
-/// stop waiting.
+/// Two questions share this answer. A window asks it when a turn has gone
+/// quiet, because it cannot tell a wedged turn from a slow one by watching,
+/// and an empty answer is what lets it stop waiting. A window that has just
+/// opened asks it to find the turns it walked away from - and for that, an id
+/// on its own is useless: the window needs the thread and the message the turn
+/// is writing into before it can reattach to it, and the events so far before
+/// it can show what happened while nobody was watching.
+///
+/// The running set is the spine rather than the record log, because the record
+/// says "running" about turns this process is no longer running - the ones a
+/// previous process left behind. A running turn with no record still answers
+/// with its id, which is all the silence check ever wanted.
 #[tauri::command]
 pub fn agent_active(state: State<'_, AppState>) -> Vec<Value> {
+    let mut records: std::collections::HashMap<String, Value> =
+        crate::records::Recorder::global()
+            .active()
+            .into_iter()
+            .filter_map(|record| {
+                let id = record.get("id")?.as_str()?.to_string();
+                Some((id, record))
+            })
+            .collect();
     state
         .running_ids()
         .into_iter()
-        .map(|id| json!({ "id": id }))
+        .map(|id| records.remove(&id).unwrap_or_else(|| json!({ "id": id })))
         .collect()
 }
 
@@ -1814,5 +1832,9 @@ pub fn agent_forget(state: State<'_, AppState>, session_id: String) -> Result<Va
     // nobody left to collect them, and leaving them in the table means the
     // next thread to inherit the id opens with somebody else's work in it.
     state.runs.forget(&session_id);
+    // And the turn records it accumulated. The workspace copy is the durable
+    // one; these are the in-memory heads, and keeping them means the next
+    // thread to be handed this id opens holding a deleted conversation's turns.
+    crate::records::Recorder::global().forget(&session_id);
     Ok(json!({ "forgotten": true }))
 }

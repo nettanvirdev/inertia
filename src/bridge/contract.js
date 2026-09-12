@@ -104,6 +104,7 @@ export const CONTRACT = {
       "waiting",
       "grants",
       "revoke",
+      "questions",
       "answer",
       "dismiss",
       "onEvent",

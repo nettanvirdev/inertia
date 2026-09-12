@@ -427,17 +427,21 @@ pub trait Apps: Send + Sync {
     async fn remove_api(&self, id: &str) -> std::result::Result<(), String>;
 }
 
-/// The answer when this build has no integrations wired up.
+/// The answer when a build has no integrations wired up.
 ///
 /// Not a silent no-op: an agent that is told "connected apps are not available"
 /// stops trying, while one whose call succeeded and did nothing will go on
-/// telling the user their app is connected.
+/// telling the user their app is connected. The app itself always has
+/// [`LiveApps`], so this is the refusing stand-in the tests below run against.
+#[cfg(test)]
 #[derive(Debug, Default)]
 pub struct NoApps;
 
+#[cfg(test)]
 const NO_LIVE: &str = "This build cannot start servers or connect apps. Ask the user to do it on \
                        the Integrations screen.";
 
+#[cfg(test)]
 #[async_trait]
 impl Apps for NoApps {
     async fn catalogue(&self, _search: Option<&str>) -> std::result::Result<Vec<Value>, String> {

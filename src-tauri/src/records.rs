@@ -492,7 +492,12 @@ impl Recorder {
             .collect()
     }
 
-    /// The memory-only answer, for anything asking about a turn it just started.
+    /// The memory-only answer.
+    ///
+    /// `find` below is what the app asks, because it also reads the folder for
+    /// a turn whose events have been shed. This is the half that answers
+    /// without touching disk, which is what the tests here check against.
+    #[cfg(test)]
     pub fn get(&self, turn_id: &str) -> Option<Value> {
         self.inner
             .records
@@ -659,6 +664,45 @@ mod tests {
     fn stored(layout: &Layout, id: &str) -> Option<Value> {
         inertia_store::collections::get(layout, Collection::Turns, id)
             .expect("readable")
+    }
+
+    /// The shape a reopened window rejoins on.
+    ///
+    /// It matches a running turn to the message it is writing into and replays
+    /// the events it missed, so an answer of bare ids is the same as no answer:
+    /// the window skips every row and the reply spins forever over work that is
+    /// still happening. That was the bug - `agent_active` answered with ids
+    /// while this, written for the window, went uncalled.
+    #[test]
+    fn a_running_turn_is_reported_with_enough_to_rejoin_it() {
+        let recorder = Recorder::new();
+        recorder.start("turn-a", meta(None));
+        recorder.event("turn-a", &json!({ "type": "delta", "text": "half a" }));
+        recorder.start("turn-b", meta(None));
+        recorder.finish("turn-b", "done");
+
+        let live = recorder.active();
+        assert_eq!(live.len(), 1, "a finished turn is not still running");
+        let turn = &live[0];
+        assert_eq!(turn["id"], json!("turn-a"));
+        assert_eq!(turn["threadId"], json!("thr-1"));
+        assert_eq!(turn["messageId"], json!("msg-1"));
+        assert_eq!(turn["events"][0]["type"], json!("delta"));
+    }
+
+    /// A deleted conversation takes its turns with it, but never a live one:
+    /// dropping the record of something still running strands it.
+    #[test]
+    fn forgetting_a_conversation_keeps_whatever_is_still_running() {
+        let recorder = Recorder::new();
+        recorder.start("turn-done", meta(None));
+        recorder.finish("turn-done", "done");
+        recorder.start("turn-live", meta(None));
+
+        recorder.forget("thr-1");
+
+        assert!(recorder.get("turn-done").is_none(), "a finished turn is dropped");
+        assert!(recorder.get("turn-live").is_some(), "a running turn is kept");
     }
 
     #[test]

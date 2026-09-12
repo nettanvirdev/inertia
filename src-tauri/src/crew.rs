@@ -465,8 +465,9 @@ impl Runs {
     ///
     /// Spawned sessions are addressed as `thread-7/run-3a9f`, so the
     /// conversation is whatever comes before the first slash however deep the
-    /// nesting goes. That is what lets the panel in one chat show the whole
-    /// tree underneath it.
+    /// nesting goes. The routing below splits inline; this is where the rule is
+    /// written down and checked, so it is built only for the tests that do so.
+    #[cfg(test)]
     pub fn conversation_of(session: &str) -> String {
         let head = session.split('/').next().unwrap_or_default();
         if head.is_empty() {

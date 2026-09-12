@@ -26,13 +26,22 @@ export function usePrompts(threadId) {
   React.useEffect(() => {
     // Anything already waiting when this mounts - the user switched threads
     // mid-turn, or reopened a window - has to be recovered, or the tool that is
-    // blocked on it never gets an answer.
+    // blocked on it never gets an answer. Both kinds, because both suspend a
+    // call: recovering only permissions leaves a model's own question waiting
+    // on a card that no longer exists, which is the one prompt the person
+    // definitely meant to answer.
+    //
+    // Permissions first, then questions, rather than interleaved by time: a
+    // permission ask carries no timestamp, so the order they originally
+    // arrived in is not recoverable and inventing one would be a guess.
     let alive = true;
-    permission
-      .waiting(threadId)
-      .then((waiting) => {
+    Promise.all([permission.waiting(threadId), question.waiting(threadId)])
+      .then(([asks, questions]) => {
         if (!alive) return;
-        setPrompts(waiting.map((q) => ({ channel: "permission", question: q })));
+        setPrompts([
+          ...asks.map((q) => ({ channel: "permission", question: q })),
+          ...questions.map((q) => ({ channel: "question", question: q })),
+        ]);
       })
       .catch(() => {});
 

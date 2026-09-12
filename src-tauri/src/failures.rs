@@ -707,7 +707,6 @@ pub struct Query {
 pub struct Matches {
     pub total: usize,
     pub rows: Vec<Value>,
-    pub signatures: HashMap<String, usize>,
 }
 
 pub fn query(layout: &Layout, request: &Query) -> Matches {
@@ -784,7 +783,6 @@ pub fn query(layout: &Layout, request: &Query) -> Matches {
     Matches {
         total: matched.len(),
         rows,
-        signatures,
     }
 }
 
@@ -1111,6 +1109,18 @@ impl Tool for FailuresTool {
                 digest.total,
                 if digest.total == 1 { "" } else { "s" }
             ));
+            // Which tools, when any of them were tools. "shell 12, edit 1" is
+            // the line that turns "things have been failing" into somewhere to
+            // look, and it costs nothing - the count is already computed.
+            if !digest.by_tool.is_empty() {
+                let tools = digest
+                    .by_tool
+                    .iter()
+                    .map(|(tool, count)| format!("{tool} {count}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                lines.push(format!("By tool: {tools}."));
+            }
             if !digest.repeated.is_empty() {
                 lines.push(String::new());
                 lines.push("Repeats, most frequent first:".to_string());

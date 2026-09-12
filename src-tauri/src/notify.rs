@@ -333,11 +333,6 @@ impl Desktop for AppDesktop {
     }
 }
 
-/// The one line the rest of the app calls: decide, then deliver.
-pub fn tell(app: &AppHandle, notice: &Notice) -> Shown {
-    announce(&AppDesktop::new(app), notice)
-}
-
 /// A turn stopped. Say so if it is worth saying.
 ///
 /// Takes the app handle rather than a `Desktop` so the call site in `turn.rs`

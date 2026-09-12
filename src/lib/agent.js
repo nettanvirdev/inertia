@@ -397,6 +397,7 @@ export const permission = {
 };
 
 export const question = {
+  waiting: (sessionId) => api()?.questions(sessionId).then(unwrap) ?? Promise.resolve([]),
   answer: (id, value) => api()?.answer(id, value).then(unwrap),
   dismiss: (id) => api()?.dismiss(id).then(unwrap),
 };

@@ -283,6 +283,7 @@ pub fn run() {
             turn::permission_reply,
             // The other thing that suspends a tool: the model asking the
             // person something and waiting for the answer.
+            question::agent_questions_waiting,
             question::agent_answer,
             question::agent_dismiss,
             turn::permission_waiting,
