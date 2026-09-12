@@ -18,6 +18,27 @@
  *     SlidersHorizontal (two tracks) stay deliberately far apart in density.
  */
 export const GLYPHS_STATUS = {
+  // ── being told something ────────────────────────────────────────────────
+  // The bell is one continuous shoulder rather than a dome on a skirt: the
+  // body rises from the rim at 4.4,16.2 on a single arc to the crown at 12,3.6
+  // and back down, so there is no corner anywhere on it. The rim is a straight
+  // run because a bell that curved at the mouth would read as a balloon, and
+  // the clapper is a 2.2-wide cradle hung below it on the same radius the
+  // shoulder ends at.
+  Bell: [
+    "M5.4 16.4a1 1 0 0 1-0.8-1.6c0.8-1.1 1.4-2 1.4-4.4a6 6 0 1 1 12 0c0 2.4 0.6 3.3 1.4 4.4a1 1 0 0 1-0.8 1.6Z",
+    "M10.1 19.4a2.2 2.2 0 0 0 3.8 0",
+  ],
+  // The same bell with the shoulder cut where the slash crosses it, so the two
+  // read as one glyph switched off rather than as a bell with a line on top.
+  BellOff: [
+    "M17.6 14.2c0.3 0.9 0.7 1.5 1 2a1 1 0 0 1-0.8 1.6H7.2",
+    "M7.2 7.4A6 6 0 0 1 18 10.4c0 0.7 0 1.3 0.1 1.8",
+    "M6 10.4c0 2.4-0.6 3.3-1.4 4.4a1 1 0 0 0 0.8 1.6",
+    "M10.1 19.4a2.2 2.2 0 0 0 3.8 0",
+    "M3.4 3.4 20.6 20.6",
+  ],
+
   // ── time ────────────────────────────────────────────────────────────────
   // Calendar body is left open at the bottom-right so the clock ring sits in
   // the gap rather than crossing the frame.

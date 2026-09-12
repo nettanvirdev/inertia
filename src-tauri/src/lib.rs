@@ -150,6 +150,8 @@ pub fn run() {
             // What Inertia does when its window is gone.
             notify::background_settings,
             notify::background_set_minimise_to_tray,
+            notify::notifications_settings,
+            notify::notifications_set,
             notify::background_set_launch_at_login,
             // setting a project up
             project::project_status,

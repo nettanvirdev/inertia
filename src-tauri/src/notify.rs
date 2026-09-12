@@ -80,6 +80,119 @@ impl Tone {
     }
 }
 
+/// What the person agreed to be told about.
+///
+/// Every notice this module can produce is behind one of these. The module
+/// header says the bar is "would this change what you do next", and that bar
+/// was set once, by us, for everybody. It is the wrong shape for a person
+/// running a room of six agents: a round of a group conversation is five turns
+/// ending, five banners and five toasts, none of which is the end of the work
+/// they asked for.
+///
+/// So the bar stays where it is - nothing here announces a turn starting, and
+/// nothing announces a cancellation whatever these say - and this is the dial
+/// on top of it. `chained` is the one that matters most in practice: a turn
+/// that ends by handing the floor to the next agent has not finished anything,
+/// it has finished a sentence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Choices {
+    /// A turn that ended normally.
+    pub finished: bool,
+    /// A turn that failed. Separate, because a failure is the one people who
+    /// switch everything else off still want.
+    pub failed: bool,
+    /// A permission card or a question nobody can see.
+    pub waiting: bool,
+    /// Announce a turn that ended by passing the floor to another agent.
+    /// Off: the interesting moment is the one where the room goes quiet.
+    pub chained: bool,
+    /// Raise an operating-system banner when nobody is looking at the window.
+    pub banners: bool,
+    /// Draw a toast in the window.
+    pub toasts: bool,
+}
+
+/// Everything on except the one that is noise by construction.
+impl Default for Choices {
+    fn default() -> Self {
+        Self {
+            finished: true,
+            failed: true,
+            waiting: true,
+            chained: false,
+            banners: true,
+            toasts: true,
+        }
+    }
+}
+
+impl Choices {
+    /// Read from `settings.app.notifications`.
+    ///
+    /// Every field falls back to the default on its own, so a document written
+    /// by an older build - or half-written, or hand-edited into nonsense -
+    /// leaves the rest of the switches alone. A settings file must never be
+    /// able to turn off the notice that says the app is broken.
+    pub fn from_settings(stored: &Value) -> Self {
+        let base = Self::default();
+        let Some(map) = stored.get("notifications") else {
+            return base;
+        };
+        let flag = |key: &str, fallback: bool| map.get(key).and_then(Value::as_bool).unwrap_or(fallback);
+        Self {
+            finished: flag("finished", base.finished),
+            failed: flag("failed", base.failed),
+            waiting: flag("waiting", base.waiting),
+            chained: flag("chained", base.chained),
+            banners: flag("banners", base.banners),
+            toasts: flag("toasts", base.toasts),
+        }
+    }
+
+    /// The shape the window reads and writes.
+    pub fn to_json(self) -> Value {
+        json!({
+            "finished": self.finished,
+            "failed": self.failed,
+            "waiting": self.waiting,
+            "chained": self.chained,
+            "banners": self.banners,
+            "toasts": self.toasts,
+        })
+    }
+}
+
+/// Read the stored choices for a workspace.
+pub fn choices(layout: &Layout) -> Choices {
+    let stored = inertia_store::collections::read_document(layout, Document::App, json!({}));
+    Choices::from_settings(&stored)
+}
+
+/// Merge the choices into `settings.app`, leaving every other writer's alone.
+pub fn save_choices(layout: &Layout, value: Choices) -> Result<(), String> {
+    let stored = inertia_store::collections::read_document(layout, Document::App, json!({}));
+    let mut doc = match stored {
+        Value::Object(map) => map,
+        _ => serde_json::Map::new(),
+    };
+    doc.insert("notifications".into(), value.to_json());
+    inertia_store::collections::write_document(layout, Document::App, &Value::Object(doc))
+        .map_err(|e| format!("Could not save the notification settings: {e}"))
+}
+
+/// The choices in force, for a call site that holds an app handle and nothing
+/// else.
+///
+/// Falls back to the defaults when there is no workspace yet, which is a real
+/// moment on first run. Being told too much beats being told nothing at all
+/// while somebody is still setting the app up.
+pub fn choices_for(app: &AppHandle) -> Choices {
+    app.try_state::<AppState>()
+        .and_then(|state| state.workspace().ok())
+        .map(|workspace| choices(&workspace.layout))
+        .unwrap_or_default()
+}
+
 /// One thing worth telling somebody.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Notice {
@@ -136,6 +249,13 @@ pub struct Finished<'a> {
     pub said: &'a str,
     pub thread_id: &'a str,
     pub turn_id: &'a str,
+    /// Whether this turn ended by passing the floor to another agent.
+    ///
+    /// A room answering a question is five turns, and four of them end like
+    /// this. Announcing them is announcing a sentence, not an answer - so by
+    /// default they are silent and the fifth one, the turn that gives the floor
+    /// back to the person, is the notice.
+    pub chained: bool,
 }
 
 /// The longest a body may be before it is cut.
@@ -163,7 +283,7 @@ fn first_line(text: &str, limit: usize) -> String {
 /// The whole point of this function is that it is the part with the bugs in it,
 /// and it takes no window, no app handle and no clock - so it can be tested
 /// against every ending in a millisecond.
-pub fn for_finished_turn(finish: &Finished<'_>) -> Option<Notice> {
+pub fn for_finished_turn(finish: &Finished<'_>, choices: Choices) -> Option<Notice> {
     // Nothing is announced about a turn the person is watching. The reply is on
     // screen, streaming, in front of them.
     if finish.watching {
@@ -171,6 +291,18 @@ pub fn for_finished_turn(finish: &Finished<'_>) -> Option<Notice> {
     }
     // Cancelling is something they just did.
     if matches!(finish.ending, Ending::Interrupted) {
+        return None;
+    }
+    // A turn that handed the floor on has not finished the work, only its own
+    // sentence. The next agent is already answering.
+    if finish.chained && !choices.chained {
+        return None;
+    }
+    let wanted = match finish.ending {
+        Ending::Failed { .. } => choices.failed,
+        _ => choices.finished,
+    };
+    if !wanted {
         return None;
     }
 
@@ -227,8 +359,9 @@ pub fn for_waiting_permission(
     key: &str,
     target: &str,
     watching: bool,
+    choices: Choices,
 ) -> Option<Notice> {
-    if watching {
+    if watching || !choices.waiting {
         return None;
     }
     let who = agent
@@ -274,10 +407,12 @@ pub enum Shown {
 ///
 /// The window is told either way - that is what makes the toast the record -
 /// and the banner is added only when nobody is looking.
-pub fn announce(desktop: &dyn Desktop, notice: &Notice) -> Shown {
+pub fn announce(desktop: &dyn Desktop, notice: &Notice, choices: Choices) -> Shown {
     let focused = desktop.watching();
-    desktop.toast(&notice.payload(focused));
-    if focused {
+    if choices.toasts {
+        desktop.toast(&notice.payload(focused));
+    }
+    if focused || !choices.banners {
         return Shown::Toast;
     }
     desktop.banner(notice);
@@ -344,26 +479,33 @@ pub fn turn_finished(
     said: &str,
     thread_id: &str,
     turn_id: &str,
+    chained: bool,
 ) {
     let desktop = AppDesktop::new(app);
-    let notice = for_finished_turn(&Finished {
-        agent,
-        ending,
-        watching: desktop.watching(),
-        said,
-        thread_id,
-        turn_id,
-    });
+    let choices = choices_for(app);
+    let notice = for_finished_turn(
+        &Finished {
+            agent,
+            ending,
+            watching: desktop.watching(),
+            said,
+            thread_id,
+            turn_id,
+            chained,
+        },
+        choices,
+    );
     if let Some(notice) = notice {
-        announce(&desktop, &notice);
+        announce(&desktop, &notice, choices);
     }
 }
 
 /// A permission card is up and nobody is looking at it.
 pub fn permission_waiting(app: &AppHandle, agent: Option<&str>, key: &str, target: &str) {
     let desktop = AppDesktop::new(app);
-    if let Some(notice) = for_waiting_permission(agent, key, target, desktop.watching()) {
-        announce(&desktop, &notice);
+    let choices = choices_for(app);
+    if let Some(notice) = for_waiting_permission(agent, key, target, desktop.watching(), choices) {
+        announce(&desktop, &notice, choices);
     }
 }
 
@@ -571,6 +713,45 @@ pub fn background_set_launch_at_login(state: State<'_, AppState>, value: bool) -
     settings(layout_of(&state).as_ref(), login.as_ref())
 }
 
+/// What the person wants to be told about.
+///
+/// Answers the whole object rather than an acknowledgement, the way the
+/// background switches do, so the pane renders what was actually stored rather
+/// than what it optimistically hoped.
+#[tauri::command]
+pub fn notifications_settings(state: State<'_, AppState>) -> Value {
+    match layout_of(&state) {
+        Some(layout) => choices(&layout).to_json(),
+        None => Choices::default().to_json(),
+    }
+}
+
+/// Change one or more of them.
+#[tauri::command]
+pub fn notifications_set(state: State<'_, AppState>, value: Value) -> Value {
+    // Merged onto what is stored rather than replacing it, so the window may
+    // send one field. A pane that had to send all six would silently reset the
+    // ones an older build did not know about.
+    let Some(layout) = layout_of(&state) else {
+        return Choices::default().to_json();
+    };
+    let current = choices(&layout);
+    let merged = Choices::from_settings(&json!({
+        "notifications": {
+            "finished": value.get("finished").and_then(Value::as_bool).unwrap_or(current.finished),
+            "failed": value.get("failed").and_then(Value::as_bool).unwrap_or(current.failed),
+            "waiting": value.get("waiting").and_then(Value::as_bool).unwrap_or(current.waiting),
+            "chained": value.get("chained").and_then(Value::as_bool).unwrap_or(current.chained),
+            "banners": value.get("banners").and_then(Value::as_bool).unwrap_or(current.banners),
+            "toasts": value.get("toasts").and_then(Value::as_bool).unwrap_or(current.toasts),
+        }
+    }));
+    if let Err(e) = save_choices(&layout, merged) {
+        tracing::warn!(error = %e, "could not save the notification settings");
+    }
+    choices(&layout).to_json()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -613,6 +794,7 @@ mod tests {
             said,
             thread_id: "t1",
             turn_id: "r1",
+            chained: false,
         }
     }
 
@@ -621,7 +803,7 @@ mod tests {
         // The reply is on screen, streaming, in front of them. A banner about
         // it is the noise that gets notifications switched off for good.
         assert_eq!(
-            for_finished_turn(&finished(&Ending::Finished, true, "done")),
+            for_finished_turn(&finished(&Ending::Finished, true, "done"), Choices::default()),
             None
         );
         assert_eq!(
@@ -631,7 +813,7 @@ mod tests {
                 },
                 true,
                 ""
-            )),
+            ), Choices::default()),
             None
         );
     }
@@ -640,7 +822,7 @@ mod tests {
     fn cancelling_is_never_announced() {
         // Telling somebody they did the thing they just did.
         assert_eq!(
-            for_finished_turn(&finished(&Ending::Interrupted, false, "half a sentence")),
+            for_finished_turn(&finished(&Ending::Interrupted, false, "half a sentence"), Choices::default()),
             None
         );
     }
@@ -650,7 +832,7 @@ mod tests {
         let ending = Ending::Failed {
             error: "The provider refused the key.".into(),
         };
-        let notice = for_finished_turn(&finished(&ending, false, "")).expect("a notice");
+        let notice = for_finished_turn(&finished(&ending, false, ""), Choices::default()).expect("a notice");
         assert_eq!(notice.title, "Doc writer failed");
         assert_eq!(notice.body, "The provider refused the key.");
         assert_eq!(notice.tone, Tone::Problem);
@@ -667,7 +849,8 @@ mod tests {
             said: "",
             thread_id: "t1",
             turn_id: "r1",
-        })
+            chained: false,
+        }, Choices::default())
         .expect("a notice");
         assert_eq!(notice.title, "Your turn finished");
         // Never an empty banner: an OS banner with a blank body reads as a bug.
@@ -678,7 +861,7 @@ mod tests {
     fn the_body_is_one_line_and_fits_on_a_banner() {
         let ending = Ending::Finished;
         let said = format!("  \n{}\nand a second paragraph\n", "x".repeat(400));
-        let notice = for_finished_turn(&finished(&ending, false, &said)).expect("a notice");
+        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default()).expect("a notice");
         assert_eq!(notice.body.chars().count(), MAX_BODY + 1); // the ellipsis
         assert!(!notice.body.contains('\n'));
     }
@@ -689,22 +872,22 @@ mod tests {
         // three bytes. Slicing by byte would panic here.
         let ending = Ending::Finished;
         let said = "\u{09AC}".repeat(400);
-        let notice = for_finished_turn(&finished(&ending, false, &said)).expect("a notice");
+        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default()).expect("a notice");
         assert_eq!(notice.body.chars().count(), MAX_BODY + 1);
     }
 
     #[test]
     fn a_waiting_permission_is_only_announced_to_somebody_who_cannot_see_it() {
-        assert_eq!(for_waiting_permission(Some("Dev"), "shell", "rm -rf", true), None);
+        assert_eq!(for_waiting_permission(Some("Dev"), "shell", "rm -rf", true, Choices::default()), None);
         let notice =
-            for_waiting_permission(Some("Dev"), "shell", "rm -rf /tmp/x", false).expect("a notice");
+            for_waiting_permission(Some("Dev"), "shell", "rm -rf /tmp/x", false, Choices::default()).expect("a notice");
         assert_eq!(notice.title, "Dev is waiting for you");
         assert_eq!(notice.body, "shell: rm -rf /tmp/x");
     }
 
     #[test]
     fn a_waiting_permission_with_no_target_still_reads_as_a_sentence() {
-        let notice = for_waiting_permission(None, "network", "  ", false).expect("a notice");
+        let notice = for_waiting_permission(None, "network", "  ", false, Choices::default()).expect("a notice");
         assert_eq!(notice.title, "Inertia is waiting for you");
         assert_eq!(notice.body, "It needs permission for network.");
     }
@@ -721,7 +904,7 @@ mod tests {
                 tone: Tone::Info,
                 meta: Value::Null,
             };
-            let shown = announce(&desktop, &notice);
+            let shown = announce(&desktop, &notice, Choices::default());
 
             let toasts = desktop.toasts.lock();
             assert_eq!(toasts.len(), 1);
@@ -744,8 +927,102 @@ mod tests {
                 tone: Tone::Problem,
                 meta: Value::Null,
             },
+            Choices::default(),
         );
         assert_eq!(desktop.toasts.lock()[0]["tone"], "problem");
+    }
+
+    /* -- what the person agreed to be told about -------------------------- */
+
+    #[test]
+    fn a_turn_that_handed_the_floor_on_is_silent_by_default() {
+        // A room answering one question is several turns, and all but the last
+        // end like this. Announcing each is a banner per sentence.
+        let ending = Ending::Finished;
+        let mut finish = finished(&ending, false, "Iris, over to you.");
+        finish.chained = true;
+        assert_eq!(for_finished_turn(&finish, Choices::default()), None);
+
+        let loud = Choices {
+            chained: true,
+            ..Choices::default()
+        };
+        assert!(for_finished_turn(&finish, loud).is_some());
+    }
+
+    #[test]
+    fn each_kind_can_be_turned_off_on_its_own() {
+        let done = Ending::Finished;
+        let broke = Ending::Failed {
+            error: "no key".into(),
+        };
+        let quiet_finishes = Choices {
+            finished: false,
+            ..Choices::default()
+        };
+        // The one people keep after turning the rest off still gets through.
+        assert_eq!(for_finished_turn(&finished(&done, false, "done"), quiet_finishes), None);
+        assert!(for_finished_turn(&finished(&broke, false, ""), quiet_finishes).is_some());
+
+        let quiet_failures = Choices {
+            failed: false,
+            ..Choices::default()
+        };
+        assert_eq!(for_finished_turn(&finished(&broke, false, ""), quiet_failures), None);
+
+        let quiet_waiting = Choices {
+            waiting: false,
+            ..Choices::default()
+        };
+        assert_eq!(
+            for_waiting_permission(Some("Dev"), "shell", "rm -rf /tmp/x", false, quiet_waiting),
+            None
+        );
+    }
+
+    #[test]
+    fn turning_off_a_channel_stops_that_channel_and_not_the_other() {
+        let notice = Notice {
+            title: "Doc writer finished".into(),
+            body: "done".into(),
+            tone: Tone::Info,
+            meta: Value::Null,
+        };
+
+        let desktop = FakeDesktop::new(false);
+        announce(
+            &desktop,
+            &notice,
+            Choices {
+                banners: false,
+                ..Choices::default()
+            },
+        );
+        assert_eq!(desktop.toasts.lock().len(), 1);
+        assert!(desktop.banners.lock().is_empty(), "banners were turned off");
+
+        let desktop = FakeDesktop::new(false);
+        announce(
+            &desktop,
+            &notice,
+            Choices {
+                toasts: false,
+                ..Choices::default()
+            },
+        );
+        assert!(desktop.toasts.lock().is_empty(), "toasts were turned off");
+        assert_eq!(desktop.banners.lock().len(), 1);
+    }
+
+    #[test]
+    fn a_settings_file_missing_the_section_keeps_every_default() {
+        assert_eq!(Choices::from_settings(&json!({})), Choices::default());
+        assert_eq!(Choices::from_settings(&Value::Null), Choices::default());
+        // And a half-written one keeps the fields it did not mention.
+        let partial = Choices::from_settings(&json!({ "notifications": { "finished": false } }));
+        assert!(!partial.finished);
+        assert!(partial.failed, "a settings file must not silence a failure by omission");
+        assert!(partial.waiting);
     }
 
     /* -- the settings ---------------------------------------------------- */

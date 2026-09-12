@@ -55,7 +55,9 @@ export function QuestionPrompt({ question, onAnswer, onDismiss, className }) {
       role="group"
       aria-label="Question from the agent"
       onKeyDown={handleKeyDown}
-      style={{ boxShadow: "inset 0 0 0 1px var(--overlay-edge)" }}
+      /* No outline, for the reason `PermissionPrompt` gives: the transcript
+         separates everything in it by a step of colour, and the one card with
+         a box around it reads as a dialog that failed to open. */
       className={cn("my-3 flex flex-col gap-3 rounded-2xl card-surface-subtle p-4", className)}
     >
       <div className="flex items-start gap-2.5">

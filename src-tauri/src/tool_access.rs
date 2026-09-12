@@ -69,11 +69,36 @@ const ALWAYS_LOADED: &[&str] = &[
     "skill",
     "failures",
     "later",
-    // Reading what it already knows, and writing something down. A turn that
-    // has to load a tool before it can save a preference the user just stated
-    // will not bother, and the store stays empty. Forgetting stays behind.
+    // Everything the store does. Reading and writing are constant, and
+    // forgetting is not: it is here anyway, because a memory that turned out
+    // to be wrong is worth deleting the moment it is noticed, and a turn that
+    // must load a tool first will leave it standing.
     "memory_recall",
     "memory_save",
+    "memory_forget",
+    // Moving files around. The same work as `write` and `edit`, done to whole
+    // files instead of their contents, and reached for on the same turns.
+    "file_copy",
+    "file_move",
+    "file_folder",
+    "file_delete",
+    // The other half of `shell`. A command left running in the background is
+    // unreadable without these, and the turn that started it is the turn that
+    // needs them.
+    "shell_list",
+    "shell_logs",
+    "shell_write",
+    "shell_kill",
+    // This workspace's own setup: agents, routines, skills, servers, rules.
+    // Inertia configuring itself is close to the core of what it is for, and
+    // the model has to be able to see that it can.
+    "inertia_list",
+    "inertia_get",
+    "inertia_save",
+    "inertia_set_picture",
+    "inertia_connect_app",
+    "inertia_remove",
+    "inertia_set_rules",
     // Handing over the result. A turn that would have to fetch this tool
     // before it could show you what it built will simply not show you.
     "present",
@@ -90,8 +115,13 @@ const ALWAYS_LOADED: &[&str] = &[
 ///
 /// Written out rather than derived from the permission keys, because the keys
 /// answer "what would a person write a rule about" and this answers "what does
-/// a turn reach for together", and those are not the same cut. `file_*` share
-/// a key with `write`, which must never leave.
+/// a turn reach for together", and those are not the same cut: `file_*` share
+/// a key with `write` and are always loaded, while the browser tools are one
+/// key and one family at once.
+///
+/// Short list on purpose. A family here is one a turn either lives in or never
+/// opens at all - a browser session, a crew of agents - and everything that
+/// merely *might* come up is cheaper in front of the gate than behind it.
 struct Family {
     id: &'static str,
     label: &'static str,
@@ -101,42 +131,26 @@ struct Family {
 
 const FAMILIES: &[Family] = &[
     Family {
-        id: "files",
-        label: "Moving and organising files",
-        summary: "Copy, move, rename and delete files and folders, and make new folders.",
-        tools: &["file_copy", "file_move", "file_folder", "file_delete"],
-    },
-    Family {
-        id: "background",
-        label: "Background commands",
-        summary: "List what shell left running in the background, read its output, type into it and stop it.",
-        tools: &["shell_list", "shell_logs", "shell_write", "shell_kill"],
+        id: "browser",
+        label: "Driving the browser pane",
+        summary: "Open a page in the pane beside the conversation and work it: browser_navigate opens a URL and returns the page's outline, browser_read_page and browser_read_text re-read it, browser_click, browser_type and browser_press act on it, browser_evaluate runs script in it, and browser_console and browser_network read what it logged and fetched.",
+        tools: &[
+            "browser_navigate",
+            "browser_read_page",
+            "browser_read_text",
+            "browser_click",
+            "browser_type",
+            "browser_press",
+            "browser_evaluate",
+            "browser_console",
+            "browser_network",
+        ],
     },
     Family {
         id: "crew",
         label: "Working alongside other agents",
         summary: "Start helpers without waiting for them, see what they have finished, send them a note, and stop one. This is the difference between delegating and blocking.",
         tools: &["spawn", "team", "collect", "agent_send", "wait", "followup", "interrupt"],
-    },
-    Family {
-        id: "memory",
-        label: "Forgetting a memory",
-        summary: "Delete a memory that turned out to be wrong. Reading and writing memories need no loading; only deleting waits here.",
-        tools: &["memory_forget"],
-    },
-    Family {
-        id: "inertia",
-        label: "Changing Inertia's own setup",
-        summary: "Read and write the agents, routines, skills, MCP servers, API imports and connected apps of this workspace, and the permission rules.",
-        tools: &[
-            "inertia_list",
-            "inertia_get",
-            "inertia_save",
-            "inertia_set_picture",
-            "inertia_connect_app",
-            "inertia_remove",
-            "inertia_set_rules",
-        ],
     },
 ];
 
@@ -686,7 +700,7 @@ impl ToolRegistry for Deferred {
         // A deferred tool called by name loads its group and runs, in one
         // step. This is what stops loading on demand from costing capability:
         // the gate names the tools in the small groups, so a model that reads
-        // it can write `file_move` directly, and that has to just work.
+        // it can write `browser_type` directly, and that has to just work.
         if let Some(group) = cut.deferred_group_of(&call.name) {
             self.loaded.lock().insert(group.id.clone());
         }
@@ -791,19 +805,19 @@ mod tests {
 
     struct Rig {
         deferred: Deferred,
-        file_copy: Arc<MockTool>,
+        browser_click: Arc<MockTool>,
         read: Arc<MockTool>,
     }
 
     fn rig() -> Rig {
-        let file_copy = Arc::new(MockTool::new("file_copy"));
+        let browser_click = Arc::new(MockTool::new("browser_click"));
         let read = Arc::new(MockTool::new("read"));
         let tools: Vec<Arc<dyn Tool>> = vec![
             read.clone(),
-            file_copy.clone(),
-            Arc::new(MockTool::new("file_move")),
+            browser_click.clone(),
+            Arc::new(MockTool::new("browser_type")),
             Arc::new(MockTool::new("write")),
-            Arc::new(MockTool::new("inertia_save")),
+            Arc::new(MockTool::new("spawn")),
             Arc::new(FakeMcp {
                 id: "my_server_search".into(),
                 server: "My Server".into(),
@@ -816,7 +830,7 @@ mod tests {
         });
         Rig {
             deferred: Deferred::new(fake.clone(), fake),
-            file_copy,
+            browser_click,
             read,
         }
     }
@@ -849,8 +863,8 @@ mod tests {
         assert!(have.contains(&"read".to_string()), "{have:?}");
         assert!(have.contains(&"write".to_string()), "{have:?}");
         assert!(have.contains(&GATE.to_string()), "{have:?}");
-        assert!(!have.contains(&"file_copy".to_string()), "{have:?}");
-        assert!(!have.contains(&"inertia_save".to_string()), "{have:?}");
+        assert!(!have.contains(&"browser_click".to_string()), "{have:?}");
+        assert!(!have.contains(&"spawn".to_string()), "{have:?}");
         assert!(!have.contains(&"my_server_search".to_string()), "{have:?}");
 
         let mut sorted = have.clone();
@@ -859,13 +873,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn the_gate_names_the_files_group_and_its_tools() {
+    async fn the_gate_names_each_family_and_its_tools() {
         let rig = rig();
         let specs = rig.deferred.specs().await;
         let gate = specs.iter().find(|spec| spec.name == GATE).expect("a gate");
-        assert!(gate.description.contains("- files (Moving and organising files)"), "{}", gate.description);
-        assert!(gate.description.contains("Tools: file_copy, file_move."), "{}", gate.description);
-        assert!(gate.description.contains("- inertia ("), "{}", gate.description);
+        assert!(gate.description.contains("- crew (Working alongside other agents)"), "{}", gate.description);
+        assert!(gate.description.contains("Tools: spawn."), "{}", gate.description);
+        // The browser family's own summary names its tools, so they are not
+        // printed a second time.
+        assert!(gate.description.contains("- browser (Driving the browser pane)"), "{}", gate.description);
+        assert!(gate.description.contains("browser_click"), "{}", gate.description);
         assert_eq!(gate.parameters["required"], json!(["groups"]));
     }
 
@@ -885,23 +902,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn loading_files_makes_file_copy_appear() {
+    async fn loading_the_browser_makes_its_tools_appear() {
         let rig = rig();
         let result = rig
             .deferred
-            .run(&call(GATE, json!({ "groups": ["files"] })), &ctx())
+            .run(&call(GATE, json!({ "groups": ["browser"] })), &ctx())
             .await
             .expect("not cancelled");
         assert!(result.ok, "{}", result.output);
         assert_eq!(result.title.as_deref(), Some("Loaded 2 tools"));
-        assert!(result.output.contains("files (Moving and organising files): file_copy, file_move"), "{}", result.output);
-        assert_eq!(result.metadata.as_ref().and_then(|m| m.get("groups")), Some(&json!(["files"])));
+        assert!(result.output.contains("browser (Driving the browser pane): browser_click, browser_type"), "{}", result.output);
+        assert_eq!(result.metadata.as_ref().and_then(|m| m.get("groups")), Some(&json!(["browser"])));
 
         let have = names(&rig.deferred).await;
-        assert!(have.contains(&"file_copy".to_string()), "{have:?}");
-        assert!(have.contains(&"file_move".to_string()), "{have:?}");
+        assert!(have.contains(&"browser_click".to_string()), "{have:?}");
+        assert!(have.contains(&"browser_type".to_string()), "{have:?}");
         // The others stay behind, and the gate stays offered for them.
-        assert!(!have.contains(&"inertia_save".to_string()), "{have:?}");
+        assert!(!have.contains(&"spawn".to_string()), "{have:?}");
         assert!(have.contains(&GATE.to_string()), "{have:?}");
         let mut sorted = have.clone();
         sorted.sort();
@@ -913,12 +930,12 @@ mod tests {
         let rig = rig();
         let result = rig
             .deferred
-            .run(&call(GATE, json!({ "groups": ["Files", "mcp/my-server"] })), &ctx())
+            .run(&call(GATE, json!({ "groups": ["Browser", "mcp/my-server"] })), &ctx())
             .await
             .expect("not cancelled");
         assert!(result.ok);
         let have = names(&rig.deferred).await;
-        assert!(have.contains(&"file_copy".to_string()), "{have:?}");
+        assert!(have.contains(&"browser_click".to_string()), "{have:?}");
         assert!(have.contains(&"my_server_search".to_string()), "{have:?}");
     }
 
@@ -927,14 +944,14 @@ mod tests {
         let rig = rig();
         let result = rig
             .deferred
-            .run(&call("file_copy", json!({ "input": "a.txt" })), &ctx())
+            .run(&call("browser_click", json!({ "input": "a.txt" })), &ctx())
             .await
             .expect("not cancelled");
         assert!(result.ok, "{}", result.output);
-        assert_eq!(rig.file_copy.call_count(), 1);
-        assert_eq!(rig.file_copy.calls()[0]["input"], "a.txt");
+        assert_eq!(rig.browser_click.call_count(), 1);
+        assert_eq!(rig.browser_click.calls()[0]["input"], "a.txt");
         // And its group is in the next request, so a second call needs nothing.
-        assert!(names(&rig.deferred).await.contains(&"file_move".to_string()));
+        assert!(names(&rig.deferred).await.contains(&"browser_type".to_string()));
     }
 
     #[tokio::test]
@@ -961,7 +978,7 @@ mod tests {
         assert_eq!(result.title.as_deref(), Some("Nothing to load"));
         assert!(result.output.contains("No group called email."), "{}", result.output);
         assert!(
-            result.output.contains("The groups are: files, inertia, mcp.my-server."),
+            result.output.contains("The groups are: browser, crew, mcp.my-server."),
             "{}",
             result.output
         );
@@ -971,15 +988,15 @@ mod tests {
     async fn loading_the_same_group_twice_says_so() {
         let rig = rig();
         rig.deferred
-            .run(&call(GATE, json!({ "groups": ["files"] })), &ctx())
+            .run(&call(GATE, json!({ "groups": ["browser"] })), &ctx())
             .await
             .expect("not cancelled");
         let again = rig
             .deferred
-            .run(&call(GATE, json!({ "groups": ["files"] })), &ctx())
+            .run(&call(GATE, json!({ "groups": ["browser"] })), &ctx())
             .await
             .expect("not cancelled");
-        assert!(again.output.contains("Already loaded: files."), "{}", again.output);
+        assert!(again.output.contains("Already loaded: browser."), "{}", again.output);
     }
 
     #[tokio::test]
@@ -1004,7 +1021,7 @@ mod tests {
             .expect("not cancelled");
         assert!(!result.ok);
         assert!(result.output.contains(GATE), "{}", result.output);
-        assert!(result.output.contains("inertia"), "{}", result.output);
+        assert!(result.output.contains("crew"), "{}", result.output);
     }
 
     #[test]

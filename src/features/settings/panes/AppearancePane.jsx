@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, Monitor, Moon, RotateCcw, Sun } from "@/components/icons";
+import { Check, ChevronDown, Monitor, Moon, RotateCcw, Sun } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
@@ -17,6 +17,8 @@ import {
   RADII,
   TRANSCRIPTS,
   appearanceOf,
+  isBehindMore,
+  shownFirst,
 } from "@/lib/appearance";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -186,6 +188,51 @@ function PaletteTile({ palette, selected, onClick }) {
   );
 }
 
+/**
+ * A grid of choices that does not open at full height.
+ *
+ * The colours doubled, and a picker that shows all of them at once stops being
+ * a choice and becomes a paint chart: the person who wanted the app to be blue
+ * reads past nine swatches to find out that "Ink" means no colour at all. So
+ * the first row is what the app has always offered and the rest is one click
+ * away - and the click is a real disclosure, with a count on it, not a chevron
+ * that could mean anything.
+ *
+ * It opens already expanded when the current choice lives behind the fold.
+ * Anything else would be a picker that cannot show you what you have chosen,
+ * which is the one thing a picker has to do.
+ */
+function ExpandingGrid({ label, options, value, columns, children }) {
+  const hidden = React.useMemo(() => options.length - shownFirst(options).length, [options]);
+  const [open, setOpen] = React.useState(() => isBehindMore(options, value));
+
+  // A choice made elsewhere - reset, a synced preference - must not leave the
+  // selected swatch folded away where nobody can see it.
+  React.useEffect(() => {
+    if (isBehindMore(options, value)) setOpen(true);
+  }, [options, value]);
+
+  const shown = open ? options : shownFirst(options);
+
+  return (
+    <>
+      <div role="radiogroup" aria-label={label} className={columns}>
+        {shown.map(children)}
+      </div>
+      {hidden > 0 && !open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-2 flex items-center gap-1 rounded-md px-0.5 py-1 text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronDown className="size-3" aria-hidden="true" />
+          {hidden} more
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 export function AppearancePane() {
   const { user, setPreference, setPreferences } = useApp();
   const { theme, setTheme, resolved } = useTheme();
@@ -241,12 +288,13 @@ export function AppearancePane() {
         title="Accent"
         description="Used for the primary button and whatever is currently selected. Ink is the original: no colour at all."
       >
-        <div
-          role="radiogroup"
-          aria-label="Accent"
-          className="grid grid-cols-4 gap-2 sm:grid-cols-7"
+        <ExpandingGrid
+          label="Accent"
+          options={ACCENTS}
+          value={a.accent}
+          columns="grid grid-cols-4 gap-2 sm:grid-cols-7"
         >
-          {ACCENTS.map((accent) => (
+          {(accent) => (
             <AccentSwatch
               key={accent.value}
               accent={accent}
@@ -254,8 +302,8 @@ export function AppearancePane() {
               selected={a.accent === accent.value}
               onClick={() => setPreference("accent", accent.value)}
             />
-          ))}
-        </div>
+          )}
+        </ExpandingGrid>
       </SettingsSection>
 
       {/* Two grounds rather than one, because a person who reads on cream in
@@ -266,16 +314,21 @@ export function AppearancePane() {
         title="Light ground"
         description="The paper the app is drawn on in the light theme. Only the surfaces move - status colours, code highlighting and your accent are the same in every one."
       >
-        <div role="radiogroup" aria-label="Light ground" className="grid grid-cols-4 gap-2">
-          {LIGHT_PALETTES.map((palette) => (
+        <ExpandingGrid
+          label="Light ground"
+          options={LIGHT_PALETTES}
+          value={a.lightPalette}
+          columns="grid grid-cols-4 gap-2"
+        >
+          {(palette) => (
             <PaletteTile
               key={palette.value}
               palette={palette}
               selected={a.lightPalette === palette.value}
               onClick={() => setPreference("lightPalette", palette.value)}
             />
-          ))}
-        </div>
+          )}
+        </ExpandingGrid>
         <p className="mt-1.5 px-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
           {LIGHT_PALETTES.find((p) => p.value === a.lightPalette)?.hint}
         </p>
@@ -285,16 +338,21 @@ export function AppearancePane() {
         title="Dark ground"
         description="The same choice for the dark theme."
       >
-        <div role="radiogroup" aria-label="Dark ground" className="grid grid-cols-4 gap-2">
-          {DARK_PALETTES.map((palette) => (
+        <ExpandingGrid
+          label="Dark ground"
+          options={DARK_PALETTES}
+          value={a.darkPalette}
+          columns="grid grid-cols-4 gap-2"
+        >
+          {(palette) => (
             <PaletteTile
               key={palette.value}
               palette={palette}
               selected={a.darkPalette === palette.value}
               onClick={() => setPreference("darkPalette", palette.value)}
             />
-          ))}
-        </div>
+          )}
+        </ExpandingGrid>
         <p className="mt-1.5 px-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
           {DARK_PALETTES.find((p) => p.value === a.darkPalette)?.hint}
         </p>

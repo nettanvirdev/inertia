@@ -1034,6 +1034,159 @@ pre code {
   --shadow-lg: 0 12px 32px rgba(40, 45, 50, 0.12);
 }
 
+/* A cool pale blue. The ground a long document reads best on in daylight. */
+:root[data-light-palette="sky"]:not(.dark),
+:root[data-light-palette="sky"] .light {
+  --ink: 44 51 61;
+
+  --background: #f2f6fb;
+  --foreground: #2c333d;
+  --foreground-secondary: #545a63;
+  --muted-foreground: #636a72;
+  --heading: #2c333d;
+
+  --card: #e8ecf2;
+  --card-lighter: #fcfdfe;
+  --card-subtle: #e8ecf2;
+  --card-raised: #e0e4ea;
+  --card-darker: #e6eaf0;
+  --muted: #e0e4ea;
+  --user-message-background: #e6eaf0;
+
+  --sidebar: #e8ecf2;
+  --sidebar-border: #dee2e8;
+  --titlebar: #e8ecf2;
+
+  --border: #dee2e8;
+  --border-strong: #d0d5db;
+  --border-subtle: #e6eaf0;
+
+  --input: #e3e7ed;
+  --input-border: #d8dde2;
+  --input-hover: #dde2e7;
+  --input-focus: #d7dce1;
+  --input-placeholder: #777d85;
+
+  --icon: #2c333d;
+  --icon-muted: #656c74;
+  --popover: #fcfdfe;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(44, 58, 80, 0.06), 0 1px 3px rgba(44, 58, 80, 0.04);
+  --shadow-md: 0 4px 12px rgba(44, 58, 80, 0.08);
+  --shadow-lg: 0 12px 32px rgba(44, 58, 80, 0.12);
+}
+
+
+/* Pale green-grey, the calmest of the cool ones. */
+:root[data-light-palette="sage"]:not(.dark),
+:root[data-light-palette="sage"] .light {
+  --ink: 47 53 45;
+
+  --background: #f3f6f1;
+  --foreground: #2f352d;
+  --foreground-secondary: #565c54;
+  --muted-foreground: #666b64;
+  --heading: #2f352d;
+
+  --card: #e9ece7;
+  --card-lighter: #fcfdfc;
+  --card-subtle: #e9ece7;
+  --card-raised: #e1e5df;
+  --card-darker: #e7eae5;
+  --muted: #e1e5df;
+  --user-message-background: #e7eae5;
+
+  --sidebar: #e9ece7;
+  --sidebar-border: #dfe3dd;
+  --titlebar: #e9ece7;
+
+  --border: #dfe3dd;
+  --border-strong: #d2d5d0;
+  --border-subtle: #e7eae5;
+
+  --input: #e4e8e2;
+  --input-border: #daddd8;
+  --input-hover: #dee2dc;
+  --input-focus: #d9dcd7;
+  --input-placeholder: #797e77;
+
+  --icon: #2f352d;
+  --icon-muted: #686d66;
+  --popover: #fcfdfc;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(45, 58, 40, 0.06), 0 1px 3px rgba(45, 58, 40, 0.04);
+  --shadow-md: 0 4px 12px rgba(45, 58, 40, 0.08);
+  --shadow-lg: 0 12px 32px rgba(45, 58, 40, 0.12);
+}
+
+
+/* Warm and pink rather than yellow. Sepia without the age. */
+:root[data-light-palette="linen"]:not(.dark),
+:root[data-light-palette="linen"] .light {
+  --ink: 56 47 43;
+
+  --background: #faf6f2;
+  --foreground: #382f2b;
+  --foreground-secondary: #5f5753;
+  --muted-foreground: #6e6763;
+  --heading: #382f2b;
+
+  --card: #f0ece8;
+  --card-lighter: #fefdfc;
+  --card-subtle: #f0ece8;
+  --card-raised: #e9e4e0;
+  --card-darker: #eeeae6;
+  --muted: #e9e4e0;
+  --user-message-background: #eeeae6;
+
+  --sidebar: #f0ece8;
+  --sidebar-border: #e7e2de;
+  --titlebar: #f0ece8;
+
+  --border: #e7e2de;
+  --border-strong: #d9d4d0;
+  --border-subtle: #eeeae6;
+
+  --input: #ebe7e3;
+  --input-border: #e1dcd8;
+  --input-hover: #e6e1dd;
+  --input-focus: #e0dbd7;
+  --input-placeholder: #827b77;
+
+  --icon: #382f2b;
+  --icon-muted: #706965;
+  --popover: #fefdfc;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+
+  --shadow-sm: 0 1px 2px rgba(68, 52, 44, 0.06), 0 1px 3px rgba(68, 52, 44, 0.04);
+  --shadow-md: 0 4px 12px rgba(68, 52, 44, 0.08);
+  --shadow-lg: 0 12px 32px rgba(68, 52, 44, 0.12);
+}
+
+
 /* A blue-black ground. Deeper, without going to pure black. */
 :root[data-dark-palette="midnight"].dark,
 :root[data-dark-palette="midnight"] .dark {
@@ -1162,6 +1315,146 @@ pre code {
   --icon: #e6e6e6;
   --icon-muted: #909090;
   --popover: #212121;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+/* A deep blue-green. Midnight with the cold taken out. */
+:root[data-dark-palette="ocean"].dark,
+:root[data-dark-palette="ocean"] .dark {
+  --ink: 219 233 238;
+
+  --background: #0e1a1f;
+  --foreground: #dbe9ee;
+  --foreground-secondary: #a8b5ba;
+  --muted-foreground: #7f8c91;
+  --heading: #ffffff;
+
+  --card: #182429;
+  --card-lighter: #222f34;
+  --card-subtle: #182429;
+  --card-raised: #222f34;
+  --card-darker: #0a1417;
+  --muted: #222f34;
+  --user-message-background: #222f34;
+
+  --sidebar: #182429;
+  --sidebar-border: #222f34;
+  --titlebar: #182429;
+
+  --border: #222f34;
+  --border-strong: #313d42;
+  --border-subtle: #1c282d;
+
+  --input: #283439;
+  --input-border: #2d393e;
+  --input-hover: #313d42;
+  --input-focus: #374348;
+  --input-placeholder: #7f8c91;
+
+  --icon: #dbe9ee;
+  --icon-muted: #8d9a9f;
+  --popover: #222f34;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+
+/* Dark green-grey. The quietest of the dark grounds. */
+:root[data-dark-palette="forest"].dark,
+:root[data-dark-palette="forest"] .dark {
+  --ink: 222 233 225;
+
+  --background: #111a15;
+  --foreground: #dee9e1;
+  --foreground-secondary: #abb5ae;
+  --muted-foreground: #828c85;
+  --heading: #ffffff;
+
+  --card: #1b241f;
+  --card-lighter: #262f29;
+  --card-subtle: #1b241f;
+  --card-raised: #262f29;
+  --card-darker: #0d1410;
+  --muted: #262f29;
+  --user-message-background: #262f29;
+
+  --sidebar: #1b241f;
+  --sidebar-border: #262f29;
+  --titlebar: #1b241f;
+
+  --border: #262f29;
+  --border-strong: #343d38;
+  --border-subtle: #1f2823;
+
+  --input: #2b342e;
+  --input-border: #303934;
+  --input-hover: #343d38;
+  --input-focus: #3a433e;
+  --input-placeholder: #828c85;
+
+  --icon: #dee9e1;
+  --icon-muted: #909a93;
+  --popover: #262f29;
+
+  /* Every "foreground on a surface" token is the foreground. Naming each
+     one again is how a palette ends up with a card whose text did not
+     move with it. */
+  --card-foreground: var(--foreground);
+  --sidebar-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input-foreground: var(--foreground);
+}
+
+
+/* A deep violet-black, for a dark room. */
+:root[data-dark-palette="plum"].dark,
+:root[data-dark-palette="plum"] .dark {
+  --ink: 231 225 238;
+
+  --background: #17121d;
+  --foreground: #e7e1ee;
+  --foreground-secondary: #b3adba;
+  --muted-foreground: #898490;
+  --heading: #ffffff;
+
+  --card: #211c27;
+  --card-lighter: #2c2732;
+  --card-subtle: #211c27;
+  --card-raised: #2c2732;
+  --card-darker: #110e16;
+  --muted: #2c2732;
+  --user-message-background: #2c2732;
+
+  --sidebar: #211c27;
+  --sidebar-border: #2c2732;
+  --titlebar: #211c27;
+
+  --border: #2c2732;
+  --border-strong: #3a3541;
+  --border-subtle: #26202c;
+
+  --input: #312c37;
+  --input-border: #36313c;
+  --input-hover: #3a3541;
+  --input-focus: #413b47;
+  --input-placeholder: #898490;
+
+  --icon: #e7e1ee;
+  --icon-muted: #98929f;
+  --popover: #2c2732;
 
   /* Every "foreground on a surface" token is the foreground. Naming each
      one again is how a palette ends up with a card whose text did not

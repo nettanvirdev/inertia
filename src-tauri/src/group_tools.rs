@@ -17,11 +17,18 @@
 //! actually take, and nobody pays for a digest of a conversation they are
 //! already in.
 //!
-//! None of these exist outside a group conversation - they are added to the
-//! registry only for a turn that has a room - and none of them can override
-//! what the person asked for. Whose turn it is next is settled when the turn
-//! ends, in `group`, so a turn is free to invite somebody and then go on
-//! talking.
+//! `invite` and `handover` are in every turn that has an agent, not only in a
+//! turn that already has a room, and `ensure_room` below is why: a one-to-one
+//! chat is the conversation a handover matters most in - "the research is done,
+//! this is now a build problem" - and a tool that only existed once the
+//! conversation was already a group could never be the thing that made it one.
+//! The room is opened at the moment one of them is called. `part` is the
+//! exception and stays room-only: there is nobody to leave a conversation to
+//! until somebody else is in it.
+//!
+//! None of them can override what the person asked for. Whose turn it is next
+//! is settled when the turn ends, in `group`, so a turn is free to invite
+//! somebody and then go on talking.
 //!
 //! Each tool is built per turn and holds the conversation it belongs to and the
 //! agent that is speaking. That is deliberate: `ToolContext` carries the
@@ -51,6 +58,34 @@ pub struct Seat {
 }
 
 impl Seat {
+    /// Make sure this conversation has a room, with me in it.
+    ///
+    /// A one-to-one chat is not a room and does not need to be one: nobody
+    /// else is reading it, nothing has to decide whose turn it is, and opening
+    /// a room around every conversation in the app would change how all of them
+    /// behave to serve the few that ever become one.
+    ///
+    /// But `handover` has to work FROM a one-to-one chat - that is the whole
+    /// point of it, an agent that knows the work has moved to somebody else's
+    /// area and says so - and the room is what carries the handover. So the
+    /// room is opened at the moment it is first needed, with me as the agent
+    /// the conversation currently belongs to. `open` is idempotent on an
+    /// existing room, so this costs nothing in a conversation that already is
+    /// one.
+    fn ensure_room(&self) {
+        let settings = inertia_store::collections::read_document(
+            &self.layout,
+            inertia_store::layout::Document::Group,
+            json!({}),
+        );
+        self.rooms.open(
+            &self.conversation,
+            self.agent_id.as_deref(),
+            crate::group::Permissions::from_settings(&settings),
+            &[],
+        );
+    }
+
     /// Every agent on the team, as stored.
     fn agents(&self) -> Vec<Value> {
         inertia_store::collections::list(&self.layout, inertia_store::Collection::Agents)
@@ -224,6 +259,9 @@ impl Tool for InviteTool {
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
+        // A one-to-one chat becomes a room the moment somebody needs it to be
+        // one, and not before.
+        self.0.ensure_room();
         let wanted = required(&args, "agent")?;
         let why = optional(&args, "why");
         let (id, name) = match self.0.colleague(&wanted) {
@@ -312,6 +350,9 @@ impl Tool for HandoverTool {
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
+        // A one-to-one chat becomes a room the moment somebody needs it to be
+        // one, and not before.
+        self.0.ensure_room();
         let wanted = required(&args, "agent")?;
         let note = optional(&args, "note");
         let (id, name) = match self.0.colleague(&wanted) {
@@ -434,14 +475,35 @@ impl Tool for PartTool {
 /// called. A tool a model can see is a tool it will try, and three refusals in
 /// a row is a turn spent finding out what the settings screen already knew.
 pub fn tools_for(seat: Seat, permissions: &crate::group::Permissions) -> Vec<Arc<dyn Tool>> {
+    tools_with(seat, permissions, true)
+}
+
+/// The same, for a turn that is not in a room yet.
+///
+/// `in_a_room` is false in an ordinary one-to-one chat. `invite` and `handover`
+/// still belong there - either of them is what turns the conversation into a
+/// room - but `part` does not: leaving is only meaningful once somebody else is
+/// present to be left with, and an agent offered a tool that can only ever
+/// refuse learns that its tools are unreliable.
+pub fn tools_with(
+    seat: Seat,
+    permissions: &crate::group::Permissions,
+    in_a_room: bool,
+) -> Vec<Arc<dyn Tool>> {
     let mut tools: Vec<Arc<dyn Tool>> = Vec::new();
+    if seat.agent_id.is_none() {
+        // No agent means nothing to hand over and nobody to hand it over. The
+        // tools hold the seat they were built for precisely so they never have
+        // to guess which agent called them.
+        return tools;
+    }
     if permissions.can_invite {
         tools.push(Arc::new(InviteTool(seat.clone())));
     }
     if permissions.can_handover {
         tools.push(Arc::new(HandoverTool(seat.clone())));
     }
-    if permissions.can_leave {
+    if in_a_room && permissions.can_leave {
         tools.push(Arc::new(PartTool(seat)));
     }
     tools

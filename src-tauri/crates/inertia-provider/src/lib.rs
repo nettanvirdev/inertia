@@ -18,8 +18,10 @@ pub mod base;
 pub mod config;
 pub mod models;
 pub mod openai;
+pub mod retry;
 pub mod sse;
 
 pub use anthropic::client::AnthropicProvider;
 pub use config::ProviderConfig;
 pub use openai::client::OpenAiProvider;
+pub use retry::Resilient;

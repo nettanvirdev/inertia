@@ -235,7 +235,7 @@ export const CONTRACT = {
   // A notice about work that finished, failed, or is blocked waiting for a
   // yes, while the person was looking at something else. The window's focus
   // decides whether it is also an operating-system banner.
-  notifyAPI: { status: "live", methods: ["onEvent"] },
+  notifyAPI: { status: "live", methods: ["onEvent", "choices", "setChoices"] },
 
   // What Inertia does with no window: close to the tray rather than quit, and
   // start with the machine. Neither answer lives in the preferences store -

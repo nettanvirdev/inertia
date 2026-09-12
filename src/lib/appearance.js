@@ -145,6 +145,27 @@ export const LIGHT_PALETTES = [
     hint: "A soft grey ground with white surfaces. No large bright area to glare.",
     swatch: { ground: "#eef0f2", surface: "#ffffff", ink: "#2f3336" },
   },
+  {
+    value: "sky",
+    label: "Sky",
+    hint: "A cool pale blue. The ground a long document reads best on in daylight.",
+    swatch: { ground: "#f2f6fb", surface: "#e8ecf2", ink: "#2c333d" },
+    more: true,
+  },
+  {
+    value: "sage",
+    label: "Sage",
+    hint: "Pale green-grey, the calmest of the cool ones.",
+    swatch: { ground: "#f3f6f1", surface: "#e9ece7", ink: "#2f352d" },
+    more: true,
+  },
+  {
+    value: "linen",
+    label: "Linen",
+    hint: "Warm and pink rather than yellow. Sepia without the age.",
+    swatch: { ground: "#faf6f2", surface: "#f0ece8", ink: "#382f2b" },
+    more: true,
+  },
 ];
 
 export const DARK_PALETTES = [
@@ -172,6 +193,27 @@ export const DARK_PALETTES = [
     hint: "Near-black, for an OLED panel or a dark room.",
     swatch: { ground: "#0a0a0a", surface: "#161616", ink: "#e6e6e6" },
   },
+  {
+    value: "ocean",
+    label: "Ocean",
+    hint: "A deep blue-green. Midnight with the cold taken out.",
+    swatch: { ground: "#0e1a1f", surface: "#182429", ink: "#dbe9ee" },
+    more: true,
+  },
+  {
+    value: "forest",
+    label: "Forest",
+    hint: "Dark green-grey. The quietest of the dark grounds.",
+    swatch: { ground: "#111a15", surface: "#1b241f", ink: "#dee9e1" },
+    more: true,
+  },
+  {
+    value: "plum",
+    label: "Plum",
+    hint: "A deep violet-black, for a dark room.",
+    swatch: { ground: "#17121d", surface: "#211c27", ink: "#e7e1ee" },
+    more: true,
+  },
 ];
 
 /**
@@ -190,7 +232,38 @@ export const ACCENTS = [
   { value: "amber", label: "Amber", light: "#b45309", dark: "#fbbf24", on: { light: "#ffffff", dark: "#2b1a00" } },
   { value: "rose", label: "Rose", light: "#be123c", dark: "#fb7185", on: { light: "#ffffff", dark: "#37060f" } },
   { value: "cyan", label: "Cyan", light: "#0e7490", dark: "#22d3ee", on: { light: "#ffffff", dark: "#04252c" } },
+  // Past here is what the "More colours" button reveals. The split is not a
+  // ranking - every one of these is the same three values as the seven above -
+  // it is a row count. Sixteen swatches open by default is a paint chart, and
+  // the person who wanted the app to be blue has to read past nine colours to
+  // find out that Ink means no colour at all.
+  { value: "teal", label: "Teal", light: "#0f766e", dark: "#2dd4bf", on: { light: "#ffffff", dark: "#03231f" }, more: true },
+  { value: "sky", label: "Sky", light: "#0369a1", dark: "#38bdf8", on: { light: "#ffffff", dark: "#042536" }, more: true },
+  { value: "indigo", label: "Indigo", light: "#4338ca", dark: "#818cf8", on: { light: "#ffffff", dark: "#131238" }, more: true },
+  { value: "fuchsia", label: "Fuchsia", light: "#a21caf", dark: "#e879f9", on: { light: "#ffffff", dark: "#2c0733" }, more: true },
+  { value: "pink", label: "Pink", light: "#be185d", dark: "#f472b6", on: { light: "#ffffff", dark: "#330717" }, more: true },
+  { value: "red", label: "Red", light: "#b91c1c", dark: "#f87171", on: { light: "#ffffff", dark: "#300a0a" }, more: true },
+  { value: "orange", label: "Orange", light: "#c2410c", dark: "#fb923c", on: { light: "#ffffff", dark: "#2b1203" }, more: true },
+  { value: "lime", label: "Lime", light: "#4d7c0f", dark: "#a3e635", on: { light: "#ffffff", dark: "#16240a" }, more: true },
+  { value: "slate", label: "Slate", light: "#334155", dark: "#94a3b8", on: { light: "#ffffff", dark: "#0d1420" }, more: true },
 ];
+
+/**
+ * The ones a picker shows before anybody asks for more.
+ *
+ * `more: true` is the only difference between an entry here and one below the
+ * fold - same shape, same three values, same everything. A stored preference
+ * naming a hidden entry is still honoured and the picker opens expanded, so
+ * nothing can be chosen and then become unreachable.
+ */
+export function shownFirst(options) {
+  return options.filter((option) => !option.more);
+}
+
+/** Whether `value` is one of the entries behind the fold. */
+export function isBehindMore(options, value) {
+  return options.some((option) => option.more && option.value === value);
+}
 
 /**
  * The Bengali half of every stack.

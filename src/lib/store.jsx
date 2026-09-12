@@ -755,7 +755,33 @@ export function AppProvider({ children }) {
          */
         if (event.type === "group") {
           if (event.room) {
-            setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, room: event.room } : t)));
+            setThreads((prev) =>
+              prev.map((t) => {
+                if (t.id !== threadId) return t;
+                const next = { ...t, room: event.room };
+                /*
+                 * A handover moves who the conversation BELONGS to, which is
+                 * the difference the person can see: the name and face at the
+                 * top of the thread, and who what they type next goes to.
+                 *
+                 * Followed here rather than left to the room alone, because
+                 * the thread's agent is what this window sends back as
+                 * `primaryAgentId` on the next turn - so a thread that did not
+                 * follow would hand the conversation straight back to the
+                 * agent that had just given it away.
+                 *
+                 * `mode` follows too: a one-to-one chat that has just been
+                 * handed over is a room now, and the chain that carries the
+                 * new agent's first turn is the group one.
+                 */
+                const primary = event.room.primary;
+                if (primary && primary !== t.agentId) {
+                  next.agentId = primary;
+                  next.mode = "group";
+                }
+                return next;
+              })
+            );
           }
           if (event.speaker) {
             setMessages((prev) => {
@@ -1070,7 +1096,11 @@ export function AppProvider({ children }) {
    * killing work because the window forgot about it is the wrong instinct.
    */
   useEffect(() => {
-    if (!isAgentAvailable()) return undefined;
+    // After the folder has been read, not before: both halves of this need the
+    // messages to exist. A turn is rejoined by replaying its log into the reply
+    // the window left behind, and a reply left spinning by a crash can only be
+    // recognised once it has been loaded.
+    if (!hydrated || !isAgentAvailable()) return undefined;
     let alive = true;
     const detach = [];
 
@@ -1088,12 +1118,40 @@ export function AppProvider({ children }) {
         turns.current.set(turn.threadId, Object.assign(handle, { messageId: turn.messageId }));
         detach.push(handle.stop);
       }
+
+      /*
+       * And whatever is left spinning with nothing behind it.
+       *
+       * A reload rejoins its turn, above. A crash, a force quit, or a machine
+       * that lost power does not: the turn died with the process, but the
+       * reply was written to disk mid-stream and comes back saying
+       * "streaming". Nothing ever settled it, so the bubble span forever and
+       * the composer offered Stop for a turn that had not existed since the
+       * last time the app was open.
+       *
+       * Settled the way stopping one is settled - what it managed to say is
+       * kept, and `stopped` marks that it did not get to finish - because
+       * that is exactly what happened to it.
+       */
+      const stillLive = new Set(live.map((turn) => turn.messageId).filter(Boolean));
+      setMessages((prev) => {
+        let touched = false;
+        const next = {};
+        for (const [id, list] of Object.entries(prev)) {
+          next[id] = list.map((m) => {
+            if (m.status !== "streaming" || stillLive.has(m.id)) return m;
+            touched = true;
+            return { ...m, status: m.content?.trim() ? "sent" : "error", stopped: true };
+          });
+        }
+        return touched ? next : prev;
+      });
     });
 
     return () => {
       alive = false;
     };
-  }, [foldTurn, rejoinEvents]);
+  }, [hydrated, foldTurn, rejoinEvents]);
 
   /**
    * Send a message, and stream the reply back into the transcript.

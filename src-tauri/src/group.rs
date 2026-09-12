@@ -323,6 +323,13 @@ impl Rooms {
         let Some(room) = rooms.get_mut(conversation_id) else {
             return Moved::No("This conversation is not a group.".into());
         };
+        // The conversation becomes theirs. This is the whole difference from
+        // an invitation, it is what the tool's own description promises the
+        // person will see - and until now nothing moved: the thread kept the
+        // old agent's name and face, and, because the primary is the one agent
+        // `floor::part` refuses to let go, the agent that had just handed over
+        // could not then step out of a conversation it no longer ran.
+        room.primary = Some(agent_id.to_string());
         room.pending = Some(Outcome::Handover(agent_id.to_string()));
         room.note("handover", Some(agent_id), why);
         Moved::Yes { already: false }
@@ -487,6 +494,61 @@ mod tests {
 
     fn roster(rooms: &Rooms) -> Vec<String> {
         rooms.seated("t1").map(|(_, roster, _)| roster).unwrap_or_default()
+    }
+
+    #[test]
+    fn handing_over_makes_the_conversation_theirs() {
+        // The tool's own description promises the person will see the name and
+        // face at the top of the thread change. Until the primary moves, they
+        // do not: the thread keeps the old agent, and the window sends that old
+        // agent back as the primary on the very next turn, undoing it.
+        let rooms = opened();
+        assert_eq!(rooms.snapshot("t1").unwrap()["primary"], json!("a"));
+
+        assert!(matches!(rooms.handover("t1", "b", Some("a"), None), Moved::Yes { .. }));
+
+        let room = rooms.snapshot("t1").unwrap();
+        assert_eq!(room["primary"], json!("b"));
+        assert_eq!(room["roster"], json!(["a", "b"]));
+
+        // And the floor goes to them when the turn settles.
+        rooms.spoke("t1", "a", &[]);
+        assert_eq!(active(&rooms).as_deref(), Some("b"));
+    }
+
+    #[test]
+    fn the_agent_that_handed_over_can_then_step_out() {
+        // The whole shape of "give this to somebody else and leave": the
+        // primary is the one agent `floor::part` refuses to release, so an
+        // agent that handed over and was still the primary was stuck in a
+        // conversation it no longer ran.
+        let rooms = opened();
+        rooms.handover("t1", "b", Some("a"), None);
+        assert!(matches!(rooms.leave("t1", "a", None, None), Moved::Yes { .. }));
+        assert_eq!(roster(&rooms), ids(&["b"]));
+
+        // And the new one cannot leave, because somebody has to be here.
+        assert!(matches!(rooms.leave("t1", "b", None, None), Moved::No(_)));
+    }
+
+    #[test]
+    fn a_one_to_one_chat_becomes_a_room_by_handing_over() {
+        // `open` is what `Seat::ensure_room` calls the first time an agent in
+        // an ordinary chat reaches for `handover`. Nothing before that moment
+        // has to know the conversation might become a room.
+        let rooms = Rooms::default();
+        assert!(rooms.snapshot("solo").is_none());
+        assert!(matches!(
+            rooms.handover("solo", "b", Some("a"), None),
+            Moved::No(_)
+        ));
+
+        rooms.open("solo", Some("a"), Permissions::default(), &[]);
+        assert!(matches!(rooms.handover("solo", "b", Some("a"), None), Moved::Yes { .. }));
+        rooms.spoke("solo", "a", &[]);
+        let room = rooms.snapshot("solo").unwrap();
+        assert_eq!(room["active"], json!("b"));
+        assert_eq!(room["primary"], json!("b"));
     }
 
     #[test]

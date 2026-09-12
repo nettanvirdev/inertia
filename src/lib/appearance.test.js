@@ -15,7 +15,10 @@ import {
   TRANSCRIPTS,
   appearanceOf,
   applyAppearance,
+  isBehindMore,
+  shownFirst,
 } from "./appearance";
+import { readFileSync } from "node:fs";
 
 /**
  * Appearance, checked at the only place it is observable.
@@ -183,6 +186,55 @@ describe("stamping the choices on the document", () => {
     // offer no way back to the app's own palette.
     expect(LIGHT_PALETTES.filter((p) => p.value === "default")).toHaveLength(1);
     expect(DARK_PALETTES.filter((p) => p.value === "default")).toHaveLength(1);
+  });
+
+  /**
+   * The failure this whole file exists to prevent: an option that saves a
+   * value nothing reads. A ground is only real if the stylesheet has a block
+   * keyed on the attribute `applyAppearance` stamps - and "default" is real
+   * precisely by NOT having one, because the default palette is `:root`.
+   */
+  it("has a stylesheet block behind every ground it offers", () => {
+    const css = readFileSync(new URL("../styles/globals.css", import.meta.url), "utf8");
+    for (const [kind, list] of [
+      ["light", LIGHT_PALETTES],
+      ["dark", DARK_PALETTES],
+    ]) {
+      for (const palette of list) {
+        const selector = `[data-${kind}-palette="${palette.value}"]`;
+        if (palette.value === "default") {
+          expect(css).not.toContain(selector);
+        } else {
+          expect(css, `${kind} ${palette.value}`).toContain(selector);
+        }
+      }
+    }
+  });
+
+  it("keeps the first row of every picker small, and can still reach the rest", () => {
+    for (const list of [ACCENTS, LIGHT_PALETTES, DARK_PALETTES]) {
+      // The default is never folded away: it is the way back.
+      expect(shownFirst(list).some((entry) => entry.value === "default")).toBe(true);
+      expect(shownFirst(list).length).toBeLessThan(list.length);
+      for (const entry of list) {
+        expect(isBehindMore(list, entry.value)).toBe(!!entry.more);
+      }
+    }
+  });
+
+  it("gives every accent both a light and a dark value, or neither", () => {
+    for (const accent of ACCENTS) {
+      if (accent.value === "default") {
+        expect(accent.light).toBeNull();
+        continue;
+      }
+      // Showing a colour the user will never see - the light chip while the
+      // app is dark - is the one thing an accent swatch must not do.
+      expect(accent.light, accent.value).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(accent.dark, accent.value).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(accent.on.light, accent.value).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(accent.on.dark, accent.value).toMatch(/^#[0-9a-f]{6}$/i);
+    }
   });
 
   it("gives every ground a swatch the settings tile can paint itself with", () => {

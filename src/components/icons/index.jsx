@@ -130,7 +130,7 @@ export const {
   Plug, PowerOff, Puzzle, Repeat, Rocket, Route, Scale, Server, ServerCog,
   SquareTerminal, Terminal, TerminalSquare, Workflow, Wrench, Wifi,
 
-  CalendarClock, Moon, Palette, Paperclip, Settings, Settings2, ShieldAlert,
+  Bell, BellOff, CalendarClock, Moon, Palette, Paperclip, Settings, Settings2, ShieldAlert,
   ShieldCheck, Siren, SlidersHorizontal, Sun, SunMoon, Sunrise, Timer, Waves,
   Wind, Zap, FlaskConical, Pickaxe, Sprout, Satellite,
 

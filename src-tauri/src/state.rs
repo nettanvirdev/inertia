@@ -16,7 +16,7 @@ use inertia_composio::provider::{ComposioProvider, ConnectionRecord};
 use inertia_mcp::client::ServerRecord;
 use inertia_mcp::provider::McpProvider;
 use inertia_openapi::provider::{ImportRecord, OpenApiProvider};
-use inertia_provider::{AnthropicProvider, OpenAiProvider, ProviderConfig};
+use inertia_provider::{AnthropicProvider, OpenAiProvider, ProviderConfig, Resilient};
 use inertia_store::settings::Protocol;
 use inertia_store::{Collection, Conversations, Layout, Settings};
 use inertia_tools::{builtin_tools, Lists, ReadState, Registry};
@@ -483,6 +483,12 @@ pub fn provider_for(
         Protocol::Anthropic => Arc::new(AnthropicProvider::new(config)),
         Protocol::OpenAi => Arc::new(OpenAiProvider::new(config)),
     };
+
+    // Every provider, wrapped once, here: the one place a provider is built is
+    // the one place to decide that a 529 is not the end of a turn. The wrapper
+    // only ever retries a request that streamed nothing, so a reply already on
+    // screen is never printed twice - see `inertia_provider::retry`.
+    let provider: Arc<dyn Provider> = Arc::new(Resilient::new(provider));
 
     Ok((provider, model.to_string()))
 }

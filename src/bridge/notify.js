@@ -1,4 +1,4 @@
-import { subscribe } from "./envelope";
+import { raw, subscribe } from "./envelope";
 
 /**
  * Being told something, when the app decided it was worth interrupting for.
@@ -15,10 +15,19 @@ import { subscribe } from "./envelope";
  *
  * The payload is `{ title, body, tone, meta, at, focused }`, and `lib/notify.js`
  * reads the first three.
+ *
+ * The two settings calls are raw rather than enveloped, and answer the whole
+ * choices object rather than an acknowledgement, for the same reason the
+ * background switches do: the pane shows what was actually stored, so a write
+ * that could not land shows as a switch that did not move.
  */
 export function notifyBridge() {
   return {
     /** Subscribe once, at the root. Returns its own unsubscribe. */
     onEvent: (callback) => subscribe("notify:event", callback),
+    /** What the person agreed to be told about. */
+    choices: () => raw("notifications_settings"),
+    /** Change some of them. Fields left out keep their stored value. */
+    setChoices: (value) => raw("notifications_set", { value: value ?? {} }),
   };
 }

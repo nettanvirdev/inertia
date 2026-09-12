@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  Bell,
   Brain,
   Cpu,
   FolderTree,
@@ -35,6 +36,7 @@ import { WorkspacePane } from "./panes/WorkspacePane";
 import { SecretsPane } from "./panes/SecretsPane";
 import { MemoryPane } from "./panes/MemoryPane";
 import { GroupPane } from "./panes/GroupPane";
+import { NotificationsPane } from "./panes/NotificationsPane";
 import { AboutPane } from "./panes/AboutPane";
 
 /** Tab ids match the `settings.tab` values the store holds. */
@@ -71,6 +73,7 @@ const GROUPS = [
     id: "app",
     label: "Application",
     tabs: [
+      { value: "notifications", label: "Notifications", icon: Bell, Pane: NotificationsPane },
       { value: "shortcuts", label: "Shortcuts", icon: Keyboard, Pane: ShortcutsPane },
       { value: "workspace", label: "Workspace", icon: FolderTree, Pane: WorkspacePane },
       { value: "secrets", label: "Secrets", icon: KeyRound, Pane: SecretsPane },

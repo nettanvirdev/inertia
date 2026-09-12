@@ -617,12 +617,41 @@ pub async fn agent_run(
     // belong to whoever is actually about to run a tool.
     let gate = gate_for(&app, &workspace, request.thread_id.clone(), speaker.clone());
 
-    // The three group tools, for a turn that has a room and only for one. They
-    // hold the conversation and the seat they were built for, so `part` can
-    // never remove the wrong agent.
+    // Every agent on the team as `(id, name)`, for reading the `@`s out of what
+    // this turn writes. A seated turn already carries these; a one-to-one turn
+    // needs them too now that it can end up in a room.
+    let names_for_floor: Vec<(String, String)> = match &seated {
+        Some(seat) => seat.names.clone(),
+        None => inertia_store::collections::list(&workspace.layout, inertia_store::Collection::Agents)
+            .into_iter()
+            .filter_map(|record| {
+                let id = record.get("id").and_then(Value::as_str)?.trim().to_string();
+                if id.is_empty() {
+                    return None;
+                }
+                let name = record
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .map(str::trim)
+                    .filter(|name| !name.is_empty())
+                    .unwrap_or(&id)
+                    .to_string();
+                Some((id, name))
+            })
+            .collect(),
+    };
+
+    // The room tools. They hold the conversation and the seat they were built
+    // for, so `part` can never remove the wrong agent.
+    //
+    // A turn already in a room gets all three. A turn in an ordinary
+    // one-to-one chat gets `invite` and `handover` but not `part`, because
+    // those two are how a conversation BECOMES a room - an agent that can see
+    // the work has moved to somebody else's area saying so, which is the case
+    // the feature is for and the one it could not reach while the tools only
+    // existed inside a group. The room is opened when one of them is called.
     let mut extra = match &seated {
-        None => Vec::new(),
-        Some(seat) => crate::group_tools::tools_for(
+        Some(seat) => crate::group_tools::tools_with(
             crate::group_tools::Seat {
                 rooms: state.rooms.clone(),
                 layout: workspace.layout.clone(),
@@ -630,7 +659,25 @@ pub async fn agent_run(
                 agent_id: seat.speaker.clone(),
             },
             &seat.permissions,
+            true,
         ),
+        None => {
+            let settings = inertia_store::collections::read_document(
+                &workspace.layout,
+                inertia_store::layout::Document::Group,
+                json!({}),
+            );
+            crate::group_tools::tools_with(
+                crate::group_tools::Seat {
+                    rooms: state.rooms.clone(),
+                    layout: workspace.layout.clone(),
+                    conversation: request.thread_id.clone(),
+                    agent_id: speaker.clone(),
+                },
+                &crate::group::Permissions::from_settings(&settings),
+                false,
+            )
+        }
     };
 
     // `task`. Built here rather than in the tools crate because running a
@@ -747,19 +794,26 @@ pub async fn agent_run(
         &withheld,
     );
 
-    // Wrapped when the person asked for tools to be loaded on demand, which
-    // is a setting that existed in the window and was implemented nowhere.
-    let registry = crate::state::as_configured(&workspace, registry, &root);
-
-    // What the model will actually be offered, asked of the registry rather
-    // than assembled a second time here: the mode withholds some, the
-    // permission rules deny others, and the prompt must describe this list.
+    // What this turn can do, asked of the registry rather than assembled a
+    // second time here: the mode withholds some, the permission rules deny
+    // others, and the prompt must describe this list.
+    //
+    // Read before the deferring wrapper goes on, because the two answer
+    // different questions. The wrapper says what is in this request; the
+    // prompt says what the turn is able to do, and a browser that is one
+    // `load_tools` call away is a browser the turn has. Describing only the
+    // loaded half would quietly take the browsing and delegating sections of
+    // the prompt away from anyone who chose to load tools on demand.
     let held: Vec<String> = registry
         .specs()
         .await
         .into_iter()
         .map(|spec| spec.name)
         .collect();
+
+    // Wrapped when the person asked for tools to be loaded on demand, which
+    // is a setting that existed in the window and was implemented nowhere.
+    let registry = crate::state::as_configured(&workspace, registry, &root);
 
     let (cancel, cancelled) = tokio::sync::oneshot::channel::<()>();
     // The handle the window steers this turn through, taken before the loop
@@ -951,7 +1005,14 @@ pub async fn agent_run(
         .as_deref()
         .and_then(|id| crate::agents::resolve(&workspace.layout, id).ok())
         .map(|agent| agent.name);
-    let task_seat = seated.map(|seat| (seat.conversation, seat.speaker, seat.names));
+    // Carried whether or not this turn started in a room: a one-to-one chat
+    // that called `handover` has one by the time the turn ends, and the floor
+    // has to be settled and sent to the window or the agent it was handed to
+    // never speaks.
+    let task_seat = match seated {
+        Some(seat) => (seat.conversation, seat.speaker, seat.names),
+        None => (request.thread_id.clone(), speaker.clone(), names_for_floor),
+    };
 
     tauri::async_runtime::spawn(async move {
         let mut events = agent.run(turn);
@@ -980,6 +1041,11 @@ pub async fn agent_run(
         // `done`, and settling on both would spend two of the room's hops on
         // one go and skip whoever was due to speak.
         let mut settled = false;
+        // Whether this turn ended by passing the floor on. A room answering one
+        // question is several turns, and all but the last of them end like
+        // this - so this is what keeps a banner for each of them off the
+        // taskbar. See `notify::Choices::chained`.
+        let mut chained = false;
 
         let mut ended = false;
         /*
@@ -1090,7 +1156,10 @@ pub async fn agent_run(
                                     .map(str::to_string);
                             }
                             if terminal && !settled {
-                                if let Some((conversation, speaker, names)) = &task_seat {
+                                // A room, whether this turn started in one or
+                                // opened one by handing over.
+                                let (conversation, speaker, names) = &task_seat;
+                                if task_rooms.snapshot(conversation).is_some() {
                                     settled = true;
                                     // Only from a turn that finished: a failed
                                     // one wrote nothing worth reading names out
@@ -1109,14 +1178,22 @@ pub async fn agent_run(
                                         speaker.as_deref().unwrap_or_default(),
                                         &mentioned,
                                     );
+                                    let room = task_rooms.snapshot(conversation);
+                                    // A floor that now seats somebody is a
+                                    // conversation still going. `active` is
+                                    // `None` when it has gone back to the
+                                    // person, which is the moment worth a
+                                    // notice.
+                                    chained = room
+                                        .as_ref()
+                                        .and_then(|room| room.get("active"))
+                                        .and_then(Value::as_str)
+                                        .is_some();
                                     emit(
                                         &task_app,
                                         &task_id,
                                         &task_thread,
-                                        json!({
-                                            "type": "group",
-                                            "room": task_rooms.snapshot(conversation),
-                                        }),
+                                        json!({ "type": "group", "room": room }),
                                     );
                                 }
                             }
@@ -1147,7 +1224,8 @@ pub async fn agent_run(
             // conversation somebody has just interrupted, and the one place the
             // chain cannot restart itself from.
             if !settled {
-                if let Some((conversation, speaker, _)) = &task_seat {
+                let (conversation, speaker, _) = &task_seat;
+                if task_rooms.snapshot(conversation).is_some() {
                     task_rooms.spoke(conversation, speaker.as_deref().unwrap_or_default(), &[]);
                     emit(
                         &task_app,
@@ -1205,6 +1283,7 @@ pub async fn agent_run(
             &said,
             &task_thread,
             &task_id,
+            chained,
         );
 
         if let Some(state) = task_app.try_state::<AppState>() {

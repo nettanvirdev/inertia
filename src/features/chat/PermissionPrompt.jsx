@@ -35,15 +35,6 @@ const DANGER_WORD = {
   low: "Low risk",
 };
 
-/** Hairline inset edge, never a shadow - the same recipe as `overlay-surface`. */
-function edge(high) {
-  return {
-    boxShadow: high
-      ? "inset 0 0 0 1px color-mix(in oklab, var(--destructive) 40%, transparent)"
-      : "inset 0 0 0 1px var(--overlay-edge)",
-  };
-}
-
 function Dangers({ dangers }) {
   return (
     <ul className="flex flex-col gap-1">
@@ -132,8 +123,19 @@ export function PermissionPrompt({ question, onReply, className }) {
       role="group"
       aria-label="Permission request"
       onKeyDown={handleKeyDown}
-      style={edge(high)}
-      className={cn("my-3 flex flex-col gap-3 rounded-2xl card-surface-subtle p-4", className)}
+      /* No outline. This card used to draw a hairline around itself and a
+         second, redder one when the risk was high - and it sits inside a
+         transcript whose messages, tool cards and diffs are all separated by a
+         step of colour and nothing else, so the one thing on the page with a
+         box drawn around it read as a dialog that had failed to open. The
+         surface does the separating, which is what `card-surface-subtle` is
+         for; a high-risk ask is coloured rather than fenced, and the icon, the
+         wash and the words "High risk" say it three times over. */
+      className={cn(
+        "my-3 flex flex-col gap-3 rounded-2xl p-4",
+        high ? "bg-destructive-wash" : "card-surface-subtle",
+        className
+      )}
     >
       <div className="flex items-start gap-2.5">
         <ShieldQuestion
