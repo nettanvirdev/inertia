@@ -614,9 +614,10 @@ fn now() -> Timestamp {
 
 /// What the scheduler needs to start a turn.
 ///
-/// A trait rather than a call into `commands::agent_send`, because the thing
+/// A trait rather than a direct call into `turn::agent_run`, because the thing
 /// worth testing here is which routine fires and when - and a test that had to
-/// reach a model to find out would not be run.
+/// reach a model to find out would not be run. `AppRunner` is the one that
+/// starts a real turn; everything above this line is driven by a fake.
 #[async_trait]
 pub trait Runner: Send + Sync + std::fmt::Debug {
     /// Start the turn. `Err` is a run that never began.
@@ -1218,27 +1219,65 @@ struct AppRunner(tauri::AppHandle);
 
 #[async_trait]
 impl Runner for AppRunner {
+    /// Through `turn::agent_run` - the same command the composer calls.
+    ///
+    /// It used to be `commands::agent_send`, a second turn engine that existed
+    /// only for this caller, and the gap between the two had been widening for
+    /// months: a routine's turn ran with no `task`, no crew, no skills, no
+    /// browser, no terminal, no computer tools, no way to ask a question, no
+    /// `later`, no thinking budget read off the agent's record, and no context
+    /// gauge. A routine was strictly the weaker half of the same app.
+    ///
+    /// What the composer does and this has to do in its place is assemble the
+    /// history and name the message the reply goes into. The window does both
+    /// from what it is already drawing; here they come off disk.
     async fn start(&self, run: &Run) -> std::result::Result<Started, String> {
         use tauri::Manager;
-        let started = crate::commands::agent_send(
+        let state = self.0.state::<crate::state::AppState>();
+        let workspace = state.workspace()?;
+
+        // The conversation so far, plus what the routine has to say. Read from
+        // disk because there is no window holding a copy: a routine that has
+        // run every morning for a week is a conversation with a week in it.
+        let stored = workspace.conversations.read_messages(&run.thread_id, &[]);
+        let mut history = inertia_store::transcript::to_entries(&stored);
+        history.push(inertia_core::message::Entry::user(&run.text));
+
+        // Minted here rather than inside the turn, so it can be handed back:
+        // a window that hears it can attach to the run and watch the tool
+        // calls land. See the note on `Started::message_id`.
+        let message_id = format!("msg_{}", uuid::Uuid::now_v7().simple());
+
+        let started = crate::turn::agent_run(
             self.0.clone(),
-            self.0.state::<crate::state::AppState>(),
-            run.thread_id.clone(),
-            run.text.clone(),
-            None,
-            run.agent_id.clone(),
-            // The routine's own pills. Written on its record, and until now
-            // dropped on the floor: a routine set to Plan ran with full tools.
-            Some(run.mode.clone()),
-            Some(run.approval.clone()),
+            state,
+            crate::turn::RunRequest {
+                thread_id: run.thread_id.clone(),
+                agent_id: run.agent_id.clone(),
+                history,
+                message_id: Some(message_id.clone()),
+                // The routine's own pills. Written on its record, and once
+                // dropped on the floor: a routine set to Plan ran with full
+                // tools.
+                conversation_mode: Some(run.mode.clone()),
+                approval: Some(run.approval.clone()),
+                // Nobody is watching, so the turn writes its own conversation
+                // down. See `reply.rs`.
+                persist: true,
+                ..Default::default()
+            },
         )
         .await?;
+
+        let turn_id = started
+            .get("id")
+            .and_then(Value::as_str)
+            .ok_or("The turn started without an id.")?
+            .to_string();
+
         Ok(Started {
-            turn_id: started.turn_id,
-            // That path mints the reply's id as it writes it, so there is
-            // nothing to hand a window that wants to watch. See the note on
-            // `Started::message_id`.
-            message_id: None,
+            turn_id,
+            message_id: Some(message_id),
         })
     }
 

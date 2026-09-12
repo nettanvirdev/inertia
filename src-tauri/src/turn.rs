@@ -67,6 +67,16 @@ pub struct RunRequest {
     pub continuation: bool,
     pub roster: Vec<String>,
     pub speaker: Option<String>,
+    /// Write the conversation down from here, because nobody else will.
+    ///
+    /// A window keeps the transcript it is drawing and saves it through the
+    /// `messages` collection as the reply arrives, so a turn it started must
+    /// not be written a second time from this side. A turn started by the
+    /// routine scheduler has no such author: left unset, its conversation would
+    /// be empty, there would be nothing to open under Routines, and the run's
+    /// own outcome - read off the last reply on disk - would report that the
+    /// turn left nothing behind.
+    pub persist: bool,
 }
 
 fn now_ms() -> u64 {
@@ -892,10 +902,11 @@ pub async fn agent_run(
 
     // The person's own lifecycle hooks.
     //
-    // This was attached on the `agent_send` path and nowhere else, which meant
-    // hooks ran for a routine's turn and never once for a turn somebody started
-    // from the composer - the path that is every turn they actually watch. A
-    // `PreToolUse` rule written to block `rm -rf` blocked nothing.
+    // This was once attached on the other turn path and nowhere else, which
+    // meant hooks ran for a routine's turn and never once for a turn somebody
+    // started from the composer - the path that is every turn they actually
+    // watch. A `PreToolUse` rule written to block `rm -rf` blocked nothing.
+    // There is one path now, so there is one answer.
     //
     // Only when the workspace actually has hooks: attaching a listener with
     // nothing to run would put three file reads and an await into every tool
@@ -1030,6 +1041,20 @@ pub async fn agent_run(
         );
     }
 
+    // The transcript, when there is nobody to write it. See `reply.rs`.
+    let mut transcript = request.persist.then(|| {
+        crate::reply::Assembling::new(
+            &reference,
+            speaker.clone(),
+            &crate::memory::last_said(&task_history),
+            request
+                .message_id
+                .clone()
+                .unwrap_or_else(|| format!("msg_{}", uuid::Uuid::now_v7().simple())),
+        )
+    });
+    let task_conversations = workspace.conversations.clone();
+
     let task_rooms = state.rooms.clone();
     // The agent's display name, for a banner. Resolved here, while the layout
     // is still in hand.
@@ -1136,6 +1161,12 @@ pub async fn agent_run(
                     // nobody can act on.
                     if let AgentEvent::ToolStarted { call, .. } = &event {
                         asked.insert(call.id.as_str().to_string(), call.parsed_arguments());
+                    }
+                    // Fed the raw event rather than the translated one: the
+                    // stored shape is the window's, and it is derived from the
+                    // same events the window's own reducer sees.
+                    if let Some(transcript) = transcript.as_mut() {
+                        transcript.observe(&event);
                     }
                     note_failure(&task_layout, &task_facts, &event, &mut asked);
 
@@ -1293,6 +1324,16 @@ pub async fn agent_run(
                     emit(&task_app, &task_id, &task_thread, event);
                 }
             }
+        }
+
+        // Before the record is closed, so a routine's outcome - which reads
+        // the last reply on disk - has something to read by the time anything
+        // asks. A turn that was stopped still leaves what it managed to say.
+        if let Some(mut transcript) = transcript {
+            if !ended {
+                transcript.interrupted();
+            }
+            transcript.save(&task_conversations, &task_thread);
         }
 
         crate::records::Recorder::global()

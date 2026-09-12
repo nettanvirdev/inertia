@@ -34,7 +34,12 @@ export function SetupTitlebar({ busy, title = "Setup" }: { busy: boolean; title?
       }}
       className="relative flex h-8 min-h-8 select-none items-center justify-between bg-titlebar"
     >
-      <div className="panel-gutter flex min-w-0 items-center text-[13px] font-medium text-foreground-secondary">
+      {/* pl-3.5 puts the word on 14px, the same left edge the app's own title
+          bar starts its mark from, so the two windows read as one product.
+          It used to be `panel-gutter`, a class that is not defined in this
+          stylesheet or the app's - so it resolved to nothing and the word sat
+          flat against the window edge. */}
+      <div className="flex min-w-0 items-center pl-3.5 text-[13px] font-medium text-foreground-secondary">
         {title}
       </div>
 
