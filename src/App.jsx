@@ -143,9 +143,7 @@ function Shell() {
     const map = {};
     for (const shortcut of GLOBAL_SHORTCUTS) {
       map[shortcut.combo] =
-        shortcut.action === "view"
-          ? () => setView(shortcut.view)
-          : actions[shortcut.action];
+        shortcut.action === "view" ? () => setView(shortcut.view) : actions[shortcut.action];
     }
     return map;
   }, [actions, setView]);
@@ -156,15 +154,14 @@ function Shell() {
     () => [
       {
         label: "Go to",
-        items: [
-          { id: "library", label: "Library", icon: LibraryIcon },
-          ...navItems,
-        ].map((item) => ({
-          id: `view:${item.id}`,
-          label: item.label,
-          icon: item.icon,
-          keywords: ["navigate", "open", item.id],
-        })),
+        items: [{ id: "library", label: "Library", icon: LibraryIcon }, ...navItems].map(
+          (item) => ({
+            id: `view:${item.id}`,
+            label: item.label,
+            icon: item.icon,
+            keywords: ["navigate", "open", item.id],
+          })
+        ),
       },
       {
         label: "Chats",
@@ -239,7 +236,9 @@ function Shell() {
   // not render, so nothing that still holds a link to it can reach the screen.
   const available = view === "chat" || view === "library" || navItems.some((i) => i.id === view);
   const View = (available ? VIEWS[view] : null) ?? ChatView;
-  const viewLabel = [{ id: "library", label: "Library" }, ...navItems].find((i) => i.id === view)?.label;
+  const viewLabel = [{ id: "library", label: "Library" }, ...navItems].find(
+    (i) => i.id === view
+  )?.label;
 
   return (
     <>

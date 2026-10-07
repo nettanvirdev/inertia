@@ -67,7 +67,8 @@ export function thinkingControl(modelId, protocol = "openai") {
   const id = String(modelId ?? "").toLowerCase();
   if (protocol === "anthropic") return { kind: "budget", options: BUDGETS };
   if (id.includes("claude")) return { kind: "effort", options: EFFORTS };
-  if (EFFORT_FAMILIES.some((family) => family.test(id))) return { kind: "effort", options: EFFORTS };
+  if (EFFORT_FAMILIES.some((family) => family.test(id)))
+    return { kind: "effort", options: EFFORTS };
   return { kind: "none", options: NONE };
 }
 

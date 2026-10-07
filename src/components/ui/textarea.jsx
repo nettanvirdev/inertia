@@ -20,8 +20,7 @@ const Textarea = React.forwardRef(function Textarea(
     el.style.height = "0px";
     const styles = window.getComputedStyle(el);
     const lineHeight = parseFloat(styles.lineHeight) || 20;
-    const padding =
-      parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom) || 0;
+    const padding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom) || 0;
     const next = maxRows
       ? Math.min(el.scrollHeight, lineHeight * maxRows + padding)
       : el.scrollHeight;

@@ -59,11 +59,12 @@ function useCapped(items, cap) {
   const [all, setAll] = React.useState(false);
   const shown = all ? items : items.slice(0, cap);
   const rest = items.length - shown.length;
-  const more = rest > 0 ? (
-    <Button variant="ghost" size="xs" onClick={() => setAll(true)}>
-      {`Show ${rest} more`}
-    </Button>
-  ) : null;
+  const more =
+    rest > 0 ? (
+      <Button variant="ghost" size="xs" onClick={() => setAll(true)}>
+        {`Show ${rest} more`}
+      </Button>
+    ) : null;
   return [shown, more];
 }
 
@@ -77,7 +78,10 @@ function Link({ href, children }) {
       className="inline-flex min-w-0 items-baseline gap-1 text-foreground underline decoration-muted-foreground/50 underline-offset-4 hover:decoration-foreground"
     >
       <span className="min-w-0 truncate">{children ?? href}</span>
-      <ExternalLink aria-hidden="true" className="size-3 shrink-0 translate-y-px text-muted-foreground" />
+      <ExternalLink
+        aria-hidden="true"
+        className="size-3 shrink-0 translate-y-px text-muted-foreground"
+      />
     </a>
   );
 }
@@ -155,7 +159,9 @@ function Scalar({ name, value }) {
     );
   }
   if (typeof value === "number" || typeof value === "boolean") {
-    return <span className="font-mono text-[12px] tabular-nums text-foreground">{String(value)}</span>;
+    return (
+      <span className="font-mono text-[12px] tabular-nums text-foreground">{String(value)}</span>
+    );
   }
   return <span className="text-[12px] text-foreground">{String(value)}</span>;
 }
@@ -188,7 +194,9 @@ function Fold({ label, hint, defaultOpen = false, children }) {
           )}
         />
         <span className="shrink-0 text-[12px] text-foreground">{label}</span>
-        {hint ? <span className="min-w-0 truncate text-[11px] text-muted-foreground">{hint}</span> : null}
+        {hint ? (
+          <span className="min-w-0 truncate text-[11px] text-muted-foreground">{hint}</span>
+        ) : null}
       </button>
       <Collapse open={open} innerClassName="min-w-0 pb-1 pl-5">
         {children}
@@ -226,11 +234,7 @@ function List({ items, name, depth }) {
                 ·
               </span>
               <span className="min-w-0 break-words">
-                {isUrl(item) ? (
-                  <Link href={item} />
-                ) : (
-                  <Scalar name={name} value={item} />
-                )}
+                {isUrl(item) ? <Link href={item} /> : <Scalar name={name} value={item} />}
               </span>
             </li>
           ))}
@@ -321,7 +325,10 @@ function Card({ row, depth = 0 }) {
   return (
     <div className="flex min-w-0 gap-3 rounded-xl fill-whisper p-2.5">
       {card.image ? (
-        <Picture url={card.image} className="size-14 shrink-0 [&_img]:size-14 [&_img]:object-cover" />
+        <Picture
+          url={card.image}
+          className="size-14 shrink-0 [&_img]:size-14 [&_img]:object-cover"
+        />
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {heading ? (

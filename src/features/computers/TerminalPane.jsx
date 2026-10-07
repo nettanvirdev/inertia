@@ -177,8 +177,8 @@ export function TerminalPane({ computer }) {
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex shrink-0 items-center justify-between gap-2">
         <p className="truncate text-[11px] text-muted-foreground">
-          One command per line on {computer.name}. Not a full terminal: interactive programs
-          will not draw.
+          One command per line on {computer.name}. Not a full terminal: interactive programs will
+          not draw.
         </p>
         <div className="flex shrink-0 items-center gap-1">
           {running ? (

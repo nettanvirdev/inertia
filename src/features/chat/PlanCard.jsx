@@ -37,9 +37,7 @@ export function PlanCard({ plan, callId }) {
   // is the same question as "has this been approved" without storing a flag that
   // could disagree with the mode the agent is actually running in.
   const open =
-    !dismissed &&
-    thread?.mode !== "autonomous" &&
-    (!newest || !callId || newest.callId === callId);
+    !dismissed && thread?.mode !== "autonomous" && (!newest || !callId || newest.callId === callId);
 
   function build() {
     if (!activeThreadId) return;
@@ -53,7 +51,9 @@ export function PlanCard({ plan, callId }) {
         `Approved: ${plan.title}. Build it.`,
         "",
         "The plan, as approved:",
-        ...plan.steps.map((step, i) => `${i + 1}. ${step.title}${step.detail ? ` - ${step.detail}` : ""}`),
+        ...plan.steps.map(
+          (step, i) => `${i + 1}. ${step.title}${step.detail ? ` - ${step.detail}` : ""}`
+        ),
         "",
         "Work through it in order and keep the task list in step with where you are.",
       ].join("\n"),
@@ -68,7 +68,9 @@ export function PlanCard({ plan, callId }) {
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-foreground">{plan.title}</p>
           {plan.summary ? (
-            <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{plan.summary}</p>
+            <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+              {plan.summary}
+            </p>
           ) : null}
         </div>
       </div>

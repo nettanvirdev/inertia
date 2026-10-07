@@ -134,7 +134,7 @@ export function settleOnLoad(messages) {
   });
   // Same array when nothing changed, so hydration does not look like an edit
   // and immediately write every thread back to disk.
-  return touched ? settled : messages ?? [];
+  return touched ? settled : (messages ?? []);
 }
 
 /**
@@ -270,7 +270,7 @@ export function settleAgents(agents, knownModels) {
     return next;
   });
   // Same array when nothing changed, so hydration does not look like an edit.
-  return touched ? settled : agents ?? [];
+  return touched ? settled : (agents ?? []);
 }
 
 export function asActivityRecords(activity) {

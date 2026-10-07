@@ -90,7 +90,8 @@ export function useAudioDevices() {
           .filter((device) => device.kind === kind && device.deviceId !== "default")
           .map((device, index) => ({
             value: device.deviceId,
-            label: device.label || `${kind === "audioinput" ? "Microphone" : "Output"} ${index + 1}`,
+            label:
+              device.label || `${kind === "audioinput" ? "Microphone" : "Output"} ${index + 1}`,
           }));
       setDevices({ inputs: pick("audioinput"), outputs: pick("audiooutput") });
     } catch {

@@ -1,11 +1,5 @@
 import * as React from "react";
-import {
-  Camera,
-  Check,
-  FolderOpen,
-  Trash2,
-  UserRound,
-} from "@/components/icons";
+import { Camera, Check, FolderOpen, Trash2, UserRound } from "@/components/icons";
 import { formatBytes } from "@/data";
 import { useApp } from "@/lib/store";
 import { useWorkspace } from "@/lib/workspace";
@@ -15,12 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import {
-  SettingsCard,
-  SettingsField,
-  SettingsRow,
-  SettingsSection,
-} from "../SettingsRow";
+import { SettingsCard, SettingsField, SettingsRow, SettingsSection } from "../SettingsRow";
 
 const BIO_LIMIT = 600;
 
@@ -40,8 +29,7 @@ function readAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () =>
-      reject(reader.error ?? new Error("Could not read that file"));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read that file"));
     reader.readAsDataURL(file);
   });
 }
@@ -71,15 +59,7 @@ function chosen(value) {
   return text && text !== "system" ? text : null;
 }
 
-function promptPreview({
-  name,
-  shortName,
-  handle,
-  bio,
-  email,
-  timezone,
-  locale,
-}) {
+function promptPreview({ name, shortName, handle, bio, email, timezone, locale }) {
   const who = String(name ?? "").trim();
   const short = String(shortName ?? "").trim();
   const at = String(handle ?? "").trim();
@@ -95,7 +75,7 @@ function promptPreview({
     lines.push(
       short && short.toLowerCase() !== who.toLowerCase()
         ? `You work for ${full}. Call them ${short}.`
-        : `You work for ${full}.`,
+        : `You work for ${full}.`
     );
   }
   if (!who && (address || zone || format)) {
@@ -103,14 +83,11 @@ function promptPreview({
   }
   if (address)
     lines.push(
-      `Their email address is ${address}. Do not use it anywhere they did not ask you to.`,
+      `Their email address is ${address}. Do not use it anywhere they did not ask you to.`
     );
   if (zone)
-    lines.push(
-      `They are in the ${zone} time zone. Write times in it unless asked otherwise.`,
-    );
-  if (format)
-    lines.push(`They read dates and numbers in the ${format} format.`);
+    lines.push(`They are in the ${zone} time zone. Write times in it unless asked otherwise.`);
+  if (format) lines.push(`They read dates and numbers in the ${format} format.`);
   if (about) {
     lines.push("");
     lines.push("They describe themselves and how they want to be worked with:");
@@ -195,8 +172,7 @@ export function IdentityPane() {
       toast({
         variant: "danger",
         title: "Could not read that photo",
-        description:
-          "The file may have moved or be unreadable. Try picking it again.",
+        description: "The file may have moved or be unreadable. Try picking it again.",
       });
     }
   }
@@ -216,9 +192,7 @@ export function IdentityPane() {
       // is worse than an unsaved change the user can try again.
       let photo = {};
       if (picked !== undefined) {
-        photo = picked
-          ? await saveAvatar(workspace, picked)
-          : await clearAvatar(workspace, user);
+        photo = picked ? await saveAvatar(workspace, picked) : await clearAvatar(workspace, user);
       }
 
       updateProfile({
@@ -226,9 +200,7 @@ export function IdentityPane() {
         shortName: shortName.trim(),
         handle: nextHandle ? `@${nextHandle}` : user.handle,
         email: email.trim() || user.email,
-        avatarInitials: (initials.trim() || initialsFrom(nextName))
-          .slice(0, 2)
-          .toUpperCase(),
+        avatarInitials: (initials.trim() || initialsFrom(nextName)).slice(0, 2).toUpperCase(),
         bio,
         ...photo,
       });
@@ -242,8 +214,7 @@ export function IdentityPane() {
       toast({
         variant: "danger",
         title: "Could not save your profile",
-        description:
-          error?.message ?? "The workspace folder could not be written to.",
+        description: error?.message ?? "The workspace folder could not be written to.",
       });
     } finally {
       setSaving(false);
@@ -275,11 +246,7 @@ export function IdentityPane() {
           />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={() => fileRef.current?.click()}
-              >
+              <Button variant="subtle" size="xs" onClick={() => fileRef.current?.click()}>
                 <Camera className="size-3.5" aria-hidden="true" />
                 {avatarUrl ? "Replace photo" : "Upload photo"}
               </Button>
@@ -304,13 +271,10 @@ export function IdentityPane() {
                 telling you it was would send you looking for a file that is not
                 there. */}
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-              A square PNG or JPEG works best. It is written to your workspace
-              as
-              <code className="mx-1 font-mono">
-                {user.avatarFile ?? "settings/avatar.png"}
-              </code>
-              , so you can also just replace that file. If it is ever missing,
-              your initials are drawn instead.
+              A square PNG or JPEG works best. It is written to your workspace as
+              <code className="mx-1 font-mono">{user.avatarFile ?? "settings/avatar.png"}</code>, so
+              you can also just replace that file. If it is ever missing, your initials are drawn
+              instead.
             </p>
           </div>
         </div>
@@ -437,9 +401,8 @@ export function IdentityPane() {
           </pre>
         ) : (
           <p className="rounded-xl fill-whisper px-3 py-2.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Nothing yet. With no name and no description, agents are told
-            nothing about who they work for and answer as if talking to a
-            stranger.
+            Nothing yet. With no name and no description, agents are told nothing about who they
+            work for and answer as if talking to a stranger.
           </p>
         )}
       </SettingsSection>
@@ -454,11 +417,7 @@ export function IdentityPane() {
             settings/identity.json
           </p>
           {workspace.native && workspace.configured ? (
-            <Button
-              variant="subtle"
-              size="xs"
-              onClick={() => workspace.reveal("settings")}
-            >
+            <Button variant="subtle" size="xs" onClick={() => workspace.reveal("settings")}>
               <FolderOpen className="size-3.5" aria-hidden="true" />
               Open folder
             </Button>
@@ -476,20 +435,10 @@ export function IdentityPane() {
           }
           control={
             <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="xs"
-                disabled={!dirty || saving}
-                onClick={revert}
-              >
+              <Button variant="ghost" size="xs" disabled={!dirty || saving} onClick={revert}>
                 Revert
               </Button>
-              <Button
-                variant="primary"
-                size="xs"
-                disabled={!dirty || saving}
-                onClick={save}
-              >
+              <Button variant="primary" size="xs" disabled={!dirty || saving} onClick={save}>
                 <Check className="size-3.5" aria-hidden="true" />
                 Save profile
               </Button>

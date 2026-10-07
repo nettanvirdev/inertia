@@ -56,7 +56,11 @@ export function usePrompts(threadId) {
       // subagent runs as `parent/task-3`, and there is only one person to ask,
       // so its questions belong here - matching the whole id would silently
       // drop them and leave the subagent's tool blocked until cancel.
-      if (threadId && event.question.sessionId && rootSession(event.question.sessionId) !== threadId) {
+      if (
+        threadId &&
+        event.question.sessionId &&
+        rootSession(event.question.sessionId) !== threadId
+      ) {
         return;
       }
 

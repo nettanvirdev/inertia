@@ -178,12 +178,7 @@ export const GLYPHS_FILES = {
   // Bullets are three subpaths of one element so the icon stays at four parts.
   List: ["M9 7.4h11", "M9 12h11", "M9 16.6h11", "M4 7.4h1.4M4 12h1.4M4 16.6h1.4"],
   ListTodo: ["r 3 4.4 6 6 2.2", "r 3 13.6 6 6 2.2", "M11.8 7.4h8.4", "M11.8 16.6h8.4"],
-  NotebookText: [
-    "r 5.2 3.2 15.6 17.6 3.6",
-    "M9.2 3.2v17.6",
-    "M12.4 9.6h5.4",
-    "M12.4 14.4h5.4",
-  ],
+  NotebookText: ["r 5.2 3.2 15.6 17.6 3.6", "M9.2 3.2v17.6", "M12.4 9.6h5.4", "M12.4 14.4h5.4"],
   // Sheet plus one rolled top edge; the roll is a full half-circle so it reads
   // as a curl rather than a dog-ear.
   ScrollText: [

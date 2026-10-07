@@ -189,7 +189,10 @@ export function CrewTimeline({ runs, events }) {
       <ScrollArea className="flex-1">
         <ul className="space-y-0.5 px-4 py-2">
           {shown.map((event, index) => (
-            <li key={`${event.at}-${event.runId}-${index}`} className="flex items-start gap-2 text-[11px]">
+            <li
+              key={`${event.at}-${event.runId}-${index}`}
+              className="flex items-start gap-2 text-[11px]"
+            >
               <span className="text-muted-foreground w-[4.5rem] shrink-0 whitespace-nowrap font-mono">
                 {clock(event.at)}
               </span>

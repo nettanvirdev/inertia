@@ -171,11 +171,7 @@ describe("config round trip", () => {
   });
 
   it("survives a round trip", () => {
-    const rules = [
-      rule("shell", "allow"),
-      rule("shell", "deny", "rm -rf *"),
-      rule("write", "ask"),
-    ];
+    const rules = [rule("shell", "allow"), rule("shell", "deny", "rm -rf *"), rule("write", "ask")];
     expect(fromConfig(toConfig(rules))).toEqual(expect.arrayContaining(rules));
   });
 });
@@ -186,9 +182,7 @@ describe("flat form", () => {
   });
 
   it("splits the tool from its pattern at the first slash", () => {
-    expect(fromFlat({ "shell/git push *": "ask" })).toEqual([
-      rule("shell", "ask", "git push *"),
-    ]);
+    expect(fromFlat({ "shell/git push *": "ask" })).toEqual([rule("shell", "ask", "git push *")]);
   });
 
   it("keeps a pattern that is itself full of slashes and colons", () => {
@@ -282,7 +276,10 @@ describe("asRules", () => {
   });
 
   it("converts every agent in the map", () => {
-    const map = asRuleMap({ atlas: { "perm-read-files": "allow" }, forge: [rule("shell", "deny")] });
+    const map = asRuleMap({
+      atlas: { "perm-read-files": "allow" },
+      forge: [rule("shell", "deny")],
+    });
     expect(map.atlas).toEqual([rule("perm-read-files", "allow")]);
     expect(map.forge).toEqual([rule("shell", "deny")]);
   });

@@ -1,5 +1,15 @@
 import * as React from "react";
-import { ChevronRight, Hand, Pause, Play, RotateCcw, Send, Users, X, Square } from "@/components/icons";
+import {
+  ChevronRight,
+  Hand,
+  Pause,
+  Play,
+  RotateCcw,
+  Send,
+  Users,
+  X,
+  Square,
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +23,17 @@ import { MessageParts } from "@/features/chat/MessageParts";
 import { groupParts } from "@/features/chat/tool-groups";
 import { useSwap } from "@/features/chat/arrival";
 
-import { asTree, cancelRun, followUpRun, interruptRun, loadTimeline, pauseRun, restartRun, resumeRun, watchRun } from "@/lib/crew";
+import {
+  asTree,
+  cancelRun,
+  followUpRun,
+  interruptRun,
+  loadTimeline,
+  pauseRun,
+  restartRun,
+  resumeRun,
+  watchRun,
+} from "@/lib/crew";
 import { isActive, isWorking } from "@shared/crew";
 import { formatCost, costOf, priceFor, totalTokens, formatTokens } from "@shared/usage";
 import { CrewTimeline } from "@/features/chat/CrewTimeline";
@@ -80,7 +100,9 @@ function FollowUp({ run }) {
   };
   return (
     <section>
-      <h4 className="text-muted-foreground text-[10px] font-medium tracking-[0.08em] uppercase">Follow up</h4>
+      <h4 className="text-muted-foreground text-[10px] font-medium tracking-[0.08em] uppercase">
+        Follow up
+      </h4>
       <div className="mt-1 flex items-center gap-1.5">
         <input
           value={text}
@@ -217,7 +239,11 @@ function Run({ run, prices, open, onToggle, onRestart }) {
               run that has already stopped it would be a button that does
               nothing, which is worse than an absent one. */}
           {isWorking(run.status) ? (
-            <IconButton size="sm" label="Pause this run" onClick={() => pauseRun(run.id).catch(() => {})}>
+            <IconButton
+              size="sm"
+              label="Pause this run"
+              onClick={() => pauseRun(run.id).catch(() => {})}
+            >
               <Pause />
             </IconButton>
           ) : null}
@@ -234,7 +260,11 @@ function Run({ run, prices, open, onToggle, onRestart }) {
             </IconButton>
           ) : null}
           {run.status === "paused" ? (
-            <IconButton size="sm" label="Resume this run" onClick={() => resumeRun(run.id).catch(() => {})}>
+            <IconButton
+              size="sm"
+              label="Resume this run"
+              onClick={() => resumeRun(run.id).catch(() => {})}
+            >
               <Play />
             </IconButton>
           ) : null}
@@ -242,11 +272,7 @@ function Run({ run, prices, open, onToggle, onRestart }) {
               wants it - but it is offered on a finished run too, because "do
               that again" is a real thing to want. */}
           {!isWorking(run.status) ? (
-            <IconButton
-              size="sm"
-              label="Run this brief again"
-              onClick={() => onRestart?.(run)}
-            >
+            <IconButton size="sm" label="Run this brief again" onClick={() => onRestart?.(run)}>
               <RotateCcw />
             </IconButton>
           ) : null}
@@ -281,15 +307,15 @@ function Run({ run, prices, open, onToggle, onRestart }) {
           </div>
           <Transcript run={run} />
         </div>
-        {run.error ? (
-          <p className="text-xs text-destructive-ink">{run.error}</p>
-        ) : null}
+        {run.error ? <p className="text-xs text-destructive-ink">{run.error}</p> : null}
 
         {run.restartOf || run.restartedAs || run.followUps ? (
           <p className="text-muted-foreground text-[11px]">
             {run.restartOf ? `Restart of ${run.restartOf}.` : null}
             {run.restartedAs ? ` Restarted as ${run.restartedAs}.` : null}
-            {run.followUps ? ` Followed up ${run.followUps} time${run.followUps === 1 ? "" : "s"}.` : null}
+            {run.followUps
+              ? ` Followed up ${run.followUps} time${run.followUps === 1 ? "" : "s"}.`
+              : null}
           </p>
         ) : null}
 
@@ -297,7 +323,9 @@ function Run({ run, prices, open, onToggle, onRestart }) {
 
         {run.inbox?.length ? (
           <section>
-            <h4 className="text-muted-foreground text-[10px] font-medium tracking-[0.08em] uppercase">Messages</h4>
+            <h4 className="text-muted-foreground text-[10px] font-medium tracking-[0.08em] uppercase">
+              Messages
+            </h4>
             <ul className="text-foreground-secondary mt-0.5 space-y-0.5 text-xs">
               {run.inbox.slice(-6).map((message, index) => (
                 <li key={`${message.at}-${index}`}>
@@ -495,7 +523,6 @@ export function CrewPanel({ open, onOpenChange, conversationId, runs, prices }) 
           ) : null}
         </div>
       </div>
-
 
       {tab === "timeline" ? (
         <div

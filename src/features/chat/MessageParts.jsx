@@ -31,8 +31,7 @@ function Reasoning({ text, live = false, startedAt, endedAt }) {
   // Only for a thought that has finished and was long enough to have been
   // waited through. Under a second is not a wait, and "Thought for 0s" is a
   // number pretending to be information.
-  const seconds =
-    !live && startedAt && endedAt ? Math.round((endedAt - startedAt) / 1000) : 0;
+  const seconds = !live && startedAt && endedAt ? Math.round((endedAt - startedAt) / 1000) : 0;
   const label = live
     ? "Thinking"
     : seconds >= 1
@@ -85,61 +84,61 @@ function Reasoning({ text, live = false, startedAt, endedAt }) {
 export function MessageParts({ items, streaming = false, fallback }) {
   return (
     <>
-  {items.length ? (
-    items.map((item, index) =>
-      item.kind === "run" ? (
-        // Consecutive calls to one tool, folded into a lid. See
-        // `tool-groups.js`; every member is still openable underneath.
-        <ToolRun key={item.key} calls={item.calls} />
-      ) : item.part.type === "tool" ? (
-        <ToolCallCard key={item.key} part={item.part} />
-      ) : item.part.type === "reasoning" ? (
-        <Reasoning
-          key={item.key}
-          text={item.part.text}
-          startedAt={item.part.startedAt}
-          endedAt={item.part.endedAt}
-          live={streaming && index === items.length - 1}
-        />
-      ) : item.part.type === "error" ? (
-        <p key={item.key} className="my-2 text-[13px] text-destructive-ink">
-          {item.part.text}
-        </p>
-      ) : item.part.type === "steer" ? (
-        // The person, in the middle of the reply. Drawn as their own
-        // bubble and pushed to their side of the conversation, because
-        // that is what it is - and because a correction rendered as
-        // another line of the agent's prose reads as the agent agreeing
-        // with itself. It sits between the card they were watching and
-        // whatever the agent did about it, which is where they said it.
-        <div key={item.key} className="my-2 flex justify-end">
-          <div className="max-w-[80%] rounded-2xl rounded-br-md bg-user-message-background px-4 py-2.5 wrap-break-word">
-            <Markdown>{item.part.text}</Markdown>
-          </div>
-        </div>
-      ) : item.part.type === "notice" ? (
-        // Not an error - the turn is still going. A rate limit being
-        // waited out, or a long thread being compacted: both take real
-        // seconds, and a turn that pauses with nothing on screen is
-        // indistinguishable from one that has hung.
-        <p
-          key={item.key}
-          className="my-2 flex items-start gap-1.5 text-[12px] text-muted-foreground"
-        >
-          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <span>{item.part.text}</span>
-        </p>
+      {items.length ? (
+        items.map((item, index) =>
+          item.kind === "run" ? (
+            // Consecutive calls to one tool, folded into a lid. See
+            // `tool-groups.js`; every member is still openable underneath.
+            <ToolRun key={item.key} calls={item.calls} />
+          ) : item.part.type === "tool" ? (
+            <ToolCallCard key={item.key} part={item.part} />
+          ) : item.part.type === "reasoning" ? (
+            <Reasoning
+              key={item.key}
+              text={item.part.text}
+              startedAt={item.part.startedAt}
+              endedAt={item.part.endedAt}
+              live={streaming && index === items.length - 1}
+            />
+          ) : item.part.type === "error" ? (
+            <p key={item.key} className="my-2 text-[13px] text-destructive-ink">
+              {item.part.text}
+            </p>
+          ) : item.part.type === "steer" ? (
+            // The person, in the middle of the reply. Drawn as their own
+            // bubble and pushed to their side of the conversation, because
+            // that is what it is - and because a correction rendered as
+            // another line of the agent's prose reads as the agent agreeing
+            // with itself. It sits between the card they were watching and
+            // whatever the agent did about it, which is where they said it.
+            <div key={item.key} className="my-2 flex justify-end">
+              <div className="max-w-[80%] rounded-2xl rounded-br-md bg-user-message-background px-4 py-2.5 wrap-break-word">
+                <Markdown>{item.part.text}</Markdown>
+              </div>
+            </div>
+          ) : item.part.type === "notice" ? (
+            // Not an error - the turn is still going. A rate limit being
+            // waited out, or a long thread being compacted: both take real
+            // seconds, and a turn that pauses with nothing on screen is
+            // indistinguishable from one that has hung.
+            <p
+              key={item.key}
+              className="my-2 flex items-start gap-1.5 text-[12px] text-muted-foreground"
+            >
+              <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+              <span>{item.part.text}</span>
+            </p>
+          ) : (
+            <Markdown key={item.key} streaming={streaming && index === items.length - 1}>
+              {item.part.text}
+            </Markdown>
+          )
+        )
       ) : (
-        <Markdown key={item.key} streaming={streaming && index === items.length - 1}>
-          {item.part.text}
-        </Markdown>
-      )
-    )
-  ) : (
-    /* the caret belongs inside the renderer: appended out here it lands
+        /* the caret belongs inside the renderer: appended out here it lands
        below the prose whenever the reply ends in a block element */
-    <Markdown streaming={streaming}>{fallback ?? ""}</Markdown>
-  )}
+        <Markdown streaming={streaming}>{fallback ?? ""}</Markdown>
+      )}
     </>
   );
 }

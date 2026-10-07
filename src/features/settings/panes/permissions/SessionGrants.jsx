@@ -74,7 +74,8 @@ export function SessionGrants({ threads = [], onPromote }) {
   }
 
   return (
-    <SettingsSection flat
+    <SettingsSection
+      flat
       title="Remembered in a conversation"
       description="Rules you granted by pressing Always on a prompt. They last until that conversation ends and apply to nothing else. Keep one for good and it moves up into the list above."
     >

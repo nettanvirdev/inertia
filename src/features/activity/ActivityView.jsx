@@ -39,8 +39,18 @@ const RANGES = [
 ];
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /** The bucket an event with no readable timestamp lands in. `null` rather than
@@ -226,7 +236,11 @@ function CategoryBar({ meta, count, total, selected, onClick }) {
         selected ? "fill-secondary" : "hover:fill-nav"
       )}
     >
-      <Icon name={meta.icon} className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <Icon
+        name={meta.icon}
+        className="size-3.5 shrink-0 text-muted-foreground"
+        aria-hidden="true"
+      />
       <span className="w-[4.5rem] shrink-0 truncate text-[12px] text-foreground">{meta.label}</span>
       <span className="block h-1 min-w-0 flex-1 rounded-full fill-secondary" aria-hidden="true">
         <span
@@ -277,10 +291,8 @@ export function ActivityView() {
     "all",
     (v) => v === "all" || v === "none" || agents.some((b) => b.id === v)
   );
-  const [range, setRange] = usePersistentState(
-    PREF.activityRange,
-    "all",
-    (v) => RANGES.some((r) => r.value === v)
+  const [range, setRange] = usePersistentState(PREF.activityRange, "all", (v) =>
+    RANGES.some((r) => r.value === v)
   );
 
   const nowMs = React.useMemo(() => new Date(now).getTime(), [now]);
@@ -299,7 +311,13 @@ export function ActivityView() {
     const bucketMs = bucketHours * HOUR;
     const end = Math.ceil(nowMs / bucketMs) * bucketMs;
     const start = Math.floor(startRaw / bucketMs) * bucketMs;
-    return { start, end, bucketMs, bucketHours, count: Math.max(1, Math.round((end - start) / bucketMs)) };
+    return {
+      start,
+      end,
+      bucketMs,
+      bucketHours,
+      count: Math.max(1, Math.round((end - start) / bucketMs)),
+    };
   }, [activity, nowMs, rangeHours]);
 
   /**
@@ -331,7 +349,9 @@ export function ActivityView() {
       if (agentId === "none" && e.agentId) return false;
       if (agentId !== "all" && agentId !== "none" && e.agentId !== agentId) return false;
       if (!q) return true;
-      return (e.title ?? "").toLowerCase().includes(q) || (e.detail ?? "").toLowerCase().includes(q);
+      return (
+        (e.title ?? "").toLowerCase().includes(q) || (e.detail ?? "").toLowerCase().includes(q)
+      );
     });
   }, [inRange, query, category, agentId]);
 
@@ -347,16 +367,18 @@ export function ActivityView() {
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(event);
     }
-    return [...map.entries()]
-      // Newest day first, with the undated group last - it is the one group
-      // whose position carries no meaning, so it should not displace one whose
-      // position does.
-      .sort((a, b) => {
-        if (a[0] === UNDATED) return 1;
-        if (b[0] === UNDATED) return -1;
-        return b[0].localeCompare(a[0]);
-      })
-      .map(([key, events]) => ({ key: key ?? "undated", label: dayLabel(key, now), events }));
+    return (
+      [...map.entries()]
+        // Newest day first, with the undated group last - it is the one group
+        // whose position carries no meaning, so it should not displace one whose
+        // position does.
+        .sort((a, b) => {
+          if (a[0] === UNDATED) return 1;
+          if (b[0] === UNDATED) return -1;
+          return b[0].localeCompare(a[0]);
+        })
+        .map(([key, events]) => ({ key: key ?? "undated", label: dayLabel(key, now), events }))
+    );
   }, [filtered, now]);
 
   const counts = React.useMemo(() => {
@@ -366,7 +388,12 @@ export function ActivityView() {
   }, [scoped]);
 
   const chart = React.useMemo(() => {
-    const cells = Array.from({ length: win.count }, () => ({ normal: 0, warning: 0, danger: 0, total: 0 }));
+    const cells = Array.from({ length: win.count }, () => ({
+      normal: 0,
+      warning: 0,
+      danger: 0,
+      total: 0,
+    }));
     for (const e of scoped) {
       const i = Math.floor((new Date(e.at).getTime() - win.start) / win.bucketMs);
       const cell = cells[Math.min(win.count - 1, Math.max(0, i))];
@@ -496,9 +523,11 @@ export function ActivityView() {
   const eventComputer = openEvent?.computerId
     ? computers.find((c) => c.id === openEvent.computerId)
     : null;
-  const eventSeverity = openEvent ? SEVERITY_META[openEvent.severity] ?? SEVERITY_META.info : null;
+  const eventSeverity = openEvent
+    ? (SEVERITY_META[openEvent.severity] ?? SEVERITY_META.info)
+    : null;
   const eventCategory = openEvent
-    ? ACTIVITY_CATEGORY_META[openEvent.category] ?? { label: openEvent.category, icon: "Circle" }
+    ? (ACTIVITY_CATEGORY_META[openEvent.category] ?? { label: openEvent.category, icon: "Circle" })
     : null;
 
   return (
@@ -783,7 +812,9 @@ export function ActivityView() {
                     </span>
                     <span className="truncate text-[11px] text-muted-foreground">
                       {relativeTime(event.at)}
-                      {event.agentId ? ` · ${agents.find((b) => b.id === event.agentId)?.name ?? ""}` : ""}
+                      {event.agentId
+                        ? ` · ${agents.find((b) => b.id === event.agentId)?.name ?? ""}`
+                        : ""}
                     </span>
                   </button>
                 ))
@@ -832,7 +863,10 @@ export function ActivityView() {
 
               {openEvent.category === "permission" ? (
                 <div className="mt-4 flex items-center gap-2">
-                  <ShieldAlert className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <ShieldAlert
+                    className="size-3.5 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                   <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-muted-foreground">
                     This event came from the permission policy.
                   </p>

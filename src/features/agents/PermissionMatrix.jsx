@@ -39,18 +39,17 @@ export function PermissionMatrix({ agentId, className }) {
     () => merge(defaultRules(), asRules(permissions?.workspace)),
     [permissions]
   );
-  const own = React.useMemo(
-    () => asRules(permissions?.agents?.[agentId]),
-    [permissions, agentId]
-  );
+  const own = React.useMemo(() => asRules(permissions?.agents?.[agentId]), [permissions, agentId]);
   const effective = React.useMemo(() => merge(workspace, own), [workspace, own]);
 
-  const setAction = (key, action) => setAgentRules(agentId, (prev) => withBaseAction(prev, key, action));
+  const setAction = (key, action) =>
+    setAgentRules(agentId, (prev) => withBaseAction(prev, key, action));
   // Fork on write: the rows show the merged patterns, so touching one copies the
   // whole set onto the agent. That is the honest reading of "this agent has its
   // own answer now", and Revert undoes all of it in one click - the alternative,
   // an agent list that silently half-tracks the workspace, has no such undo.
-  const setPatterns = (key, next) => setAgentRules(agentId, (prev) => withPatternRules(prev, key, next));
+  const setPatterns = (key, next) =>
+    setAgentRules(agentId, (prev) => withPatternRules(prev, key, next));
   const revert = (key) => setAgentRules(agentId, (prev) => withoutTool(prev, key));
 
   /* -- the summary ------------------------------------------------------- */

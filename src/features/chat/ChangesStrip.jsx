@@ -20,10 +20,18 @@ import { isSnapshotAvailable, loadDiff, revertTurn } from "@/lib/snapshot";
  * what was changed is still true, it is just no longer the state of the disk.
  */
 
-const STATUS_LABEL = { A: "added", M: "changed", D: "deleted", R: "renamed", C: "copied", T: "changed" };
+const STATUS_LABEL = {
+  A: "added",
+  M: "changed",
+  D: "deleted",
+  R: "renamed",
+  C: "copied",
+  T: "changed",
+};
 
 function Counts({ file }) {
-  if (file.additions == null && file.deletions == null) return <span className="text-muted-foreground">binary</span>;
+  if (file.additions == null && file.deletions == null)
+    return <span className="text-muted-foreground">binary</span>;
   return (
     <span className="tabular-nums">
       {file.additions ? <span className="text-success-ink">+{file.additions}</span> : null}
@@ -80,12 +88,23 @@ export function ChangesStrip({ changes }) {
       const result = await revertTurn({ cwd: changes.cwd, to: changes.from, since: changes.to });
       if (result?.reverted) {
         setReverted(true);
-        toast({ title: "Reverted", description: `${files.length} file${files.length === 1 ? "" : "s"} put back the way they were before this reply.` });
+        toast({
+          title: "Reverted",
+          description: `${files.length} file${files.length === 1 ? "" : "s"} put back the way they were before this reply.`,
+        });
       } else {
-        toast({ title: "Could not revert", description: result?.reason ?? "Nothing was changed.", variant: "danger" });
+        toast({
+          title: "Could not revert",
+          description: result?.reason ?? "Nothing was changed.",
+          variant: "danger",
+        });
       }
     } catch (error) {
-      toast({ title: "Could not revert", description: error?.message ?? "Nothing was changed.", variant: "danger" });
+      toast({
+        title: "Could not revert",
+        description: error?.message ?? "Nothing was changed.",
+        variant: "danger",
+      });
     } finally {
       setBusy(false);
       setConfirming(false);
@@ -111,7 +130,8 @@ export function ChangesStrip({ changes }) {
         >
           <FilePen className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
           <span className="font-medium">
-            {files.length} file{files.length === 1 ? "" : "s"} {reverted ? "were changed, then reverted" : "changed"}
+            {files.length} file{files.length === 1 ? "" : "s"}{" "}
+            {reverted ? "were changed, then reverted" : "changed"}
           </span>
           <span className="text-muted-foreground tabular-nums">
             {additions ? <span className="text-success-ink">+{additions}</span> : null}
@@ -127,7 +147,13 @@ export function ChangesStrip({ changes }) {
           />
         </button>
         {canRevert ? (
-          <Button size="xs" variant="ghost" className="ml-auto shrink-0" onClick={() => setConfirming(true)} disabled={busy}>
+          <Button
+            size="xs"
+            variant="ghost"
+            className="ml-auto shrink-0"
+            onClick={() => setConfirming(true)}
+            disabled={busy}
+          >
             <RotateCcw className="size-3.5" aria-hidden="true" />
             Revert
           </Button>
@@ -150,7 +176,9 @@ export function ChangesStrip({ changes }) {
                 {file.from ? `${file.from} → ` : null}
                 {file.path}
               </button>
-              <span className="text-muted-foreground shrink-0">{STATUS_LABEL[file.status] ?? file.status}</span>
+              <span className="text-muted-foreground shrink-0">
+                {STATUS_LABEL[file.status] ?? file.status}
+              </span>
               <Counts file={file} />
             </li>
           ))}
@@ -165,19 +193,34 @@ export function ChangesStrip({ changes }) {
           the panel that stays, and a long file scrolls inside it rather than
           running off the screen. `pr-8` keeps a long path clear of the close
           button, and `break-all` keeps it on one line's worth of decisions. */}
-      <Dialog open={Boolean(openFile)} onOpenChange={(open) => !open && setOpenFile(null)} size="lg" ariaLabel="File diff">
+      <Dialog
+        open={Boolean(openFile)}
+        onOpenChange={(open) => !open && setOpenFile(null)}
+        size="lg"
+        ariaLabel="File diff"
+      >
         <DialogTitle className="pr-8 font-mono text-[13px] break-all">{openFile}</DialogTitle>
         <DialogBody className="no-scrollbar h-[min(60vh,32rem)] overflow-y-auto">
-          {diff ? <ToolDiff diff={diff} /> : <p className="text-muted-foreground text-xs">Loading the diff…</p>}
+          {diff ? (
+            <ToolDiff diff={diff} />
+          ) : (
+            <p className="text-muted-foreground text-xs">Loading the diff…</p>
+          )}
         </DialogBody>
       </Dialog>
 
-      <Dialog open={confirming} onOpenChange={setConfirming} size="sm" ariaLabel="Revert this reply's changes">
+      <Dialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        size="sm"
+        ariaLabel="Revert this reply's changes"
+      >
         <DialogTitle>Put these files back?</DialogTitle>
         <DialogBody>
           <p className="text-foreground-secondary text-sm">
-            {files.length} file{files.length === 1 ? "" : "s"} will go back to the way {files.length === 1 ? "it" : "they"} were before this
-            reply. Files the reply created are removed. Anything changed since, by you or a later reply, is lost too.
+            {files.length} file{files.length === 1 ? "" : "s"} will go back to the way{" "}
+            {files.length === 1 ? "it" : "they"} were before this reply. Files the reply created are
+            removed. Anything changed since, by you or a later reply, is lost too.
           </p>
         </DialogBody>
         <DialogFooter>

@@ -22,9 +22,7 @@ export function App() {
       // In a plain browser there is no backend to ask. Default to the setup
       // screen; `?mode=uninstall` reaches the other one for design work.
       .catch<Mode>(() =>
-        new URLSearchParams(location.search).get("mode") === "uninstall"
-          ? "uninstall"
-          : "install",
+        new URLSearchParams(location.search).get("mode") === "uninstall" ? "uninstall" : "install"
       )
       .then(setMode);
   }, []);

@@ -8,7 +8,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
-import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { GUTTER } from "@/components/layout/View";
 import { PluginRow } from "./PluginRow";
 
@@ -196,7 +202,11 @@ export function PluginManager({ kind, query, layout, addToken }) {
         </div>
       </ScrollArea>
 
-      <Dialog open={Boolean(draft)} onOpenChange={(v) => !v && closeDialog()} size={kind.dialogSize ?? "lg"}>
+      <Dialog
+        open={Boolean(draft)}
+        onOpenChange={(v) => !v && closeDialog()}
+        size={kind.dialogSize ?? "lg"}
+      >
         <DialogTitle>{editingId ? `Edit ${kind.noun}` : kind.addLabel}</DialogTitle>
         <DialogDescription>{kind.dialogHint}</DialogDescription>
         <DialogBody className="mt-4">

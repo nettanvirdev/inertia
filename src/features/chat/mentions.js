@@ -71,7 +71,12 @@ export function mentionSpecs({ agents = [], skills = [], commands = [], face = n
     add("agent", agent.id, agent.name, {
       iconSrc: agent.avatarUrl ?? null,
       iconHtml: null,
-      initials: agent.initials ?? String(agent.name ?? "").trim().charAt(0).toUpperCase(),
+      initials:
+        agent.initials ??
+        String(agent.name ?? "")
+          .trim()
+          .charAt(0)
+          .toUpperCase(),
       tint: agent.avatarColor ?? null,
       ...(face ? face(agent) : {}),
     });
@@ -90,7 +95,12 @@ export function mentionSpecs({ agents = [], skills = [], commands = [], face = n
     });
   }
   for (const skill of skills) {
-    add("skill", skill.id ?? skill.name, skill.name, { iconSrc: null, iconHtml: null, initials: null, tint: null });
+    add("skill", skill.id ?? skill.name, skill.name, {
+      iconSrc: null,
+      iconHtml: null,
+      initials: null,
+      tint: null,
+    });
   }
   return specs;
 }
@@ -108,7 +118,9 @@ export function findSpecRanges(text, specs) {
   const found = [];
   const haystack = String(text ?? "");
   const lower = haystack.toLowerCase();
-  const sorted = [...specs].filter((spec) => spec.raw.length > 1).sort((a, b) => b.raw.length - a.raw.length);
+  const sorted = [...specs]
+    .filter((spec) => spec.raw.length > 1)
+    .sort((a, b) => b.raw.length - a.raw.length);
 
   for (const spec of sorted) {
     const needle = spec.raw.toLowerCase();

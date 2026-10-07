@@ -28,11 +28,7 @@ export const GLYPHS_TOOLS = {
 
   // rx 4 on a 17.6 square, matching the set's card-shaped frames. The plus arms
   // are 4.4 long against a 7.2 bar, so the bar always reads as the wider mark.
-  Diff: [
-    "r 3.2 3.2 17.6 17.6 4",
-    "M12 7.4v4.4 M9.8 9.6h4.4",
-    "M8.4 16.2h7.2",
-  ],
+  Diff: ["r 3.2 3.2 17.6 17.6 4", "M12 7.4v4.4 M9.8 9.6h4.4", "M8.4 16.2h7.2"],
 
   // THE shield, unchanged from glyphs.status, plus a hook that stops short of
   // the pip - a question mark whose tail touches its dot closes up at 16px.

@@ -52,7 +52,11 @@ export function SideDock({ sections = [], className }) {
   const [dragId, setDragId] = React.useState(null);
 
   const shown = React.useMemo(
-    () => orderTabs(sections.filter((section) => section?.open && section?.node), order),
+    () =>
+      orderTabs(
+        sections.filter((section) => section?.open && section?.node),
+        order
+      ),
     [sections, order]
   );
   const open = shown.length > 0;
@@ -73,7 +77,11 @@ export function SideDock({ sections = [], className }) {
     // Built from what is on screen rather than patched into the stored list,
     // so an order carrying ids from panes that no longer exist cannot decide
     // where a tab lands today.
-    const next = moveTab(shown.map((section) => section.id), moved, before);
+    const next = moveTab(
+      shown.map((section) => section.id),
+      moved,
+      before
+    );
     setOrder(next);
     writePref(ORDER_KEY, next);
   };

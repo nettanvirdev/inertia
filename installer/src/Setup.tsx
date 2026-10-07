@@ -134,8 +134,7 @@ function Ready({
         </h1>
         <p className="mt-1.5 text-xs font-medium text-muted-foreground">Version {info.version}</p>
         <p className="mt-3 max-w-[19rem] text-sm leading-relaxed text-muted-foreground">
-          This installs for your account only, so Windows won't ask for
-          administrator access.
+          This installs for your account only, so Windows won't ask for administrator access.
         </p>
       </div>
 
@@ -148,10 +147,7 @@ function Ready({
             <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Location
             </span>
-            <span
-              title={dir}
-              className="block truncate text-left text-xs text-foreground"
-            >
+            <span title={dir} className="block truncate text-left text-xs text-foreground">
               {shortenPath(dir)}
             </span>
           </span>
@@ -208,10 +204,7 @@ function Installing({
           {/* Width is driven per frame by the easing in `useInstallProgress`,
               so there is no CSS transition here - two easings stacked on the
               same value fight each other and the bar stutters. */}
-          <div
-            className="h-full rounded-full bg-foreground"
-            style={{ width: `${percent}%` }}
-          />
+          <div className="h-full rounded-full bg-foreground" style={{ width: `${percent}%` }} />
         </div>
         <p className="mt-2 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
           {Math.round(percent)}%
@@ -293,7 +286,7 @@ function Checkbox({
       <span
         className={cn(
           "flex size-4 shrink-0 items-center justify-center rounded-xs transition-colors duration-150 ease-out",
-          checked ? "accent-fill" : "fill-field ring-1 ring-control-border",
+          checked ? "accent-fill" : "fill-field ring-1 ring-control-border"
         )}
       >
         {checked ? <Check className="size-2.5 animate-pop-in" /> : null}

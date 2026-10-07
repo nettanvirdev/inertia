@@ -36,7 +36,9 @@ const TRUNCATION = /\n?\[result truncated\]\s*$/;
  * not "something went wrong".
  */
 export function parseResult(output) {
-  const text = String(output ?? "").replace(TRUNCATION, "").trim();
+  const text = String(output ?? "")
+    .replace(TRUNCATION, "")
+    .trim();
   if (!text) return undefined;
   // A bare number or `true` is JSON, and rendering it as a JSON document
   // rather than as the sentence it probably is helps nobody.
@@ -110,12 +112,21 @@ export function classify(value) {
  * a field drawn as a link instead of as text.
  */
 const ROLES = [
-  ["image", /^(image|img|thumbnail|thumb|photo|picture|avatar|icon|screenshot|cover|poster)(_?(url|uri|src|link))?$/i],
+  [
+    "image",
+    /^(image|img|thumbnail|thumb|photo|picture|avatar|icon|screenshot|cover|poster)(_?(url|uri|src|link))?$/i,
+  ],
   ["url", /^(url|uri|href|link|permalink|web_?url|html_?url|source_?url|download_?url)$/i],
   ["title", /^(title|name|heading|headline|subject|label|display_?name|full_?name)$/i],
-  ["body", /^(content|text|description|snippet|summary|body|answer|message|excerpt|abstract|caption)$/i],
+  [
+    "body",
+    /^(content|text|description|snippet|summary|body|answer|message|excerpt|abstract|caption)$/i,
+  ],
   ["score", /^(score|rating|relevance|confidence|similarity|rank|weight)$/i],
-  ["time", /^(date|time|timestamp|published(_?(at|date|time))?|created(_?at)?|updated(_?at)?|modified(_?at)?)$/i],
+  [
+    "time",
+    /^(date|time|timestamp|published(_?(at|date|time))?|created(_?at)?|updated(_?at)?|modified(_?at)?)$/i,
+  ],
   ["status", /^(status|state|error|errors|level|severity|result|outcome)$/i],
   ["id", /^(id|_?id|uuid|guid|key|slug|hash|sha|ref)$/i],
 ];
@@ -299,7 +310,8 @@ export function preview(value) {
  * stays neutral, which is most things.
  */
 const BAD = /^(error|failed|failure|denied|invalid|unhealthy|down|critical|fatal|rejected)$/i;
-const GOOD = /^(ok|success|succeeded|passed|healthy|active|connected|complete|completed|done|up|valid)$/i;
+const GOOD =
+  /^(ok|success|succeeded|passed|healthy|active|connected|complete|completed|done|up|valid)$/i;
 const WARN = /^(warn|warning|pending|degraded|partial|stale|retrying|queued|skipped)$/i;
 
 export function toneOf(key, value) {

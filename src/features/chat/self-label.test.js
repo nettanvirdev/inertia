@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { cutScript, cutScriptParts, isPass, stripSelfLabel, stripSelfLabelParts } from "./self-label.js";
+import {
+  cutScript,
+  cutScriptParts,
+  isPass,
+  stripSelfLabel,
+  stripSelfLabelParts,
+} from "./self-label.js";
 
 /**
  * The name an agent writes in front of its own reply.
@@ -11,7 +17,9 @@ import { cutScript, cutScriptParts, isPass, stripSelfLabel, stripSelfLabelParts 
  */
 describe("a reply that opens with its own name", () => {
   it("loses the name and the separator", () => {
-    expect(stripSelfLabel("Folder Organizer: Hi. Which folder?", "Folder Organizer")).toBe("Hi. Which folder?");
+    expect(stripSelfLabel("Folder Organizer: Hi. Which folder?", "Folder Organizer")).toBe(
+      "Hi. Which folder?"
+    );
   });
 
   it("copes with the bold and the dash the models also produce", () => {
@@ -64,7 +72,8 @@ describe("a reply that turns into a script for the others", () => {
   const others = ["Folder Organizer", "Iris"];
 
   it("is cut where the first colleague's line begins", () => {
-    const text = "I'll start: purpose over type.\nFolder Organizer: I disagree.\nInertia Dev: fair.";
+    const text =
+      "I'll start: purpose over type.\nFolder Organizer: I disagree.\nInertia Dev: fair.";
     expect(cutScript(text, others)).toBe("I'll start: purpose over type.");
   });
 

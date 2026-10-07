@@ -63,7 +63,11 @@ export function RequiredKeys({ entries, loading, onChanged }) {
       const value = (await client.secrets.get(name)) ?? "";
       setRevealed((prev) => ({ ...prev, [name]: value }));
     } catch (failure) {
-      toast({ variant: "danger", title: "Could not read that secret", description: failure.message });
+      toast({
+        variant: "danger",
+        title: "Could not read that secret",
+        description: failure.message,
+      });
     }
   }
 
@@ -110,7 +114,8 @@ export function RequiredKeys({ entries, loading, onChanged }) {
   }
 
   return (
-    <SettingsSection flat
+    <SettingsSection
+      flat
       title="Keys Inertia needs"
       description="Two features authenticate with a key of their own, under the exact names below. They cannot be renamed, because the app looks them up by name before you have named anything. Test one to prove it works rather than that something is stored."
     >

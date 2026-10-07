@@ -119,7 +119,9 @@ export function clearReveal(dock, threadId, tabId) {
 /** What is waiting for this panel in this conversation, newest last. */
 export function pendingReveals(dock, threadId) {
   const prefix = `${String(dock ?? "")}|${threadId == null ? "" : String(threadId)}|`;
-  return [...pending.entries()].filter(([key]) => key.startsWith(prefix)).map(([, detail]) => detail);
+  return [...pending.entries()]
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, detail]) => detail);
 }
 
 /** Test seam. */

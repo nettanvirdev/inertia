@@ -25,7 +25,10 @@ const memory = (title, body, extra = {}) => ({
 
 describe("finding the memories a question is about", () => {
   const store = [
-    memory("Deploys from master", "Inertia work is pushed straight to master, never a feature branch."),
+    memory(
+      "Deploys from master",
+      "Inertia work is pushed straight to master, never a feature branch."
+    ),
     memory("Package manager", "The project uses pnpm. npm lockfiles are deleted on sight.", {
       tags: ["tooling"],
     }),
@@ -33,7 +36,9 @@ describe("finding the memories a question is about", () => {
   ];
 
   it("finds a memory by the words in it", () => {
-    expect(search(store, "which branch do we push to").map((m) => m.id)).toContain("deploys-from-master");
+    expect(search(store, "which branch do we push to").map((m) => m.id)).toContain(
+      "deploys-from-master"
+    );
   });
 
   it("finds one by its tags", () => {
@@ -63,10 +68,7 @@ describe("finding the memories a question is about", () => {
 
 describe("what goes into the prompt", () => {
   it("puts pinned memories first", () => {
-    const chosen = forPrompt([
-      memory("Ordinary", "a"),
-      memory("Pinned", "b", { pinned: true }),
-    ]);
+    const chosen = forPrompt([memory("Ordinary", "a"), memory("Pinned", "b", { pinned: true })]);
     expect(chosen[0].title).toBe("Pinned");
   });
 
@@ -160,7 +162,9 @@ describe("refusing to write down a secret", () => {
 
   it("does not refuse ordinary sentences about secrets", () => {
     // Talking about where a key lives is exactly what a memory SHOULD record.
-    expect(looksSecret("The API key is stored in the workspace secrets as MINIMAX_API_KEY.")).toBe(false);
+    expect(looksSecret("The API key is stored in the workspace secrets as MINIMAX_API_KEY.")).toBe(
+      false
+    );
     expect(looksSecret("Ask the user for their token; never read it from the repo.")).toBe(false);
   });
 
@@ -192,28 +196,42 @@ describe("not writing the same memory twice", () => {
   const store = [
     memory("Uses pnpm", "The project uses pnpm, not npm.", { scope: "global" }),
     memory("Allergic to peanuts", "Do not suggest peanut recipes.", { scope: "global" }),
-    memory("API routes", "Handlers live in src/routes.", { scope: "project", folder: "D:/work/api" }),
+    memory("API routes", "Handlers live in src/routes.", {
+      scope: "project",
+      folder: "D:/work/api",
+    }),
   ];
 
   it("recognises the same fact written again", () => {
-    const twin = findDuplicate(store, memory("Uses pnpm", "The project uses pnpm, not npm.", { scope: "global" }));
+    const twin = findDuplicate(
+      store,
+      memory("Uses pnpm", "The project uses pnpm, not npm.", { scope: "global" })
+    );
     expect(twin?.id).toBe("uses-pnpm");
   });
 
   it("treats a changed body under the same title as a correction, not a new fact", () => {
     // Keeping both is how a store starts contradicting itself.
-    const twin = findDuplicate(store, memory("Uses pnpm", "They moved to bun in July.", { scope: "global" }));
+    const twin = findDuplicate(
+      store,
+      memory("Uses pnpm", "They moved to bun in July.", { scope: "global" })
+    );
     expect(twin?.id).toBe("uses-pnpm");
   });
 
   it("ignores case and punctuation in a title, as a person would", () => {
-    expect(findDuplicate(store, memory("uses PNPM!", "Something.", { scope: "global" }))?.id).toBe("uses-pnpm");
+    expect(findDuplicate(store, memory("uses PNPM!", "Something.", { scope: "global" }))?.id).toBe(
+      "uses-pnpm"
+    );
   });
 
   it("does not merge two facts that are merely related", () => {
     // Both true. A wrong merge silently destroys one of them, which is far
     // worse than an untidy pair.
-    const twin = findDuplicate(store, memory("Allergic to eggs", "Do not suggest egg recipes.", { scope: "global" }));
+    const twin = findDuplicate(
+      store,
+      memory("Allergic to eggs", "Do not suggest egg recipes.", { scope: "global" })
+    );
     expect(twin).toBe(null);
   });
 
@@ -221,7 +239,10 @@ describe("not writing the same memory twice", () => {
     // In each one it is a fact about that project.
     const twin = findDuplicate(
       store,
-      memory("API routes", "Handlers live in src/routes.", { scope: "project", folder: "D:/work/site" })
+      memory("API routes", "Handlers live in src/routes.", {
+        scope: "project",
+        folder: "D:/work/site",
+      })
     );
     expect(twin).toBe(null);
   });
@@ -229,7 +250,10 @@ describe("not writing the same memory twice", () => {
   it("does not merge a project memory into a global one", () => {
     const twin = findDuplicate(
       store,
-      memory("Uses pnpm", "The project uses pnpm, not npm.", { scope: "project", folder: "D:/work/api" })
+      memory("Uses pnpm", "The project uses pnpm, not npm.", {
+        scope: "project",
+        folder: "D:/work/api",
+      })
     );
     expect(twin).toBe(null);
   });
@@ -240,7 +264,6 @@ describe("not writing the same memory twice", () => {
     expect(similarity("", "anything")).toBe(0);
   });
 });
-
 
 describe("choosing what is worth carrying into this message", () => {
   const store = [
@@ -264,7 +287,12 @@ describe("choosing what is worth carrying into this message", () => {
 
   it("always carries the pinned memories and the handover note first", () => {
     const chosen = forPrompt(store, { query: "deploy", budget: 5000 });
-    expect(chosen.slice(0, 2).map((m) => m.title).sort()).toEqual(["Pinned rule", "Where we left off"]);
+    expect(
+      chosen
+        .slice(0, 2)
+        .map((m) => m.title)
+        .sort()
+    ).toEqual(["Pinned rule", "Where we left off"]);
   });
 
   it("falls back to what has proved useful when the message matches nothing", () => {
@@ -289,7 +317,9 @@ describe("bringing an older memory up to date", () => {
   });
 
   it("takes the new wording", () => {
-    expect(merged(previous, { title: "Uses pnpm", body: "Moved off npm." }).body).toBe("Moved off npm.");
+    expect(merged(previous, { title: "Uses pnpm", body: "Moved off npm." }).body).toBe(
+      "Moved off npm."
+    );
   });
 
   it("keeps everything the memory had accumulated", () => {

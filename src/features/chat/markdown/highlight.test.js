@@ -118,7 +118,7 @@ describe("json", () => {
 });
 
 describe("html", () => {
-  const spans = tokenize('<a href="/x" class=\'y\'>text</a>', "html");
+  const spans = tokenize("<a href=\"/x\" class='y'>text</a>", "html");
 
   it("separates the tag, its attributes and its values", () => {
     expect(of(spans, "tag")).toEqual(["a", "a"]);

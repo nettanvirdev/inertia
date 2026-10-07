@@ -184,7 +184,9 @@ describe("runCount", () => {
 describe("runState", () => {
   it("is failed if any member failed, whatever the rest did", () => {
     expect(runState([read("a"), read("b", { state: "failed" })])).toBe("failed");
-    expect(runState([read("a", { state: "running" }), read("b", { state: "failed" })])).toBe("failed");
+    expect(runState([read("a", { state: "running" }), read("b", { state: "failed" })])).toBe(
+      "failed"
+    );
   });
 
   it("is running until every member has finished", () => {
@@ -199,7 +201,9 @@ describe("runDuration", () => {
   });
 
   it("reports nothing rather than an understated total", () => {
-    expect(runDuration([read("a", { durationMs: 3 }), read("b", { durationMs: null })])).toBeUndefined();
+    expect(
+      runDuration([read("a", { durationMs: 3 }), read("b", { durationMs: null })])
+    ).toBeUndefined();
     expect(runDuration([])).toBeUndefined();
   });
 });

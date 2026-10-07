@@ -11,7 +11,14 @@ describe("remote pictures", () => {
   });
 
   it("does not treat a picture on this machine as remote", () => {
-    for (const local of ["data:image/png;base64,aGk=", "blob:abc", "C:/work/project/a.png", "file:///C:/work/a.png", "files/a.png", ""]) {
+    for (const local of [
+      "data:image/png;base64,aGk=",
+      "blob:abc",
+      "C:/work/project/a.png",
+      "file:///C:/work/a.png",
+      "files/a.png",
+      "",
+    ]) {
       expect(remoteHost(local)).toBeNull();
       expect(mayFetch(local)).toBe(true);
     }

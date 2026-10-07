@@ -117,9 +117,7 @@ describe("urls and pictures", () => {
   });
 
   it("turns an attachment into something an img can take", () => {
-    expect(attachmentUrl({ mimeType: "image/png", data: "AAA" })).toBe(
-      "data:image/png;base64,AAA"
-    );
+    expect(attachmentUrl({ mimeType: "image/png", data: "AAA" })).toBe("data:image/png;base64,AAA");
     expect(attachmentUrl({ data: "https://a.com/b.png" })).toBe("https://a.com/b.png");
     expect(attachmentUrl(null)).toBe("");
   });
@@ -141,14 +139,17 @@ describe("columnsOf and fitsATable", () => {
   });
 
   it("ignores nested values, which have no cell", () => {
-    expect(columnsOf([{ a: 1, deep: { x: 1 } }, { a: 2, deep: { x: 2 } }])).toEqual(["a"]);
+    expect(
+      columnsOf([
+        { a: 1, deep: { x: 1 } },
+        { a: 2, deep: { x: 2 } },
+      ])
+    ).toEqual(["a"]);
   });
 
   it("refuses a table for rows that carry paragraphs", () => {
     expect(fitsATable(rows)).toBe(true);
-    expect(
-      fitsATable(rows.map((row) => ({ ...row, note: "x".repeat(200) })))
-    ).toBe(false);
+    expect(fitsATable(rows.map((row) => ({ ...row, note: "x".repeat(200) })))).toBe(false);
   });
 
   it("refuses a table when the rows hold much more than the columns show", () => {

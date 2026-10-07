@@ -29,7 +29,9 @@ describe("reading a flowchart", () => {
   });
 
   it("reads the other spelling of an edge label", () => {
-    const diagram = flow("graph LR\n  A -- takes a while --> B\n  B -. maybe .-> C\n  C == always ==> D");
+    const diagram = flow(
+      "graph LR\n  A -- takes a while --> B\n  B -. maybe .-> C\n  C == always ==> D"
+    );
     expect(diagram.edges.map((edge) => [edge.label, edge.stroke, edge.head])).toEqual([
       ["takes a while", "solid", "end"],
       ["maybe", "dotted", "end"],
@@ -179,8 +181,7 @@ describe("laying a flowchart out", () => {
     for (const a of diagram.nodes) {
       for (const b of diagram.nodes) {
         if (a.id >= b.id) continue;
-        const apart =
-          a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+        const apart = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
         expect(apart, `${a.id} and ${b.id} overlap`).toBe(true);
       }
     }

@@ -147,9 +147,7 @@ export function useAnchoredPosition({
       "--overlay-in-y": slide.y,
       maxHeight: `${Math.max(
         96,
-        Math.round(
-          placed === "top" || placed === "bottom" ? room[placed] : vh - MARGIN * 2
-        )
+        Math.round(placed === "top" || placed === "bottom" ? room[placed] : vh - MARGIN * 2)
       )}px`,
       ...(matchWidth
         ? minMode

@@ -56,8 +56,14 @@ function Directories({ directories }) {
     <div className="flex flex-col gap-1">
       <p className="text-[11px] text-muted-foreground">Outside the working folder</p>
       {directories.map((dir) => (
-        <p key={dir} className="flex items-start gap-2 font-mono text-[12px] break-all text-foreground">
-          <FolderOpen className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <p
+          key={dir}
+          className="flex items-start gap-2 font-mono text-[12px] break-all text-foreground"
+        >
+          <FolderOpen
+            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
           <span className="min-w-0 flex-1">{dir}</span>
         </p>
       ))}

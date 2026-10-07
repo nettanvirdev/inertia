@@ -114,10 +114,7 @@ describe("collectThreadFiles, with real attachments", () => {
   });
 
   it("shows one row per file even when it is written more than once", () => {
-    const twice = [
-      blocks[1],
-      { ...blocks[1], id: "m5", createdAt: "2026-09-01T14:00:00.000Z" },
-    ];
+    const twice = [blocks[1], { ...blocks[1], id: "m5", createdAt: "2026-09-01T14:00:00.000Z" }];
     const rows = collectThreadFiles(twice);
     expect(rows).toHaveLength(1);
     expect(rows[0].at).toBe("2026-09-01T14:00:00.000Z");
@@ -215,11 +212,7 @@ describe("collectLibraryArtifacts", () => {
   const catalogue = collectLibraryArtifacts({ threads: [thread], messages: { t1: blocks } });
 
   it("finds everything a thread produced, of both kinds", () => {
-    expect(catalogue.map((item) => item.name)).toEqual([
-      "README.md",
-      "screenshot.png",
-      "notes.md",
-    ]);
+    expect(catalogue.map((item) => item.name)).toEqual(["README.md", "screenshot.png", "notes.md"]);
   });
 
   it("scopes ids by thread, so two transcripts cannot collide", () => {

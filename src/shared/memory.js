@@ -96,8 +96,12 @@ export function approved(memories) {
  * inside an XML element in a prompt and a stray one reads as structure.
  */
 export function summarise(memory, limit = MAX_SUMMARY) {
-  const written = String(memory?.description ?? "").replace(/\s+/g, " ").trim();
-  const body = String(memory?.body ?? "").replace(/\s+/g, " ").trim();
+  const written = String(memory?.description ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const body = String(memory?.body ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
   const line = written || body;
   if (!line) return "";
   return line.length > limit ? `${line.slice(0, limit).trimEnd()}...` : line;
@@ -114,9 +118,34 @@ export function summarise(memory, limit = MAX_SUMMARY) {
  * than it saves noise.
  */
 const STOP = new Set([
-  "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "from", "how",
-  "in", "is", "it", "of", "on", "or", "that", "the", "this", "to", "was", "what",
-  "when", "where", "which", "with",
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "but",
+  "by",
+  "for",
+  "from",
+  "how",
+  "in",
+  "is",
+  "it",
+  "of",
+  "on",
+  "or",
+  "that",
+  "the",
+  "this",
+  "to",
+  "was",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
 ]);
 
 export function terms(text) {
@@ -294,8 +323,10 @@ export function forPrompt(
     if (byRelevance) return byRelevance;
     const used = (b.useCount ?? 0) - (a.useCount ?? 0);
     if (used) return used;
-    return freshness(b.lastUsedAt || b.updatedAt || b.createdAt, now) -
-      freshness(a.lastUsedAt || a.updatedAt || a.createdAt, now);
+    return (
+      freshness(b.lastUsedAt || b.updatedAt || b.createdAt, now) -
+      freshness(a.lastUsedAt || a.updatedAt || a.createdAt, now)
+    );
   });
 
   const kept = [];
@@ -333,7 +364,10 @@ export function similarity(a, b) {
 
 /** Titles compared the way a person would: case and punctuation do not count. */
 function normalisedTitle(memory) {
-  return String(memory?.title ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return String(memory?.title ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 /**
@@ -365,7 +399,8 @@ export function findDuplicate(memories, candidate, threshold = SAME_MEMORY) {
     if (candidate?.scope === "project" && !sameFolder(memory?.folder, candidate?.folder)) continue;
 
     if (title && normalisedTitle(memory) === title) return memory;
-    if (similarity(text, `${memory?.title ?? ""} ${memory?.body ?? ""}`) >= threshold) return memory;
+    if (similarity(text, `${memory?.title ?? ""} ${memory?.body ?? ""}`) >= threshold)
+      return memory;
   }
   return null;
 }

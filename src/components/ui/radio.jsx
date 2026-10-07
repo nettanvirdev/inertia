@@ -14,9 +14,7 @@ function RadioGroup({ value, onChange, children, className, label, ...props }) {
   const enabledItems = React.useCallback(() => {
     const root = groupRef.current;
     if (!root) return [];
-    return Array.from(root.querySelectorAll('[role="radio"]')).filter(
-      (n) => !n.disabled
-    );
+    return Array.from(root.querySelectorAll('[role="radio"]')).filter((n) => !n.disabled);
   }, []);
 
   const move = React.useCallback(
@@ -32,10 +30,7 @@ function RadioGroup({ value, onChange, children, className, label, ...props }) {
   );
 
   // When nothing is selected the first enabled item holds the group's tab stop.
-  const isFirst = React.useCallback(
-    (node) => enabledItems()[0] === node,
-    [enabledItems]
-  );
+  const isFirst = React.useCallback((node) => enabledItems()[0] === node, [enabledItems]);
 
   const ctx = React.useMemo(
     () => ({ value, onChange, move, isFirst }),
@@ -117,9 +112,7 @@ function RadioItem({ value, label, description, disabled = false, className, ...
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="text-[13px] text-foreground">{label}</span>
         {description ? (
-          <span className="text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </span>
+          <span className="text-xs leading-relaxed text-muted-foreground">{description}</span>
         ) : null}
       </span>
     </button>

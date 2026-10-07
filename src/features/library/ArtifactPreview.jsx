@@ -23,7 +23,12 @@ import { useWorkspace } from "@/lib/workspace";
 /** A picture, in the frame, with nothing between it and the viewer. */
 function ImagePreview({ artifact, className }) {
   return (
-    <div className={cn("grid place-items-center overflow-hidden rounded-2xl bg-card-darker p-2", className)}>
+    <div
+      className={cn(
+        "grid place-items-center overflow-hidden rounded-2xl bg-card-darker p-2",
+        className
+      )}
+    >
       <img
         src={artifact.dataUrl}
         alt={artifact.name}
@@ -58,7 +63,7 @@ function MediaPreview({ artifact, className, video, source }) {
     <div
       className={cn(
         "grid place-items-center overflow-hidden rounded-2xl bg-card-darker p-3",
-        className,
+        className
       )}
     >
       <Element
@@ -122,16 +127,14 @@ function TextPreview({ artifact, className, compact }) {
   // A card in a grid of forty gets the head of the file and no scrollbar; the
   // dialog gets all of it. Slicing rather than clipping with CSS keeps a 200KB
   // attachment out of the DOM forty times over.
-  const body = compact
-    ? String(artifact.text).split("\n").slice(0, 10).join("\n")
-    : artifact.text;
+  const body = compact ? String(artifact.text).split("\n").slice(0, 10).join("\n") : artifact.text;
 
   return (
     <div
       className={cn(
         "rounded-2xl bg-card-darker p-3.5",
         compact ? "overflow-hidden" : "overflow-auto",
-        className,
+        className
       )}
     >
       <pre className="font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-foreground/85">
@@ -147,7 +150,7 @@ function PathPreview({ artifact, className }) {
     <div
       className={cn(
         "flex flex-col items-center justify-center gap-2 rounded-2xl bg-card-darker px-5 py-6 text-center",
-        className,
+        className
       )}
     >
       <Icon
@@ -155,12 +158,14 @@ function PathPreview({ artifact, className }) {
         className="size-5 text-muted-foreground/70"
         aria-hidden="true"
       />
-      <p className="max-w-full truncate font-mono text-[11px] text-foreground/80" title={artifact.path}>
+      <p
+        className="max-w-full truncate font-mono text-[11px] text-foreground/80"
+        title={artifact.path}
+      >
         {artifact.path}
       </p>
       <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-        This file lives on the computer, not in the conversation. Open it to see
-        what is in it.
+        This file lives on the computer, not in the conversation. Open it to see what is in it.
       </p>
     </div>
   );
@@ -172,7 +177,7 @@ function OpaquePreview({ artifact, className }) {
     <div
       className={cn(
         "flex flex-col items-center justify-center gap-2 rounded-2xl bg-card-darker px-5 py-6 text-center",
-        className,
+        className
       )}
     >
       <Icon
@@ -182,8 +187,8 @@ function OpaquePreview({ artifact, className }) {
       />
       <p className="text-[11px] text-foreground/80">{artifact.name}</p>
       <p className="text-[10.5px] text-muted-foreground">
-        {formatBytes(artifact.sizeBytes) ?? "Unknown size"} · nothing here can
-        show it. Save a copy and open it where it belongs.
+        {formatBytes(artifact.sizeBytes) ?? "Unknown size"} · nothing here can show it. Save a copy
+        and open it where it belongs.
       </p>
     </div>
   );

@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isFeatureOn, visibleItems } from "./features.js";
 
-const NAV = [
-  { id: "agents" },
-  { id: "memory", needs: "memory" },
-  { id: "activity" },
-];
+const NAV = [{ id: "agents" }, { id: "memory", needs: "memory" }, { id: "activity" }];
 
 describe("which parts of the app exist", () => {
   it("keeps everything when nothing has been switched off", () => {

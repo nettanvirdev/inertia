@@ -7,8 +7,26 @@ function isMac() {
   return /mac|iphone|ipad|ipod/i.test(src);
 }
 
-const MAC = { mod: "⌘", meta: "⌘", cmd: "⌘", alt: "⌥", option: "⌥", shift: "⇧", ctrl: "⌃", control: "⌃" };
-const PC = { mod: "Ctrl", meta: "Win", cmd: "Ctrl", alt: "Alt", option: "Alt", shift: "Shift", ctrl: "Ctrl", control: "Ctrl" };
+const MAC = {
+  mod: "⌘",
+  meta: "⌘",
+  cmd: "⌘",
+  alt: "⌥",
+  option: "⌥",
+  shift: "⇧",
+  ctrl: "⌃",
+  control: "⌃",
+};
+const PC = {
+  mod: "Ctrl",
+  meta: "Win",
+  cmd: "Ctrl",
+  alt: "Alt",
+  option: "Alt",
+  shift: "Shift",
+  ctrl: "Ctrl",
+  control: "Ctrl",
+};
 
 const NAMED = {
   enter: "↵",
@@ -38,7 +56,12 @@ function formatShortcut(combo) {
     .split("+")
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean)
-    .map((p) => table[p] ?? NAMED[p] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1)));
+    .map(
+      (p) =>
+        table[p] ??
+        NAMED[p] ??
+        (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1))
+    );
   // mac glyphs read as one unit; word modifiers need the space
   return mac ? parts.join("") : parts.join(" ");
 }

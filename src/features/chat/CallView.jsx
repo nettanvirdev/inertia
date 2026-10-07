@@ -41,7 +41,15 @@ const PHASE_WORDS = {
   speaking: "Speaking",
 };
 
-export function CallView({ agent, messages, streaming, minimized = false, onSend, onMinimize, onClose }) {
+export function CallView({
+  agent,
+  messages,
+  streaming,
+  minimized = false,
+  onSend,
+  onMinimize,
+  onClose,
+}) {
   const { settings } = useVoiceSettings();
   const speech = useSpeechState();
 
@@ -133,9 +141,7 @@ export function CallView({ agent, messages, streaming, minimized = false, onSend
     if (closing.current || streaming) return;
     const fresh = (messages ?? []).filter(
       (message) =>
-        message.role === "agent" &&
-        message.status === "sent" &&
-        !spoken.current.has(message.id)
+        message.role === "agent" && message.status === "sent" && !spoken.current.has(message.id)
     );
     for (const message of fresh) spoken.current.add(message.id);
 
@@ -240,18 +246,18 @@ export function CallView({ agent, messages, streaming, minimized = false, onSend
             percent tint meant to sit on top of an opaque surface, not to be
             one: the card was see-through and the transcript read straight
             through the middle of it. */}
-        <div data-state={sheet.state} className="absolute inset-0 scrim animate-fade-in" aria-hidden="true" />
+        <div
+          data-state={sheet.state}
+          className="absolute inset-0 scrim animate-fade-in"
+          aria-hidden="true"
+        />
         <div
           data-state={sheet.state}
           className="relative w-full max-w-[26rem] overlay-surface rounded-3xl p-6 text-center animate-overlay-in"
         >
           <div className="flex items-center justify-between">
             <p className="text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Call</p>
-            <IconButton
-              size="sm"
-              label="Send the call to the background"
-              onClick={onMinimize}
-            >
+            <IconButton size="sm" label="Send the call to the background" onClick={onMinimize}>
               <ChevronDown />
             </IconButton>
           </div>
@@ -292,9 +298,7 @@ export function CallView({ agent, messages, streaming, minimized = false, onSend
           </p>
 
           <Collapse open={Boolean(error)}>
-            <p className="mt-1 text-[0.6875rem] leading-relaxed text-destructive-ink">
-              {error}
-            </p>
+            <p className="mt-1 text-[0.6875rem] leading-relaxed text-destructive-ink">{error}</p>
           </Collapse>
 
           <div className="mt-5 flex items-center justify-center gap-2">

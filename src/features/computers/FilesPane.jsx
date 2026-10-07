@@ -37,7 +37,10 @@ const IMAGE_MIME = {
 
 /** The MIME for a name, if it is an image we can draw. */
 function imageMime(name) {
-  const ext = String(name ?? "").split(".").pop()?.toLowerCase();
+  const ext = String(name ?? "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
   return (ext && IMAGE_MIME[ext]) || null;
 }
 
@@ -274,73 +277,76 @@ export function FilesPane({ computer }) {
                 ];
                 return (
                   <ContextMenu key={row.path} items={isDir ? [] : fileItems}>
-                  <button
-                    data-row=""
-                    type="button"
-                    role="treeitem"
-                    aria-expanded={isDir ? open : undefined}
-                    aria-selected={active}
-                    tabIndex={tabStop ? 0 : -1}
-                    onKeyDown={(event) => onKeyDown(event, row, i)}
-                    onClick={() => {
-                      setSelected(row.path);
-                      if (isDir) toggle(row.path);
-                    }}
-                    onDoubleClick={() => {
-                      if (!isDir && imageMime(row.name)) setViewing(row);
-                    }}
-                    style={{ paddingLeft: `${row.depth * 12 + 6}px` }}
-                    className={cn(
-                      // Rows are keyed by path, so only the ones a fold just
-                      // revealed are new enough to fade; the rest stay put.
-                      "flex h-7 w-full animate-fade-in items-center gap-1.5 rounded-xl pr-2 text-left outline-none",
-                      "transition-colors duration-150 ease-out",
-                      "focus-visible:fill-nav",
-                      active ? "fill-nav-active" : "hover:fill-nav"
-                    )}
-                  >
-                    <ChevronRight
-                      aria-hidden="true"
+                    <button
+                      data-row=""
+                      type="button"
+                      role="treeitem"
+                      aria-expanded={isDir ? open : undefined}
+                      aria-selected={active}
+                      tabIndex={tabStop ? 0 : -1}
+                      onKeyDown={(event) => onKeyDown(event, row, i)}
+                      onClick={() => {
+                        setSelected(row.path);
+                        if (isDir) toggle(row.path);
+                      }}
+                      onDoubleClick={() => {
+                        if (!isDir && imageMime(row.name)) setViewing(row);
+                      }}
+                      style={{ paddingLeft: `${row.depth * 12 + 6}px` }}
                       className={cn(
-                        "size-3 shrink-0 text-muted-foreground transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
-                        !isDir ? "invisible" : open ? "rotate-90" : ""
+                        // Rows are keyed by path, so only the ones a fold just
+                        // revealed are new enough to fade; the rest stay put.
+                        "flex h-7 w-full animate-fade-in items-center gap-1.5 rounded-xl pr-2 text-left outline-none",
+                        "transition-colors duration-150 ease-out",
+                        "focus-visible:fill-nav",
+                        active ? "fill-nav-active" : "hover:fill-nav"
                       )}
-                    />
-                    {isDir ? (
-                      open ? (
-                        <FolderOpen
-                          className="size-3.5 shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Folder
-                          className="size-3.5 shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                      )
-                    ) : (
-                      <File
-                        className="size-3.5 shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span
-                      className={cn("min-w-0 flex-1 truncate text-[13px]", active && "font-medium")}
-                      title={row.path}
                     >
-                      {row.name}
-                    </span>
-                    {loading.has(row.path) ? (
-                      <span className="shrink-0 text-[10px] text-muted-foreground">…</span>
-                    ) : failed[row.path] ? (
+                      <ChevronRight
+                        aria-hidden="true"
+                        className={cn(
+                          "size-3 shrink-0 text-muted-foreground transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+                          !isDir ? "invisible" : open ? "rotate-90" : ""
+                        )}
+                      />
+                      {isDir ? (
+                        open ? (
+                          <FolderOpen
+                            className="size-3.5 shrink-0 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Folder
+                            className="size-3.5 shrink-0 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                        )
+                      ) : (
+                        <File
+                          className="size-3.5 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                      )}
                       <span
-                        className="shrink-0 text-[10px] text-muted-foreground"
-                        title={failed[row.path]}
+                        className={cn(
+                          "min-w-0 flex-1 truncate text-[13px]",
+                          active && "font-medium"
+                        )}
+                        title={row.path}
                       >
-                        locked
+                        {row.name}
                       </span>
-                    ) : null}
-                  </button>
+                      {loading.has(row.path) ? (
+                        <span className="shrink-0 text-[10px] text-muted-foreground">…</span>
+                      ) : failed[row.path] ? (
+                        <span
+                          className="shrink-0 text-[10px] text-muted-foreground"
+                          title={failed[row.path]}
+                        >
+                          locked
+                        </span>
+                      ) : null}
+                    </button>
                   </ContextMenu>
                 );
               })
@@ -533,7 +539,11 @@ function FilePreview({ computer, path, entry, onDownload, onView }) {
                 <Eye />
               </IconButton>
             ) : null}
-            <IconButton size="sm" label={`Download ${entry.name}`} onClick={() => onDownload?.(entry)}>
+            <IconButton
+              size="sm"
+              label={`Download ${entry.name}`}
+              onClick={() => onDownload?.(entry)}
+            >
               <Download />
             </IconButton>
           </span>

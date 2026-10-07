@@ -52,7 +52,12 @@ export function parseDiff(text) {
     } else if (line.startsWith("-")) {
       hunk.rows.push({ kind: "del", text: line.slice(1), oldNo: oldNo++ });
     } else {
-      hunk.rows.push({ kind: "ctx", text: line.startsWith(" ") ? line.slice(1) : line, oldNo: oldNo++, newNo: newNo++ });
+      hunk.rows.push({
+        kind: "ctx",
+        text: line.startsWith(" ") ? line.slice(1) : line,
+        oldNo: oldNo++,
+        newNo: newNo++,
+      });
     }
   }
 

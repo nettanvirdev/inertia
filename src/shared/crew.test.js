@@ -114,7 +114,9 @@ describe("the conversation-wide limits", () => {
     const generous = { name: "Nova", spawn: { subagents: true, agents: true, recursive: true } };
     expect(spawnRefusal(generous, { live: TEAM_LIMITS.live })).toMatch(/in flight/);
     expect(spawnRefusal(generous, { total: TEAM_LIMITS.total })).toMatch(/already started/);
-    expect(spawnRefusal(generous, { live: TEAM_LIMITS.live - 1, total: TEAM_LIMITS.total - 1 })).toBeNull();
+    expect(
+      spawnRefusal(generous, { live: TEAM_LIMITS.live - 1, total: TEAM_LIMITS.total - 1 })
+    ).toBeNull();
   });
 
   it("only a settled run with its conversation kept can take a follow-up", () => {

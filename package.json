@@ -16,6 +16,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "vitest run",
+    "lint": "eslint src",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\" \"installer/src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\" \"installer/src/**/*.{ts,tsx,css}\"",
     "notices": "node scripts/third-party-notices.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -45,14 +48,20 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@eslint/js": "9",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "9",
+    "eslint-plugin-react": "7",
+    "eslint-plugin-react-hooks": "5",
+    "globals": "^17.13.0",
+    "prettier": "3",
+    "tailwindcss": "^4.3.3",
     "typescript": "~7.0.2",
     "vite": "^8.0.16",
-    "@tauri-apps/cli": "^2",
-    "@tailwindcss/vite": "^4.3.3",
-    "tailwindcss": "^4.3.3",
     "vitest": "^4.1.10"
   }
 }

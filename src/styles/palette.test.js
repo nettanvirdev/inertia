@@ -18,10 +18,10 @@ import { fileURLToPath } from "url";
 // Normalised, because the working copy is checked out with CRLF on Windows
 // and LF elsewhere - and this file matches on a multi-line selector, so
 // without it the suite would pass or fail depending on who cloned the repo.
-const css = readFileSync(
-  fileURLToPath(new URL("./globals.css", import.meta.url)),
-  "utf8"
-).replace(/\r\n/g, "\n");
+const css = readFileSync(fileURLToPath(new URL("./globals.css", import.meta.url)), "utf8").replace(
+  /\r\n/g,
+  "\n"
+);
 
 /**
  * The declarations inside one top-level block, by name.
@@ -79,9 +79,7 @@ const dark = block(".dark");
 
 describe("the two palettes", () => {
   it("defines every themed token in both", () => {
-    const missing = [...light.keys()].filter(
-      (name) => !GEOMETRY.has(name) && !dark.has(name)
-    );
+    const missing = [...light.keys()].filter((name) => !GEOMETRY.has(name) && !dark.has(name));
     expect(missing, "defined in light but not in dark").toEqual([]);
   });
 
@@ -128,7 +126,10 @@ describe("the two palettes", () => {
     // a dot, unreadable as the word next to it, which is what they were being
     // used for. A status colour is the one place where "looks about right" and
     // "can be read" come apart, so the number is asserted rather than eyeballed.
-    for (const [mode, tokens] of [["light", light], ["dark", dark]]) {
+    for (const [mode, tokens] of [
+      ["light", light],
+      ["dark", dark],
+    ]) {
       const surfaces = ["--background", "--overlay", "--card", "--card-subtle"];
       for (const name of ["--destructive-ink", "--success-ink", "--warning-ink", "--info-ink"]) {
         for (const surface of surfaces) {
@@ -143,7 +144,10 @@ describe("the two palettes", () => {
     // `rgb(var(--ink) / 0.06)` only works if --ink is "51 53 55" and not
     // "rgb(51,53,55)". Getting this wrong makes every hover in the app vanish
     // at once, which is a spectacular failure and an easy typo.
-    for (const [mode, tokens] of [["light", light], ["dark", dark]]) {
+    for (const [mode, tokens] of [
+      ["light", light],
+      ["dark", dark],
+    ]) {
       expect(tokens.get("--ink"), mode).toMatch(/^\d+ \d+ \d+$/);
     }
   });

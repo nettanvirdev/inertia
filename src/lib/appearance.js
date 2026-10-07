@@ -226,26 +226,125 @@ export const DARK_PALETTES = [
  */
 export const ACCENTS = [
   { value: "default", label: "Ink", light: null, dark: null },
-  { value: "emerald", label: "Emerald", light: "#047857", dark: "#34d399", on: { light: "#ffffff", dark: "#06251b" } },
-  { value: "blue", label: "Blue", light: "#1d4ed8", dark: "#60a5fa", on: { light: "#ffffff", dark: "#0a1834" } },
-  { value: "violet", label: "Violet", light: "#6d28d9", dark: "#a78bfa", on: { light: "#ffffff", dark: "#1b0f36" } },
-  { value: "amber", label: "Amber", light: "#b45309", dark: "#fbbf24", on: { light: "#ffffff", dark: "#2b1a00" } },
-  { value: "rose", label: "Rose", light: "#be123c", dark: "#fb7185", on: { light: "#ffffff", dark: "#37060f" } },
-  { value: "cyan", label: "Cyan", light: "#0e7490", dark: "#22d3ee", on: { light: "#ffffff", dark: "#04252c" } },
+  {
+    value: "emerald",
+    label: "Emerald",
+    light: "#047857",
+    dark: "#34d399",
+    on: { light: "#ffffff", dark: "#06251b" },
+  },
+  {
+    value: "blue",
+    label: "Blue",
+    light: "#1d4ed8",
+    dark: "#60a5fa",
+    on: { light: "#ffffff", dark: "#0a1834" },
+  },
+  {
+    value: "violet",
+    label: "Violet",
+    light: "#6d28d9",
+    dark: "#a78bfa",
+    on: { light: "#ffffff", dark: "#1b0f36" },
+  },
+  {
+    value: "amber",
+    label: "Amber",
+    light: "#b45309",
+    dark: "#fbbf24",
+    on: { light: "#ffffff", dark: "#2b1a00" },
+  },
+  {
+    value: "rose",
+    label: "Rose",
+    light: "#be123c",
+    dark: "#fb7185",
+    on: { light: "#ffffff", dark: "#37060f" },
+  },
+  {
+    value: "cyan",
+    label: "Cyan",
+    light: "#0e7490",
+    dark: "#22d3ee",
+    on: { light: "#ffffff", dark: "#04252c" },
+  },
   // Past here is what the "More colours" button reveals. The split is not a
   // ranking - every one of these is the same three values as the seven above -
   // it is a row count. Sixteen swatches open by default is a paint chart, and
   // the person who wanted the app to be blue has to read past nine colours to
   // find out that Ink means no colour at all.
-  { value: "teal", label: "Teal", light: "#0f766e", dark: "#2dd4bf", on: { light: "#ffffff", dark: "#03231f" }, more: true },
-  { value: "sky", label: "Sky", light: "#0369a1", dark: "#38bdf8", on: { light: "#ffffff", dark: "#042536" }, more: true },
-  { value: "indigo", label: "Indigo", light: "#4338ca", dark: "#818cf8", on: { light: "#ffffff", dark: "#131238" }, more: true },
-  { value: "fuchsia", label: "Fuchsia", light: "#a21caf", dark: "#e879f9", on: { light: "#ffffff", dark: "#2c0733" }, more: true },
-  { value: "pink", label: "Pink", light: "#be185d", dark: "#f472b6", on: { light: "#ffffff", dark: "#330717" }, more: true },
-  { value: "red", label: "Red", light: "#b91c1c", dark: "#f87171", on: { light: "#ffffff", dark: "#300a0a" }, more: true },
-  { value: "orange", label: "Orange", light: "#c2410c", dark: "#fb923c", on: { light: "#ffffff", dark: "#2b1203" }, more: true },
-  { value: "lime", label: "Lime", light: "#4d7c0f", dark: "#a3e635", on: { light: "#ffffff", dark: "#16240a" }, more: true },
-  { value: "slate", label: "Slate", light: "#334155", dark: "#94a3b8", on: { light: "#ffffff", dark: "#0d1420" }, more: true },
+  {
+    value: "teal",
+    label: "Teal",
+    light: "#0f766e",
+    dark: "#2dd4bf",
+    on: { light: "#ffffff", dark: "#03231f" },
+    more: true,
+  },
+  {
+    value: "sky",
+    label: "Sky",
+    light: "#0369a1",
+    dark: "#38bdf8",
+    on: { light: "#ffffff", dark: "#042536" },
+    more: true,
+  },
+  {
+    value: "indigo",
+    label: "Indigo",
+    light: "#4338ca",
+    dark: "#818cf8",
+    on: { light: "#ffffff", dark: "#131238" },
+    more: true,
+  },
+  {
+    value: "fuchsia",
+    label: "Fuchsia",
+    light: "#a21caf",
+    dark: "#e879f9",
+    on: { light: "#ffffff", dark: "#2c0733" },
+    more: true,
+  },
+  {
+    value: "pink",
+    label: "Pink",
+    light: "#be185d",
+    dark: "#f472b6",
+    on: { light: "#ffffff", dark: "#330717" },
+    more: true,
+  },
+  {
+    value: "red",
+    label: "Red",
+    light: "#b91c1c",
+    dark: "#f87171",
+    on: { light: "#ffffff", dark: "#300a0a" },
+    more: true,
+  },
+  {
+    value: "orange",
+    label: "Orange",
+    light: "#c2410c",
+    dark: "#fb923c",
+    on: { light: "#ffffff", dark: "#2b1203" },
+    more: true,
+  },
+  {
+    value: "lime",
+    label: "Lime",
+    light: "#4d7c0f",
+    dark: "#a3e635",
+    on: { light: "#ffffff", dark: "#16240a" },
+    more: true,
+  },
+  {
+    value: "slate",
+    label: "Slate",
+    light: "#334155",
+    dark: "#94a3b8",
+    on: { light: "#ffffff", dark: "#0d1420" },
+    more: true,
+  },
 ];
 
 /**
@@ -302,15 +401,13 @@ export const FONT_FAMILIES = [
     value: "sf",
     label: "SF Pro",
     description: "Apple's interface face, then the platform's own",
-    stack:
-      `"SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", "Inter Variable", Inter, system-ui, Roboto, "Helvetica Neue", Arial, ${BENGALI_SANS}, sans-serif`,
+    stack: `"SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", "Inter Variable", Inter, system-ui, Roboto, "Helvetica Neue", Arial, ${BENGALI_SANS}, sans-serif`,
   },
   {
     value: "system",
     label: "System",
     description: "Whatever this computer uses",
-    stack:
-      `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, ${BENGALI_SANS}, sans-serif`,
+    stack: `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, ${BENGALI_SANS}, sans-serif`,
   },
   {
     value: "inter",
@@ -352,8 +449,7 @@ export const MONO_FAMILIES = [
     value: "sf",
     label: "SF Mono",
     description: "Apple's code face, then the platform's own",
-    stack:
-      `"SF Mono", ui-monospace, "JetBrains Mono Variable", "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", ${BENGALI_MONO}, monospace`,
+    stack: `"SF Mono", ui-monospace, "JetBrains Mono Variable", "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", ${BENGALI_MONO}, monospace`,
   },
   {
     value: "jetbrains",
@@ -499,7 +595,10 @@ export function applyAppearance(preferences, isDark) {
   style.setProperty("--chat-font-size", `${clamp(a.fontSize, 12, 20)}px`);
   style.setProperty("--code-font-size", `${clamp(a.codeSize, 11, 18)}px`);
   style.setProperty("--tool-max-height", `${clamp(a.toolHeight, 160, 800)}px`);
-  style.setProperty("--chat-line-height", String(byValue(LINE_HEIGHTS, a.lineHeight, "normal").ratio));
+  style.setProperty(
+    "--chat-line-height",
+    String(byValue(LINE_HEIGHTS, a.lineHeight, "normal").ratio)
+  );
   style.setProperty("--chat-measure", byValue(MESSAGE_WIDTHS, a.messageWidth, "comfortable").ch);
 
   // Both of these are read by an attribute selector in globals.css rather than

@@ -125,7 +125,10 @@ function collectReferences() {
     BARREL_IMPORT.lastIndex = 0;
     for (const match of source.matchAll(BARREL_IMPORT)) {
       for (const raw of match[1].split(",")) {
-        const name = raw.trim().split(/\s+as\s+/)[0].trim();
+        const name = raw
+          .trim()
+          .split(/\s+as\s+/)[0]
+          .trim();
         if (/^[A-Z][A-Za-z0-9]*$/.test(name)) note(name, `${rel} (import)`);
       }
     }
@@ -258,7 +261,10 @@ describe("the image files the app ships", () => {
       "public/assets/logo-512.png",
     ].map(inspect);
     const broken = results.filter((r) => r.missing || r.size === 0 || r.typed === false);
-    expect(broken.map((r) => r.relative), "logo sizes that are missing or not PNGs").toEqual([]);
+    expect(
+      broken.map((r) => r.relative),
+      "logo sizes that are missing or not PNGs"
+    ).toEqual([]);
   });
 
   it("points every <img> at a file that is really there", () => {
@@ -296,8 +302,9 @@ describe("the image files the app ships", () => {
           if (/src="\/(?!\/)/.test(line)) absolute.push(`${rel}:${i + 1}`);
         });
     }
-    expect(absolute, `absolute asset paths that break under file://: ${absolute.join(", ")}`).toEqual(
-      []
-    );
+    expect(
+      absolute,
+      `absolute asset paths that break under file://: ${absolute.join(", ")}`
+    ).toEqual([]);
   });
 });

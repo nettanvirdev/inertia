@@ -23,7 +23,10 @@ function unwrap(reply) {
 }
 
 function bridgeClient(api) {
-  const call = (fn) => async (...args) => unwrap(await fn(...args));
+  const call =
+    (fn) =>
+    async (...args) =>
+      unwrap(await fn(...args));
   return {
     kind: "bridge",
     status: call(api.status),
@@ -82,7 +85,13 @@ function memoryClient() {
       return blank();
     }
   };
-  const blank = () => ({ configured: false, root: null, collections: {}, documents: {}, secrets: {} });
+  const blank = () => ({
+    configured: false,
+    root: null,
+    collections: {},
+    documents: {},
+    secrets: {},
+  });
   const save = (state) => {
     try {
       localStorage.setItem(MEMORY_KEY, JSON.stringify(state));
@@ -118,7 +127,15 @@ function memoryClient() {
       return null; // no folder picker outside the desktop app - the field is typed into
     },
     async inspect(dir) {
-      return { path: dir, exists: false, isEmpty: true, hasWorkspace: false, action: "create", writable: true, error: null };
+      return {
+        path: dir,
+        exists: false,
+        isEmpty: true,
+        hasWorkspace: false,
+        action: "create",
+        writable: true,
+        error: null,
+      };
     },
     async configure(dir) {
       const state = load();
@@ -163,7 +180,8 @@ function memoryClient() {
       const state = load();
       const items = rows(state, name);
       const now = new Date().toISOString();
-      const id = record.id || slugify(record.name ?? record.title, "item") || `item-${items.length + 1}`;
+      const id =
+        record.id || slugify(record.name ?? record.title, "item") || `item-${items.length + 1}`;
       const index = items.findIndex((r) => r.id === id);
       const next = { ...record, id, createdAt: items[index]?.createdAt ?? now, updatedAt: now };
       if (index >= 0) items[index] = next;

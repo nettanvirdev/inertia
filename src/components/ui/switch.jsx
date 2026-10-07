@@ -13,9 +13,19 @@ import { cn } from "@/lib/utils";
  * reason in the stylesheet: #c4c4c4 there is brighter than ON.
  */
 const SIZES = {
-  sm: { track: "h-[18px] w-8", thumb: "size-3.5", on: "translate-x-[14px]", off: "translate-x-[2px]" },
+  sm: {
+    track: "h-[18px] w-8",
+    thumb: "size-3.5",
+    on: "translate-x-[14px]",
+    off: "translate-x-[2px]",
+  },
   // 42x20 with a 16px knob, from app-controls.
-  md: { track: "h-5 w-[42px]", thumb: "size-4", on: "translate-x-[24px]", off: "translate-x-[2px]" },
+  md: {
+    track: "h-5 w-[42px]",
+    thumb: "size-4",
+    on: "translate-x-[24px]",
+    off: "translate-x-[2px]",
+  },
 };
 
 function Switch({

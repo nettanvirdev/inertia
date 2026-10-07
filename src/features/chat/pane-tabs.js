@@ -94,7 +94,11 @@ export function labelFor({ kind, serial, title, url, cwd }) {
   if (kind === "job") {
     // The command, cut to something that fits a tab. A dev server's tab
     // saying "npm run dev" is the only label that helps; its pid does not.
-    const command = String(title ?? "").trim().split(/\s+/).slice(0, 3).join(" ");
+    const command = String(title ?? "")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 3)
+      .join(" ");
     return command.slice(0, 24) || "Process";
   }
   if (kind === "sh") {

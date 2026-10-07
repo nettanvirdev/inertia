@@ -137,7 +137,9 @@ export function ComputerDetail({ computerId }) {
           </div>
 
           {computer.error ? (
-            <p className="mt-2 animate-fade-in text-[12px] text-destructive-ink">{computer.error}</p>
+            <p className="mt-2 animate-fade-in text-[12px] text-destructive-ink">
+              {computer.error}
+            </p>
           ) : null}
         </div>
 
@@ -211,7 +213,11 @@ export function ComputerDetail({ computerId }) {
                     description: `${computer.name} · ${snap.name}`,
                   });
                 } catch (error) {
-                  toast({ variant: "error", title: "Snapshot failed", description: error?.message });
+                  toast({
+                    variant: "error",
+                    title: "Snapshot failed",
+                    description: error?.message,
+                  });
                 } finally {
                   setWorking(false);
                 }
@@ -242,11 +248,19 @@ export function ComputerDetail({ computerId }) {
 
       <div className="grid shrink-0 grid-cols-2 gap-2 lg:grid-cols-5">
         <ResourceCell>
-          <Meter label="CPU" value={computer.usage?.cpuPct ?? 0} tone={tone(computer.usage?.cpuPct)} />
+          <Meter
+            label="CPU"
+            value={computer.usage?.cpuPct ?? 0}
+            tone={tone(computer.usage?.cpuPct)}
+          />
           <Spec>{measured(computer.usage?.cpuPct, `${computer.specs?.cpu || "?"} vCPU`)}</Spec>
         </ResourceCell>
         <ResourceCell>
-          <Meter label="Memory" value={computer.usage?.memPct ?? 0} tone={tone(computer.usage?.memPct)} />
+          <Meter
+            label="Memory"
+            value={computer.usage?.memPct ?? 0}
+            tone={tone(computer.usage?.memPct)}
+          />
           <Spec>
             {measured(
               computer.usage?.memPct,
@@ -255,7 +269,11 @@ export function ComputerDetail({ computerId }) {
           </Spec>
         </ResourceCell>
         <ResourceCell>
-          <Meter label="Disk" value={computer.usage?.diskPct ?? 0} tone={tone(computer.usage?.diskPct)} />
+          <Meter
+            label="Disk"
+            value={computer.usage?.diskPct ?? 0}
+            tone={tone(computer.usage?.diskPct)}
+          />
           <Spec>
             {measured(
               computer.usage?.diskPct,
@@ -320,11 +338,7 @@ export function ComputerDetail({ computerId }) {
         </TabPanel>
       </ScrollArea>
 
-      <SnapshotsDialog
-        open={snapshotsOpen}
-        onOpenChange={setSnapshotsOpen}
-        computer={computer}
-      />
+      <SnapshotsDialog open={snapshotsOpen} onOpenChange={setSnapshotsOpen} computer={computer} />
       <AssignAgentsDialog
         open={assignOpen}
         onOpenChange={setAssignOpen}

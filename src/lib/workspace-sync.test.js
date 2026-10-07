@@ -53,7 +53,10 @@ describe("syncCollection", () => {
     const marks = await syncCollection(
       client,
       "threads",
-      [{ id: "a", title: "A" }, { id: "b", title: "B" }],
+      [
+        { id: "a", title: "A" },
+        { id: "b", title: "B" },
+      ],
       new Map()
     );
     expect(client.calls.put).toEqual(["threads/a", "threads/b"]);
@@ -62,11 +65,19 @@ describe("syncCollection", () => {
 
   it("writes nothing when nothing moved", async () => {
     const client = fakeClient();
-    const rows = [{ id: "a", title: "A" }, { id: "b", title: "B" }];
+    const rows = [
+      { id: "a", title: "A" },
+      { id: "b", title: "B" },
+    ];
     const marks = await syncCollection(client, "threads", rows, new Map());
     client.calls.put.length = 0;
 
-    await syncCollection(client, "threads", rows.map((r) => ({ ...r })), marks);
+    await syncCollection(
+      client,
+      "threads",
+      rows.map((r) => ({ ...r })),
+      marks
+    );
     expect(client.calls.put).toEqual([]);
     expect(client.calls.remove).toEqual([]);
   });
@@ -76,7 +87,10 @@ describe("syncCollection", () => {
     const marks = await syncCollection(
       client,
       "threads",
-      [{ id: "a", title: "A" }, { id: "b", title: "B" }],
+      [
+        { id: "a", title: "A" },
+        { id: "b", title: "B" },
+      ],
       new Map()
     );
     client.calls.put.length = 0;
@@ -84,7 +98,10 @@ describe("syncCollection", () => {
     await syncCollection(
       client,
       "threads",
-      [{ id: "a", title: "A" }, { id: "b", title: "B changed" }],
+      [
+        { id: "a", title: "A" },
+        { id: "b", title: "B changed" },
+      ],
       marks
     );
     expect(client.calls.put).toEqual(["threads/b"]);
@@ -92,12 +109,7 @@ describe("syncCollection", () => {
 
   it("deletes a record that is gone from the app", async () => {
     const client = fakeClient();
-    const marks = await syncCollection(
-      client,
-      "threads",
-      [{ id: "a" }, { id: "b" }],
-      new Map()
-    );
+    const marks = await syncCollection(client, "threads", [{ id: "a" }, { id: "b" }], new Map());
     const next = await syncCollection(client, "threads", [{ id: "a" }], marks);
     expect(client.calls.remove).toEqual(["threads/b"]);
     expect([...next.keys()]).toEqual(["a"]);
@@ -152,8 +164,9 @@ describe("shape conversions", () => {
   });
 
   it("orders lists newest first", () => {
-    expect(byUpdatedDesc([{ updatedAt: "2026-01-01" }, { updatedAt: "2026-02-01" }])[0].updatedAt)
-      .toBe("2026-02-01");
+    expect(
+      byUpdatedDesc([{ updatedAt: "2026-01-01" }, { updatedAt: "2026-02-01" }])[0].updatedAt
+    ).toBe("2026-02-01");
     expect(byTimeDesc([{ at: "2026-01-01" }, { at: "2026-02-01" }])[0].at).toBe("2026-02-01");
   });
 });
@@ -169,9 +182,7 @@ describe("settleOnLoad", () => {
   });
 
   it("turns a reply that produced nothing into a visible failure", () => {
-    const [message] = settleOnLoad([
-      { id: "m1", role: "agent", status: "streaming", content: "" },
-    ]);
+    const [message] = settleOnLoad([{ id: "m1", role: "agent", status: "streaming", content: "" }]);
     expect(message.status).toBe("error");
     expect(message.error).toMatch(/interrupted/i);
   });
@@ -224,17 +235,19 @@ describe("reconcileMessages", () => {
   it("still settles a turn nothing here knows about", () => {
     // The case the settling rule was written for: an abandoned turn from a
     // previous run, or another window. Nobody is streaming it now.
-    const [message] = reconcileMessages([{ id: "m1", role: "user", status: "sent", content: "hi" }], [
-      { id: "old", role: "agent", status: "streaming", content: "" },
-    ]);
+    const [message] = reconcileMessages(
+      [{ id: "m1", role: "user", status: "sent", content: "hi" }],
+      [{ id: "old", role: "agent", status: "streaming", content: "" }]
+    );
     expect(message.status).toBe("error");
     expect(message.error).toMatch(/interrupted/i);
   });
 
   it("settles everything when there is nothing held, which is what a load is", () => {
-    const [message] = reconcileMessages([], [
-      { id: "m1", role: "agent", status: "streaming", content: "" },
-    ]);
+    const [message] = reconcileMessages(
+      [],
+      [{ id: "m1", role: "agent", status: "streaming", content: "" }]
+    );
     expect(message.status).toBe("error");
   });
 
@@ -317,7 +330,9 @@ describe("an agent that has never been used", () => {
     // The numbers on an agent's page are only worth having if they are the
     // same numbers after a restart. They travel in the record itself, so what
     // this guards is that nothing on the way in quietly rewrites them.
-    const rows = [{ id: "a1", name: "Atlas", stats: { messages: 3, routinesRun: 2, tokensUsed: 900 } }];
+    const rows = [
+      { id: "a1", name: "Atlas", stats: { messages: 3, routinesRun: 2, tokensUsed: 900 } },
+    ];
     const [agent] = settleAgents(rows);
     expect(agent.stats).toEqual({ messages: 3, routinesRun: 2, tokensUsed: 900 });
   });
@@ -344,7 +359,10 @@ describe("mergeRows", () => {
     // A draft thread has no file by design, and a conversation started a
     // moment ago has not been written yet. Neither may be deleted by a re-read
     // that something else triggered.
-    const held = [{ id: "written", title: "old" }, { id: "draft", title: "New chat" }];
+    const held = [
+      { id: "written", title: "old" },
+      { id: "draft", title: "New chat" },
+    ];
     const merged = mergeRows(held, [{ id: "written", title: "renamed" }]);
     expect(merged.map((row) => row.id).sort()).toEqual(["draft", "written"]);
     expect(merged.find((row) => row.id === "written").title).toBe("renamed");
@@ -487,7 +505,12 @@ describe("a temporary conversation", () => {
   const held = {
     threads: [
       { id: "t-kept", title: "Kept", updatedAt: "2026-09-03T10:00:00.000Z" },
-      { id: "t-temp", title: "Just asking", temporary: true, updatedAt: "2026-09-03T11:00:00.000Z" },
+      {
+        id: "t-temp",
+        title: "Just asking",
+        temporary: true,
+        updatedAt: "2026-09-03T11:00:00.000Z",
+      },
       { id: "t-draft", title: "New chat", draft: true, updatedAt: "2026-09-03T12:00:00.000Z" },
     ],
     messages: {
@@ -498,8 +521,16 @@ describe("a temporary conversation", () => {
   };
 
   it("is never written to the folder, and neither are its messages", () => {
-    expect(sourceFor("threads").read(held).map((t) => t.id)).toEqual(["t-kept"]);
-    expect(sourceFor("messages").read(held).map((r) => r.id)).toEqual(["t-kept"]);
+    expect(
+      sourceFor("threads")
+        .read(held)
+        .map((t) => t.id)
+    ).toEqual(["t-kept"]);
+    expect(
+      sourceFor("messages")
+        .read(held)
+        .map((r) => r.id)
+    ).toEqual(["t-kept"]);
   });
 
   it("survives an announcement of somebody else's write", () => {
@@ -519,7 +550,10 @@ describe("a temporary conversation", () => {
 
   it("does not believe a file that claims to be one", () => {
     const set = state([], {});
-    sourceFor("threads").apply([{ id: "t-odd", title: "Hand edited", temporary: true, draft: true }], set);
+    sourceFor("threads").apply(
+      [{ id: "t-odd", title: "Hand edited", temporary: true, draft: true }],
+      set
+    );
     expect(set.held.threads[0].temporary).toBe(false);
     expect(set.held.threads[0].draft).toBe(false);
   });
@@ -592,12 +626,16 @@ describe("the cost of mirroring a long conversation", () => {
     const seen = new Map();
     const messages = { t1: [{ id: "m1", content: "x" }] };
 
-    const marks = await syncCollection(client, "messages", asMessageRecords(messages), new Map(), { seen });
+    const marks = await syncCollection(client, "messages", asMessageRecords(messages), new Map(), {
+      seen,
+    });
     expect(client.calls.put).toHaveLength(1);
 
     // The same state, a tick later. Nothing is written and, more to the point,
     // nothing is serialised: the record is the same object.
-    const again = await syncCollection(client, "messages", asMessageRecords(messages), marks, { seen });
+    const again = await syncCollection(client, "messages", asMessageRecords(messages), marks, {
+      seen,
+    });
     expect(client.calls.put).toHaveLength(1);
     expect(again).toBe(marks);
   });
@@ -605,7 +643,13 @@ describe("the cost of mirroring a long conversation", () => {
   it("still notices a change when the shortcut is in place", async () => {
     const client = fakeClient();
     const seen = new Map();
-    const marks = await syncCollection(client, "messages", asMessageRecords({ t1: [{ id: "m1" }] }), new Map(), { seen });
+    const marks = await syncCollection(
+      client,
+      "messages",
+      asMessageRecords({ t1: [{ id: "m1" }] }),
+      new Map(),
+      { seen }
+    );
     await syncCollection(
       client,
       "messages",

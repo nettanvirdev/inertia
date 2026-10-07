@@ -29,15 +29,69 @@ const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp
 /** Extensions that are text whatever the browser claims the type is. Windows
  *  reports no type at all for most of these. */
 const TEXT_EXT = new Set([
-  "txt", "md", "markdown", "json", "jsonl", "yaml", "yml", "toml", "ini", "cfg", "conf", "env",
-  "csv", "tsv", "log", "sql", "graphql", "proto",
-  "js", "jsx", "mjs", "cjs", "ts", "tsx", "py", "rb", "go", "rs", "java", "kt", "swift",
-  "c", "h", "cpp", "hpp", "cs", "php", "sh", "bash", "zsh", "ps1", "bat",
-  "html", "htm", "css", "scss", "less", "svg", "xml", "vue", "svelte", "astro",
-  "dockerfile", "gitignore", "editorconfig", "lock",
+  "txt",
+  "md",
+  "markdown",
+  "json",
+  "jsonl",
+  "yaml",
+  "yml",
+  "toml",
+  "ini",
+  "cfg",
+  "conf",
+  "env",
+  "csv",
+  "tsv",
+  "log",
+  "sql",
+  "graphql",
+  "proto",
+  "js",
+  "jsx",
+  "mjs",
+  "cjs",
+  "ts",
+  "tsx",
+  "py",
+  "rb",
+  "go",
+  "rs",
+  "java",
+  "kt",
+  "swift",
+  "c",
+  "h",
+  "cpp",
+  "hpp",
+  "cs",
+  "php",
+  "sh",
+  "bash",
+  "zsh",
+  "ps1",
+  "bat",
+  "html",
+  "htm",
+  "css",
+  "scss",
+  "less",
+  "svg",
+  "xml",
+  "vue",
+  "svelte",
+  "astro",
+  "dockerfile",
+  "gitignore",
+  "editorconfig",
+  "lock",
 ]);
 
-const extensionOf = (name) => String(name ?? "").split(".").pop()?.toLowerCase() ?? "";
+const extensionOf = (name) =>
+  String(name ?? "")
+    .split(".")
+    .pop()
+    ?.toLowerCase() ?? "";
 
 export function kindOf(file) {
   const type = String(file?.type ?? "");

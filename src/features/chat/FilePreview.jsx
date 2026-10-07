@@ -146,8 +146,10 @@ export function useSaveImage(url, name) {
       event?.preventDefault();
       if (!url) return;
       const result = await window.electronAPI?.saveImage?.({ dataUrl: url, name });
-      if (result?.saved) toast({ title: "Picture saved", description: result.path, variant: "success" });
-      else if (result?.error) toast({ title: "It could not be saved", description: result.error, variant: "danger" });
+      if (result?.saved)
+        toast({ title: "Picture saved", description: result.path, variant: "success" });
+      else if (result?.error)
+        toast({ title: "It could not be saved", description: result.error, variant: "danger" });
     },
     [url, name, toast]
   );
@@ -275,7 +277,11 @@ function Lightbox({ url, alt, failed, state, onClose, onReveal }) {
 
 /** The language a filename suggests, for colouring a text preview. */
 function languageFor(name) {
-  const ext = String(name ?? "").split(".").pop()?.toLowerCase() ?? "";
+  const ext =
+    String(name ?? "")
+      .split(".")
+      .pop()
+      ?.toLowerCase() ?? "";
   return ext === name ? "" : ext;
 }
 
@@ -294,7 +300,10 @@ export function FilePreview({ file: wanted, onClose }) {
 
   const isImage = file?.kind === "image";
   const needsFetching = !file?.dataUrl && !file?.text && (file?.src || file?.path);
-  const disk = useMessageImage(needsFetching ? (file.src ?? file.path) : null, Boolean(needsFetching) && isImage);
+  const disk = useMessageImage(
+    needsFetching ? (file.src ?? file.path) : null,
+    Boolean(needsFetching) && isImage
+  );
   const url = file?.dataUrl ?? disk.url;
 
   if (!file) return null;
@@ -379,9 +388,7 @@ export function FileChip({ file, onOpen }) {
     >
       <Glyph className="size-3.5 shrink-0" aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate text-foreground">{file.name}</span>
-      <span className="shrink-0 tabular-nums">
-        {formatBytes(file.size ?? file.sizeBytes)}
-      </span>
+      <span className="shrink-0 tabular-nums">{formatBytes(file.size ?? file.sizeBytes)}</span>
     </button>
   );
 }

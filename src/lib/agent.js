@@ -292,7 +292,10 @@ function steerTurn(id, text) {
 export function activeTurns() {
   const bridge = api();
   if (!bridge?.active) return Promise.resolve([]);
-  return bridge.active().then(unwrap).catch(() => []);
+  return bridge
+    .active()
+    .then(unwrap)
+    .catch(() => []);
 }
 
 /**
@@ -305,7 +308,10 @@ export function activeTurns() {
 export function turnRecord(id) {
   const bridge = api();
   if (!id || !bridge?.record) return Promise.resolve(null);
-  return bridge.record(id).then(unwrap).catch(() => null);
+  return bridge
+    .record(id)
+    .then(unwrap)
+    .catch(() => null);
 }
 
 /**
@@ -487,7 +493,8 @@ export function toHistory(messages, { label = null } = {}) {
 
     const parts = message.parts;
     if (!parts?.length) {
-      if (message.content?.trim()) out.push({ role: "assistant", content: named(message.content), ...who });
+      if (message.content?.trim())
+        out.push({ role: "assistant", content: named(message.content), ...who });
       continue;
     }
 

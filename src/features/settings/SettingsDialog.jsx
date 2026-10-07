@@ -207,11 +207,7 @@ export function SettingsDialog() {
 
         {/* footer: who is signed in */}
         <div className="hidden shrink-0 items-center gap-2 px-4 pb-3.5 md:flex">
-          <Avatar
-            src={avatarSrc ?? undefined}
-            name={user.avatarInitials ?? user.name}
-            size="sm"
-          />
+          <Avatar src={avatarSrc ?? undefined} name={user.avatarInitials ?? user.name} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs text-foreground/90">{user.name}</p>
             <p className="truncate text-[0.6875rem] leading-tight text-muted-foreground">

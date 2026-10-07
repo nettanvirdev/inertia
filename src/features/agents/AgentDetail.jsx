@@ -1,10 +1,20 @@
 import * as React from "react";
-import { ArrowLeft, Copy, MessageSquare, MoreHorizontal, Pause, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2, Icon } from "@/components/icons";
 import {
-  AGENT_STATUS_META,
-  formatCompactNumber,
-  relativeTime,
-} from "@/data";
+  ArrowLeft,
+  Copy,
+  MessageSquare,
+  MoreHorizontal,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  Settings2,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  Icon,
+} from "@/components/icons";
+import { AGENT_STATUS_META, formatCompactNumber, relativeTime } from "@/data";
 import { useApp } from "@/lib/store";
 import { ANY, asRules, evaluate, merge } from "@shared/permission";
 import { groupedTools } from "@shared/tools";
@@ -139,7 +149,10 @@ export function AgentDetail({ agentId, onBack }) {
   // rules are what the tool registry filters on when a turn is built.
   const { totalTools, allowedCount } = React.useMemo(() => {
     const rows = groupedTools().flatMap((group) => group.tools);
-    const merged = merge(asRules(permissions?.workspace), asRules(permissions?.agents?.[agent?.id]));
+    const merged = merge(
+      asRules(permissions?.workspace),
+      asRules(permissions?.agents?.[agent?.id])
+    );
     const allowed = rows.filter((tool) => {
       const verdict = evaluate(merged, tool.key, ANY);
       return !(verdict.action === "deny" && (verdict.rule?.pattern ?? ANY) === ANY);
@@ -312,7 +325,9 @@ export function AgentDetail({ agentId, onBack }) {
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <h1 className="text-[20px] leading-snug font-medium text-foreground">{agent.name}</h1>
+                <h1 className="text-[20px] leading-snug font-medium text-foreground">
+                  {agent.name}
+                </h1>
                 <span className="text-[13px] text-muted-foreground">{agent.handle}</span>
                 <Badge variant={STATUS_VARIANT[agent.status] ?? "neutral"} dot>
                   {statusMeta.label}
@@ -329,7 +344,8 @@ export function AgentDetail({ agentId, onBack }) {
                     <span aria-hidden="true">·</span>
                   </span>
                 ) : null}
-                {agent.role} · {agent.lastActiveAt ? `active ${relativeTime(agent.lastActiveAt)}` : "not used yet"}
+                {agent.role} ·{" "}
+                {agent.lastActiveAt ? `active ${relativeTime(agent.lastActiveAt)}` : "not used yet"}
               </p>
             </div>
 
@@ -357,13 +373,13 @@ export function AgentDetail({ agentId, onBack }) {
                 <MenuItem icon={Copy} onSelect={duplicate}>
                   Duplicate
                 </MenuItem>
-                <MenuItem
-                  icon={agent.status === "offline" ? Play : Pause}
-                  onSelect={togglePause}
-                >
+                <MenuItem icon={agent.status === "offline" ? Play : Pause} onSelect={togglePause}>
                   {agent.status === "offline" ? "Resume" : "Pause"}
                 </MenuItem>
-                <MenuItem icon={isProtected(agent) ? ShieldAlert : ShieldCheck} onSelect={toggleProtected}>
+                <MenuItem
+                  icon={isProtected(agent) ? ShieldAlert : ShieldCheck}
+                  onSelect={toggleProtected}
+                >
                   {isProtected(agent) ? "Remove protection" : "Protect from agents"}
                 </MenuItem>
                 <MenuSeparator />
@@ -409,7 +425,12 @@ export function AgentDetail({ agentId, onBack }) {
           />
 
           {/* ── overview ───────────────────────────────────────────────────── */}
-          <TabPanel value="overview" activeValue={tab} idPrefix={`agent-${agent.id}`} className="animate-fade-in">
+          <TabPanel
+            value="overview"
+            activeValue={tab}
+            idPrefix={`agent-${agent.id}`}
+            className="animate-fade-in"
+          >
             <div className="flex flex-col gap-6">
               <section>
                 <h2 className="text-[11px] font-semibold text-muted-foreground">About</h2>
@@ -525,7 +546,12 @@ export function AgentDetail({ agentId, onBack }) {
           </TabPanel>
 
           {/* ── routines ───────────────────────────────────────────────────── */}
-          <TabPanel value="routines" activeValue={tab} idPrefix={`agent-${agent.id}`} className="animate-fade-in">
+          <TabPanel
+            value="routines"
+            activeValue={tab}
+            idPrefix={`agent-${agent.id}`}
+            className="animate-fade-in"
+          >
             {agentRoutines.length ? (
               <div className="flex flex-col gap-1">
                 {agentRoutines.map((routine) => (
@@ -553,7 +579,12 @@ export function AgentDetail({ agentId, onBack }) {
           </TabPanel>
 
           {/* ── memory ─────────────────────────────────────────────────────── */}
-          <TabPanel value="memory" activeValue={tab} idPrefix={`agent-${agent.id}`} className="animate-fade-in">
+          <TabPanel
+            value="memory"
+            activeValue={tab}
+            idPrefix={`agent-${agent.id}`}
+            className="animate-fade-in"
+          >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <SearchInput
@@ -612,12 +643,22 @@ export function AgentDetail({ agentId, onBack }) {
           </TabPanel>
 
           {/* ── permissions ────────────────────────────────────────────────── */}
-          <TabPanel value="permissions" activeValue={tab} idPrefix={`agent-${agent.id}`} className="animate-fade-in">
+          <TabPanel
+            value="permissions"
+            activeValue={tab}
+            idPrefix={`agent-${agent.id}`}
+            className="animate-fade-in"
+          >
             <PermissionMatrix agentId={agent.id} />
           </TabPanel>
 
           {/* ── activity ───────────────────────────────────────────────────── */}
-          <TabPanel value="activity" activeValue={tab} idPrefix={`agent-${agent.id}`} className="animate-fade-in">
+          <TabPanel
+            value="activity"
+            activeValue={tab}
+            idPrefix={`agent-${agent.id}`}
+            className="animate-fade-in"
+          >
             {agentActivity.length ? (
               <div className="flex flex-col gap-1">
                 {agentActivity.slice(0, ACTIVITY_CAP).map((event) => (
@@ -649,7 +690,11 @@ export function AgentDetail({ agentId, onBack }) {
         onOpenChange={setAddingMemory}
         agentId={agent.id}
         onCreated={(id, title) =>
-          toast({ variant: "success", title: `${agent.name} will remember this`, description: title })
+          toast({
+            variant: "success",
+            title: `${agent.name} will remember this`,
+            description: title,
+          })
         }
       />
 

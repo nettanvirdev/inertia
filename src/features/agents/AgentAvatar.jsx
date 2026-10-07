@@ -42,13 +42,7 @@ function tint(hex, alpha) {
   return `rgb(${r} ${g} ${b} / ${alpha})`;
 }
 
-export function AgentAvatar({
-  agent,
-  size = "md",
-  showStatus = false,
-  className,
-  ...props
-}) {
+export function AgentAvatar({ agent, size = "md", showStatus = false, className, ...props }) {
   // Hooks first: an early return above one is a different number of hooks on
   // the render where an agent is missing, which React counts as an error.
   const picture = useAvatarSrc(agent);
@@ -65,11 +59,7 @@ export function AgentAvatar({
       status={showStatus ? agent.status : undefined}
       icon={
         agent.icon ? (
-          <Icon
-            name={agent.icon}
-            aria-hidden="true"
-            className={GLYPH[size] ?? GLYPH.md}
-          />
+          <Icon name={agent.icon} aria-hidden="true" className={GLYPH[size] ?? GLYPH.md} />
         ) : agent.initials ? (
           <span aria-hidden="true">{agent.initials}</span>
         ) : undefined
@@ -79,7 +69,7 @@ export function AgentAvatar({
       className={cn(
         fill &&
           "[&>span:first-child]:bg-[var(--agent-tint)] [&>span:first-child]:text-[var(--agent-ink)]",
-        className,
+        className
       )}
       {...props}
     />

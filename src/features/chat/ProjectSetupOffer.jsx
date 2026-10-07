@@ -2,11 +2,7 @@ import * as React from "react";
 import { FileText } from "@/components/icons";
 import { useApp } from "@/lib/store";
 import { PREFERENCE_DEFAULTS } from "@/lib/appearance";
-import {
-  createProjectSetup,
-  declineProjectSetup,
-  decideProjectSetup,
-} from "@/lib/project";
+import { createProjectSetup, declineProjectSetup, decideProjectSetup } from "@/lib/project";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 
@@ -120,13 +116,11 @@ export function ProjectSetupOffer({ cwd }) {
     <div className="mb-2 flex items-start gap-3 rounded-2xl card-surface-subtle px-3 py-2.5">
       <FileText aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] text-foreground">
-          This project has no notes for agents yet.
-        </p>
+        <p className="text-[13px] text-foreground">This project has no notes for agents yet.</p>
         <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-          An <span className="font-mono">AGENTS.md</span> is read at the start of every conversation,
-          so you explain the project once instead of every time. Other coding agents read the same
-          file.
+          An <span className="font-mono">AGENTS.md</span> is read at the start of every
+          conversation, so you explain the project once instead of every time. Other coding agents
+          read the same file.
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">

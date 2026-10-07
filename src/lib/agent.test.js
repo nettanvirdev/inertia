@@ -37,7 +37,9 @@ describe("applyEvent", () => {
   });
 
   it("shows a tool the moment it starts, not when it finishes", () => {
-    const message = fold([{ type: "tool-start", callId: "c1", name: "read", title: "a.js", args: {} }]);
+    const message = fold([
+      { type: "tool-start", callId: "c1", name: "read", title: "a.js", args: {} },
+    ]);
     expect(message.parts[0]).toMatchObject({ type: "tool", callId: "c1", state: "running" });
   });
 
@@ -154,7 +156,14 @@ describe("toHistory", () => {
       {
         role: "agent",
         parts: [
-          { type: "tool", callId: "c1", name: "read", args: {}, state: "failed", output: "not found" },
+          {
+            type: "tool",
+            callId: "c1",
+            name: "read",
+            args: {},
+            state: "failed",
+            output: "not found",
+          },
         ],
       },
     ]);
@@ -278,7 +287,9 @@ describe("attaching files to a message", () => {
       {
         role: "user",
         content: "what is wrong with this?",
-        attachments: [{ id: "a1", kind: "image", name: "shot.png", dataUrl: "data:image/png;base64,iVBORw0K" }],
+        attachments: [
+          { id: "a1", kind: "image", name: "shot.png", dataUrl: "data:image/png;base64,iVBORw0K" },
+        ],
       },
     ]);
     expect(entry.parts).toEqual([
@@ -292,7 +303,9 @@ describe("attaching files to a message", () => {
       {
         role: "user",
         content: "",
-        attachments: [{ id: "a1", kind: "image", name: "shot.png", dataUrl: "data:image/png;base64,x" }],
+        attachments: [
+          { id: "a1", kind: "image", name: "shot.png", dataUrl: "data:image/png;base64,x" },
+        ],
       },
     ]);
     expect(entry.parts[0]).toEqual({ type: "text", text: "Attached." });
@@ -493,7 +506,10 @@ describe("labelling a group transcript", () => {
   });
 
   it("leaves the transcript alone when there is no label", () => {
-    expect(toHistory([{ role: "agent", content: "I am." }])[0]).toEqual({ role: "assistant", content: "I am." });
+    expect(toHistory([{ role: "agent", content: "I am." }])[0]).toEqual({
+      role: "assistant",
+      content: "I am.",
+    });
   });
 });
 

@@ -96,7 +96,13 @@ function ScheduleControl({ kind, expression, onChange, check }) {
   if (kind === "interval") {
     return (
       <Field label="Interval">
-        <Select size="md" value={expression} onChange={onChange} options={INTERVALS} ariaLabel="Interval" />
+        <Select
+          size="md"
+          value={expression}
+          onChange={onChange}
+          options={INTERVALS}
+          ariaLabel="Interval"
+        />
       </Field>
     );
   }
@@ -119,7 +125,13 @@ function ScheduleControl({ kind, expression, onChange, check }) {
   if (kind === "trigger") {
     return (
       <Field label="Trigger">
-        <Select size="md" value={expression} onChange={onChange} options={TRIGGERS} ariaLabel="Trigger" />
+        <Select
+          size="md"
+          value={expression}
+          onChange={onChange}
+          options={TRIGGERS}
+          ariaLabel="Trigger"
+        />
       </Field>
     );
   }
@@ -142,7 +154,11 @@ function ScheduleReading({ id, expression, check }) {
   // than recolours in place.
   if (check.checked && !check.valid) {
     return (
-      <p key="invalid" id={id} className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+      <p
+        key="invalid"
+        id={id}
+        className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink"
+      >
         {check.reason}
       </p>
     );
@@ -150,7 +166,11 @@ function ScheduleReading({ id, expression, check }) {
   const words = cronToHuman(expression) ?? check.words;
   const next = nextRunLabel(check.nextRunAt);
   return (
-    <p key="reading" id={id} className="animate-fade-in text-[11px] leading-relaxed text-muted-foreground">
+    <p
+      key="reading"
+      id={id}
+      className="animate-fade-in text-[11px] leading-relaxed text-muted-foreground"
+    >
       {words ?? "Checking..."}
       {next ? ` Next run ${next}.` : ""}
     </p>
@@ -175,8 +195,10 @@ function toLocalInput(iso) {
 }
 
 function humanLabel(kind, expression) {
-  if (kind === "interval") return INTERVALS.find((i) => i.value === expression)?.label ?? "Custom interval";
-  if (kind === "trigger") return TRIGGERS.find((t) => t.value === expression)?.label ?? "Custom trigger";
+  if (kind === "interval")
+    return INTERVALS.find((i) => i.value === expression)?.label ?? "Custom interval";
+  if (kind === "trigger")
+    return TRIGGERS.find((t) => t.value === expression)?.label ?? "Custom trigger";
   if (kind === "cron") return `Cron · ${expression}`;
   if (kind === "once") return `Once, at ${new Date(expression).toLocaleString()}`;
   return "Run manually";
@@ -249,8 +271,8 @@ export function NewRoutineDialog({ open, onOpenChange, agentId, onCreated }) {
     <Dialog open={open} onOpenChange={onOpenChange} size="lg">
       <DialogTitle>New routine</DialogTitle>
       <DialogDescription>
-        A routine is a Markdown playbook a teammate runs on a schedule. You can edit every part of it
-        afterwards.
+        A routine is a Markdown playbook a teammate runs on a schedule. You can edit every part of
+        it afterwards.
       </DialogDescription>
 
       <DialogBody>
@@ -279,15 +301,33 @@ export function NewRoutineDialog({ open, onOpenChange, agentId, onCreated }) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Agent">
-                <Select size="md" value={agent} onChange={setAgent} options={agentOptions} ariaLabel="Agent" />
+                <Select
+                  size="md"
+                  value={agent}
+                  onChange={setAgent}
+                  options={agentOptions}
+                  ariaLabel="Agent"
+                />
               </Field>
               <Field label="Icon">
-                <Select size="md" value={icon} onChange={setIcon} options={iconOptions} ariaLabel="Icon" />
+                <Select
+                  size="md"
+                  value={icon}
+                  onChange={setIcon}
+                  options={iconOptions}
+                  ariaLabel="Icon"
+                />
               </Field>
             </div>
 
             <Field label="Schedule">
-              <Segmented size="xs" value={kind} onChange={changeKind} options={KIND_OPTIONS} label="Schedule kind" />
+              <Segmented
+                size="xs"
+                value={kind}
+                onChange={changeKind}
+                options={KIND_OPTIONS}
+                label="Schedule kind"
+              />
             </Field>
 
             {/* Keyed on the kind so a new control fades in rather than the
@@ -316,7 +356,12 @@ export function NewRoutineDialog({ open, onOpenChange, agentId, onCreated }) {
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="secondary" size="pill" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+        <Button
+          variant="secondary"
+          size="pill"
+          className="w-full sm:w-auto"
+          onClick={() => onOpenChange(false)}
+        >
           Cancel
         </Button>
         <Button

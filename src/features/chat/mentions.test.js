@@ -25,7 +25,10 @@ const specs = mentionSpecs({
     { id: "a2", name: "Nova Reyes" },
     { id: "a3", name: "Iris" },
   ],
-  skills: [{ id: "s1", name: "Brand Guidelines" }, { id: "s2", name: "Review" }],
+  skills: [
+    { id: "s1", name: "Brand Guidelines" },
+    { id: "s2", name: "Review" },
+  ],
 });
 
 describe("turning a name into a token", () => {
@@ -52,7 +55,12 @@ describe("turning a name into a token", () => {
   });
 
   it("keeps the first of two names that make the same token", () => {
-    const both = mentionSpecs({ agents: [{ id: "a", name: "Nova" }, { id: "b", name: "nova" }] });
+    const both = mentionSpecs({
+      agents: [
+        { id: "a", name: "Nova" },
+        { id: "b", name: "nova" },
+      ],
+    });
     expect(both).toHaveLength(1);
     expect(both[0].id).toBe("a");
   });
@@ -90,7 +98,12 @@ describe("finding the mentions in a message", () => {
 
 describe("what the caret is in the middle of", () => {
   it("reports a token being typed", () => {
-    expect(activeQuery("tell @no", 8, specs)).toMatchObject({ kind: "agent", query: "no", start: 5, end: 8 });
+    expect(activeQuery("tell @no", 8, specs)).toMatchObject({
+      kind: "agent",
+      query: "no",
+      start: 5,
+      end: 8,
+    });
   });
 
   it("reports a bare sigil, so the palette opens before anything is typed", () => {
@@ -166,7 +179,10 @@ describe("what a message attaches", () => {
 
 describe("commands share the slash with skills", () => {
   const withCommands = mentionSpecs({
-    skills: [{ id: "s2", name: "Review" }, { id: "s3", name: "Copy Edit" }],
+    skills: [
+      { id: "s2", name: "Review" },
+      { id: "s3", name: "Copy Edit" },
+    ],
     commands: [{ name: "compact", summary: "Summarise the conversation" }],
   });
 

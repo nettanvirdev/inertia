@@ -22,8 +22,16 @@
 
 export const GROUPS = [
   { id: "files", label: "Files", description: "Reading and changing files on this machine." },
-  { id: "system", label: "System", description: "Running commands and reaching outside the project." },
-  { id: "agents", label: "Agents and skills", description: "Delegating work and loading instructions." },
+  {
+    id: "system",
+    label: "System",
+    description: "Running commands and reaching outside the project.",
+  },
+  {
+    id: "agents",
+    label: "Agents and skills",
+    description: "Delegating work and loading instructions.",
+  },
   { id: "plugins", label: "Connected tools", description: "MCP servers, APIs and Composio apps." },
 ];
 
@@ -149,7 +157,11 @@ export const TOOLS = [
     suggestions: [
       { pattern: "http://localhost*", action: "allow", label: "Anything on localhost" },
       { pattern: "http://127.0.0.1*", action: "allow", label: "Anything on 127.0.0.1" },
-      { pattern: "the open page", action: "allow", label: "Reading and driving the page already open" },
+      {
+        pattern: "the open page",
+        action: "allow",
+        label: "Reading and driving the page already open",
+      },
       { pattern: "*", action: "ask", label: "Opening anything else" },
     ],
   },

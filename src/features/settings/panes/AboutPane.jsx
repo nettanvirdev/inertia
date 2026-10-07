@@ -45,9 +45,7 @@ export function AboutPane() {
     // "release" to everybody, forever, which is a row that tells nobody
     // anything - but seeing "development" is worth a line when a bug report
     // turns out to be about a debug build.
-    ...(info?.profile === "development"
-      ? [{ label: "Build", value: "development" }]
-      : []),
+    ...(info?.profile === "development" ? [{ label: "Build", value: "development" }] : []),
   ];
 
   return (
@@ -60,12 +58,9 @@ export function AboutPane() {
         />
         <div className="min-w-0">
           <p className="text-base font-medium text-foreground">Inertia</p>
-          <p className="text-xs text-muted-foreground">
-            Version {rows[0].value ?? DASH}
-          </p>
+          <p className="text-xs text-muted-foreground">Version {rows[0].value ?? DASH}</p>
           <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Persistent AI teammates with their own computers, memory and
-            routines.
+            Persistent AI teammates with their own computers, memory and routines.
           </p>
         </div>
       </div>
@@ -73,17 +68,12 @@ export function AboutPane() {
       <SettingsSection flat title="Runtime">
         <SettingsCard className="flex flex-col gap-0.5 py-1.5">
           {rows.map((row) => (
-            <div
-              key={row.label}
-              className="flex items-baseline justify-between gap-4 px-1 py-1"
-            >
+            <div key={row.label} className="flex items-baseline justify-between gap-4 px-1 py-1">
               <span className="text-xs text-foreground/90">{row.label}</span>
               <span
                 className={cn(
                   "shrink-0 font-mono text-[0.6875rem] tabular-nums",
-                  row.value
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground/60",
+                  row.value ? "text-muted-foreground" : "text-muted-foreground/60"
                 )}
               >
                 {row.value ?? DASH}

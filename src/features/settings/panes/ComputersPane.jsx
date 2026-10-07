@@ -47,8 +47,7 @@ const SIZE_OPTIONS = [
   { value: "8-16-80", label: "Large", description: "8 vCPU · 16 GB · 80 GB" },
 ];
 
-const specKey = (specs) =>
-  `${specs?.cpu ?? 4}-${specs?.memoryGb ?? 8}-${specs?.diskGb ?? 40}`;
+const specKey = (specs) => `${specs?.cpu ?? 4}-${specs?.memoryGb ?? 8}-${specs?.diskGb ?? 40}`;
 
 /**
  * What you can actually do about a provider, from here.
@@ -81,11 +80,7 @@ function ProviderAction({ provider, building, onRecheck, onBuild, onAddKey }) {
   }
 
   if (provider.id === "local") {
-    return (
-      <span className="text-[0.6875rem] text-muted-foreground">
-        Nothing to set up
-      </span>
-    );
+    return <span className="text-[0.6875rem] text-muted-foreground">Nothing to set up</span>;
   }
 
   return (
@@ -182,8 +177,7 @@ export function ComputersPane() {
     setBuilding(true);
     setBuildLog("");
     const off = machines.onEvent((event) => {
-      if (event.type === "output")
-        setBuildLog((prev) => (prev + event.text).slice(-4000));
+      if (event.type === "output") setBuildLog((prev) => (prev + event.text).slice(-4000));
     });
     try {
       const built = await machines.buildImage();
@@ -236,9 +230,7 @@ export function ComputersPane() {
               panelClassName="w-64"
               ariaLabel="Default computer"
               value={user.preferences.defaultComputerId ?? ""}
-              onChange={(value) =>
-                setPreference("defaultComputerId", value || null)
-              }
+              onChange={(value) => setPreference("defaultComputerId", value || null)}
               options={[
                 { value: "", label: "None" },
                 ...computers.map((computer) => ({
@@ -371,35 +363,21 @@ export function ComputersPane() {
           {(providers ?? []).map((provider) => {
             const meta = PROVIDER_META[provider.id];
             return (
-              <div
-                key={provider.id}
-                className="flex min-w-0 items-start gap-2.5 py-1.5"
-              >
+              <div key={provider.id} className="flex min-w-0 items-start gap-2.5 py-1.5">
                 <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full fill-control text-muted-foreground">
-                  <Icon
-                    name={meta?.icon ?? "Container"}
-                    className="size-3.5"
-                    aria-hidden="true"
-                  />
+                  <Icon name={meta?.icon ?? "Container"} className="size-3.5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="truncate text-xs text-foreground/90">
-                      {provider.label}
-                    </span>
-                    <Badge
-                      variant={provider.ok ? "success" : "neutral"}
-                      size="sm"
-                    >
+                    <span className="truncate text-xs text-foreground/90">{provider.label}</span>
+                    <Badge variant={provider.ok ? "success" : "neutral"} size="sm">
                       {provider.ok ? "Ready" : "Unavailable"}
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
                     {provider.ok
                       ? provider.warning || provider.blurb
-                      : [provider.reason, provider.hint]
-                          .filter(Boolean)
-                          .join(" ")}
+                      : [provider.reason, provider.hint].filter(Boolean).join(" ")}
                   </p>
                 </div>
                 <ProviderAction
@@ -420,13 +398,12 @@ export function ComputersPane() {
 
       <SettingsSection flat title="The sandbox image">
         <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-          Docker and Daytona machines are built from one image, defined in the
-          app's <span className="font-mono">sandbox/</span> folder: Debian, the
-          tools an agent would otherwise ask you to install, and an X server so
-          its desktop and browser panes show something real. Editing it and
-          bumping the tag in <span className="font-mono">image.json</span>{" "}
-          changes what a new machine gets. A machine that already exists keeps
-          the image it was made from.
+          Docker and Daytona machines are built from one image, defined in the app's{" "}
+          <span className="font-mono">sandbox/</span> folder: Debian, the tools an agent would
+          otherwise ask you to install, and an X server so its desktop and browser panes show
+          something real. Editing it and bumping the tag in{" "}
+          <span className="font-mono">image.json</span> changes what a new machine gets. A machine
+          that already exists keeps the image it was made from.
         </p>
 
         {image ? (
@@ -435,23 +412,18 @@ export function ComputersPane() {
               <span className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-foreground/90">
                 {image.ref}
               </span>
-              <Badge
-                variant={image.buildable ? "neutral" : "warning"}
-                size="sm"
-              >
+              <Badge variant={image.buildable ? "neutral" : "warning"} size="sm">
                 {image.buildable ? "Buildable" : "No Dockerfile found"}
               </Badge>
             </div>
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-              Building it now takes a couple of minutes and pulls a few hundred
-              megabytes. Doing it here rather than when you make your first
-              machine means the wait is one you chose. Docker machines use it
-              straight away.
+              Building it now takes a couple of minutes and pulls a few hundred megabytes. Doing it
+              here rather than when you make your first machine means the wait is one you chose.
+              Docker machines use it straight away.
             </p>
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-              Daytona cannot see an image that only exists here. To use it in
-              the cloud, push it to a registry and put the pushed name in the
-              Daytona Image box above:
+              Daytona cannot see an image that only exists here. To use it in the cloud, push it to
+              a registry and put the pushed name in the Daytona Image box above:
             </p>
             <pre className="overflow-x-auto rounded-xl fill-whisper p-2 font-mono text-[0.625rem] leading-relaxed text-muted-foreground">
               {`docker tag ${image.ref} <you>/inertia-sandbox:0.1.0

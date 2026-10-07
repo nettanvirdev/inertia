@@ -134,7 +134,14 @@ export function Tabs({
   );
 }
 
-export function TabPanel({ value, activeValue, children, className, idPrefix = "inertia", ...props }) {
+export function TabPanel({
+  value,
+  activeValue,
+  children,
+  className,
+  idPrefix = "inertia",
+  ...props
+}) {
   if (value !== activeValue) return null;
   return (
     <div

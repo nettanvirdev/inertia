@@ -1,11 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import {
-  MenuPanel,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { MenuPanel, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/dropdown-menu";
 
 /**
  * Right-click menu. It is the dropdown, anchored to a point instead of an
@@ -58,8 +53,7 @@ export function ContextMenu({ items, children, className, panelClassName }) {
         ? items.map((item, i) => {
             if (!item) return null;
             if (item.type === "separator") return <MenuSeparator key={`s-${i}`} />;
-            if (item.type === "label")
-              return <MenuLabel key={`l-${i}`}>{item.label}</MenuLabel>;
+            if (item.type === "label") return <MenuLabel key={`l-${i}`}>{item.label}</MenuLabel>;
             return (
               <MenuItem
                 key={item.id ?? `i-${i}`}

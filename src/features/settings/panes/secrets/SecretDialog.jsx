@@ -33,8 +33,7 @@ export function SecretDialog({
     return <Dialog open={false} onOpenChange={onOpenChange} size="md" ariaLabel="Secret" />;
   }
 
-  const heading =
-    title ?? (editing.isNew ? "Add a secret" : `Edit ${editing.name}`);
+  const heading = title ?? (editing.isNew ? "Add a secret" : `Edit ${editing.name}`);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} size="md" ariaLabel={heading}>
@@ -103,7 +102,9 @@ export function SecretDialog({
         ) : null}
 
         {error ? (
-          <p className="animate-fade-in text-[0.6875rem] leading-relaxed text-destructive-ink">{error}</p>
+          <p className="animate-fade-in text-[0.6875rem] leading-relaxed text-destructive-ink">
+            {error}
+          </p>
         ) : null}
       </DialogBody>
       <DialogFooter>

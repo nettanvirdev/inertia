@@ -467,7 +467,9 @@ function ManageToolsDialog({ connection, open, onClose, onSaved }) {
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()} size="lg">
-      <DialogTitle>{connection ? `${connection.name || connection.toolkitSlug} tools` : "Tools"}</DialogTitle>
+      <DialogTitle>
+        {connection ? `${connection.name || connection.toolkitSlug} tools` : "Tools"}
+      </DialogTitle>
       <DialogDescription>
         Every tool ticked here is described to the model on every turn, so a shorter list is a
         sharper agent as well as a cheaper one.
@@ -516,7 +518,9 @@ function ManageToolsDialog({ connection, open, onClose, onSaved }) {
             Reading the tool list from Composio
           </div>
         ) : error ? (
-          <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">{error}</p>
+          <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+            {error}
+          </p>
         ) : (
           <ScrollArea className="max-h-[min(24rem,50dvh)] pr-1" fade>
             <div className="flex animate-fade-in flex-col gap-0.5">
@@ -757,7 +761,11 @@ function ComposioScreen({ query, layout }) {
         } else if (status === "FAILED" || status === "EXPIRED") {
           setPending((current) =>
             current && current.id === pending.id
-              ? { ...current, phase: "failed", error: `Composio reported the connection as ${status}.` }
+              ? {
+                  ...current,
+                  phase: "failed",
+                  error: `Composio reported the connection as ${status}.`,
+                }
               : current
           );
           await reloadConnections();
@@ -798,7 +806,13 @@ function ComposioScreen({ query, layout }) {
       await reloadConnections();
     } catch (failure) {
       popup?.close();
-      setPending({ id: null, name: toolkit.name, phase: "failed", error: failure.message, replacingId });
+      setPending({
+        id: null,
+        name: toolkit.name,
+        phase: "failed",
+        error: failure.message,
+        replacingId,
+      });
     }
   }
 
@@ -848,7 +862,11 @@ function ComposioScreen({ query, layout }) {
       await reloadConnections();
       toast({ variant: "warning", title: `${doomed.name || doomed.toolkitSlug} disconnected` });
     } catch (failure) {
-      toast({ variant: "danger", title: "Could not disconnect that", description: failure.message });
+      toast({
+        variant: "danger",
+        title: "Could not disconnect that",
+        description: failure.message,
+      });
     } finally {
       setDisconnecting(null);
     }
@@ -962,7 +980,9 @@ function ComposioScreen({ query, layout }) {
             />
 
             {error ? (
-              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">{error}</p>
+              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+                {error}
+              </p>
             ) : null}
 
             {shownConnections.length ? (
@@ -1051,7 +1071,13 @@ function ComposioScreen({ query, layout }) {
               count={blocked.length}
               description="Composio carries these, but signing in to them needs credentials of your own - an API key, or an OAuth client from the vendor's developer console. Save one as an auth config at Composio and press Refresh: the app moves up into Browse."
             >
-              <div className={layout === "rows" ? "flex flex-col gap-0.5" : "grid gap-0.5 md:grid-cols-2 2xl:grid-cols-3"}>
+              <div
+                className={
+                  layout === "rows"
+                    ? "flex flex-col gap-0.5"
+                    : "grid gap-0.5 md:grid-cols-2 2xl:grid-cols-3"
+                }
+              >
                 {blocked.map((toolkit) => (
                   <BlockedToolkitRow key={toolkit.slug} toolkit={toolkit} />
                 ))}

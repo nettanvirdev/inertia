@@ -53,8 +53,8 @@ export function ShortcutsPane() {
           </span>
           <p className="text-xs text-foreground/90">No shortcut matches</p>
           <p className="max-w-72 text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Nothing in the reference matches “{query}”. Try a key name like Ctrl, or an action
-            like chat.
+            Nothing in the reference matches “{query}”. Try a key name like Ctrl, or an action like
+            chat.
           </p>
         </div>
       ) : (

@@ -100,7 +100,9 @@ export function useCommands({ threadId, onModel } = {}) {
           const used = Number(thread?.context?.used) || 0;
           const window = Number(thread?.context?.window) || 0;
           if (!window) {
-            say("Nothing has been sent to a model in this conversation yet, so there is no context to measure.");
+            say(
+              "Nothing has been sent to a model in this conversation yet, so there is no context to measure."
+            );
             return true;
           }
           const percent = Math.round((used / window) * 100);
@@ -134,7 +136,9 @@ export function useCommands({ threadId, onModel } = {}) {
           const dollars = price ? costOf(usage, price) : null;
           say(
             `${formatTokens(totalTokens(usage))} tokens over ${replies} ${replies === 1 ? "reply" : "replies"}` +
-              (dollars != null ? `, about ${formatCost(dollars)}.` : ". No price is known for this model.")
+              (dollars != null
+                ? `, about ${formatCost(dollars)}.`
+                : ". No price is known for this model.")
           );
           return true;
         }
@@ -153,8 +157,16 @@ export function useCommands({ threadId, onModel } = {}) {
           }
           const match =
             chatModels.find((m) => String(m.id ?? "").toLowerCase() === wanted) ??
-            chatModels.find((m) => String(m.label ?? "").toLowerCase().includes(wanted)) ??
-            chatModels.find((m) => String(m.id ?? "").toLowerCase().includes(wanted));
+            chatModels.find((m) =>
+              String(m.label ?? "")
+                .toLowerCase()
+                .includes(wanted)
+            ) ??
+            chatModels.find((m) =>
+              String(m.id ?? "")
+                .toLowerCase()
+                .includes(wanted)
+            );
           if (!match) {
             say(
               `No configured model matches "${args.trim()}". The ones you have: ${
@@ -194,7 +206,9 @@ export function useCommands({ threadId, onModel } = {}) {
           }
           copyText(`# ${thread?.title ?? "Conversation"}\n\n${lines.join("\n\n")}`)
             .then(() => toast({ title: "Conversation copied" }))
-            .catch(() => toast({ title: "The conversation could not be copied", variant: "danger" }));
+            .catch(() =>
+              toast({ title: "The conversation could not be copied", variant: "danger" })
+            );
           return true;
         }
 

@@ -28,9 +28,7 @@ export function ConfirmDialog({
 
   React.useEffect(() => {
     if (!open || !destructive) return;
-    const raf = requestAnimationFrame(() =>
-      cancelRef.current?.focus({ preventScroll: true })
-    );
+    const raf = requestAnimationFrame(() => cancelRef.current?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(raf);
   }, [open, destructive]);
 

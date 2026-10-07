@@ -68,8 +68,7 @@ export const REQUIRED_SECRETS = [
     title: "Daytona",
     label: "Daytona API key",
     icon: "Cloud",
-    purpose:
-      "Runs an agent's computer in the cloud, so it keeps working when Inertia is closed.",
+    purpose: "Runs an agent's computer in the cloud, so it keeps working when Inertia is closed.",
     url: "https://app.daytona.io",
     urlLabel: "Get a key at app.daytona.io",
     async test() {

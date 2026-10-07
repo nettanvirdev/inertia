@@ -127,7 +127,9 @@ function ServerVariables({ servers, values, onChange }) {
         <Field
           key={variable.name}
           label={variable.name}
-          hint={variable.description || (variable.default ? `Defaults to ${variable.default}.` : "")}
+          hint={
+            variable.description || (variable.default ? `Defaults to ${variable.default}.` : "")
+          }
         >
           {variable.enum?.length ? (
             <Select
@@ -278,7 +280,10 @@ function ImportDialog({ open, onClose, onImported }) {
                 with a fade rather than rewriting the label under the cursor. */}
             <div key={source} className="animate-fade-in">
               {source === "url" ? (
-                <Field label="Spec URL" hint="JSON or YAML. A URL that redirects is refused rather than followed.">
+                <Field
+                  label="Spec URL"
+                  hint="JSON or YAML. A URL that redirects is refused rather than followed."
+                >
                   <Input
                     size="sm"
                     className="font-mono"
@@ -325,7 +330,9 @@ function ImportDialog({ open, onClose, onImported }) {
             </Field>
 
             {error ? (
-              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">{error}</p>
+              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+                {error}
+              </p>
             ) : null}
           </div>
         </ScrollArea>
@@ -480,7 +487,13 @@ function TestPanel({ record, operations }) {
         </Field>
       </div>
 
-      <Button variant="subtle" size="sm" className="self-start" disabled={busy || !chosen} onClick={run}>
+      <Button
+        variant="subtle"
+        size="sm"
+        className="self-start"
+        disabled={busy || !chosen}
+        onClick={run}
+      >
         {busy ? <Spinner size="sm" /> : <Play />}
         Call it
       </Button>
@@ -501,9 +514,7 @@ function ImportCard({ record, expanded, onToggle, onChanged, onRemove }) {
   const [baseUrl, setBaseUrl] = React.useState(record.baseUrl ?? "");
   const [auth, setAuth] = React.useState(() => normaliseAuth(record.auth));
   const [details, setDetails] = React.useState(null);
-  const [serverVariables, setServerVariables] = React.useState(
-    () => record.serverVariables ?? {}
-  );
+  const [serverVariables, setServerVariables] = React.useState(() => record.serverVariables ?? {});
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
 
@@ -653,7 +664,10 @@ function ImportCard({ record, expanded, onToggle, onChanged, onRemove }) {
         <div className="flex flex-col gap-5 pl-9">
           {record.warnings?.length ? (
             <div className="flex items-start gap-2 rounded-xl fill-whisper px-3 py-2.5">
-              <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning-ink" aria-hidden="true" />
+              <TriangleAlert
+                className="mt-px size-3.5 shrink-0 text-warning-ink"
+                aria-hidden="true"
+              />
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   Parts of this spec did not come through cleanly. A reference that could not be
@@ -661,7 +675,10 @@ function ImportCard({ record, expanded, onToggle, onChanged, onRemove }) {
                   body Inertia cannot build was skipped entirely; a templated server URL needs a
                   value before anything will resolve. Read them and you will know which.
                 </p>
-                <Disclosure label={`Read the ${record.warnings.length} warnings`} className="mt-1.5">
+                <Disclosure
+                  label={`Read the ${record.warnings.length} warnings`}
+                  className="mt-1.5"
+                >
                   <Mono>{record.warnings.join("\n")}</Mono>
                 </Disclosure>
               </div>
@@ -814,7 +831,9 @@ function ImportCard({ record, expanded, onToggle, onChanged, onRemove }) {
           </div>
 
           {error ? (
-            <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">{error}</p>
+            <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+              {error}
+            </p>
           ) : null}
         </div>
       </Collapse>
@@ -892,7 +911,11 @@ function OpenApiScreen({ query, addToken }) {
               Reading the workspace folder
             </div>
           ) : error ? (
-            <EmptyState icon={CircleAlert} title="That folder could not be read" description={error} />
+            <EmptyState
+              icon={CircleAlert}
+              title="That folder could not be read"
+              description={error}
+            />
           ) : filtered.length ? (
             <div className="flex flex-col gap-1.5">
               {filtered.map((record) => (
@@ -900,7 +923,9 @@ function OpenApiScreen({ query, addToken }) {
                   key={record.id}
                   record={record}
                   expanded={expanded === record.id}
-                  onToggle={() => setExpanded((current) => (current === record.id ? null : record.id))}
+                  onToggle={() =>
+                    setExpanded((current) => (current === record.id ? null : record.id))
+                  }
                   onChanged={reload}
                   onRemove={() => setRemoving(record)}
                 />

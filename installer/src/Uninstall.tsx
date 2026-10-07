@@ -57,8 +57,7 @@ export function Uninstall() {
                   Remove {info.productName}?
                 </h1>
                 <p className="mt-2 max-w-[19rem] text-sm leading-relaxed text-pretty text-muted-foreground">
-                  This deletes the app and its shortcuts. You can install it
-                  again at any time.
+                  This deletes the app and its shortcuts. You can install it again at any time.
                 </p>
               </div>
 
@@ -94,7 +93,10 @@ export function Uninstall() {
                   aria-valuenow={Math.round(percent)}
                   className="h-1.5 w-full overflow-hidden rounded-full fill-track"
                 >
-                  <div className="h-full rounded-full bg-foreground" style={{ width: `${percent}%` }} />
+                  <div
+                    className="h-full rounded-full bg-foreground"
+                    style={{ width: `${percent}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -172,13 +174,15 @@ function Choice({
       className={cn(
         "flex items-start gap-2.5 rounded-md p-3 text-left outline-none",
         "transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring",
-        checked ? "card-surface-raised" : "card-surface-subtle hover:fill-control-hover",
+        checked ? "card-surface-raised" : "card-surface-subtle hover:fill-control-hover"
       )}
     >
       <span
         className={cn(
           "mt-px flex size-4 shrink-0 items-center justify-center rounded-xs transition-colors duration-150 ease-out",
-          checked ? "bg-destructive text-destructive-foreground" : "fill-field ring-1 ring-control-border",
+          checked
+            ? "bg-destructive text-destructive-foreground"
+            : "fill-field ring-1 ring-control-border"
         )}
       >
         {checked ? <X className="size-2.5 animate-pop-in" /> : null}

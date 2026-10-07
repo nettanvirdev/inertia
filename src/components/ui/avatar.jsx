@@ -30,10 +30,7 @@ function Avatar({ src, name, size = "md", status, icon, className, ...props }) {
   React.useEffect(() => setBroken(false), [src]);
 
   return (
-    <span
-      className={cn("relative inline-flex shrink-0", s.box, className)}
-      {...props}
-    >
+    <span className={cn("relative inline-flex shrink-0", s.box, className)} {...props}>
       <span
         className={cn(
           "flex size-full select-none items-center justify-center overflow-hidden rounded-full",

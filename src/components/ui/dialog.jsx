@@ -16,7 +16,7 @@ const FOCUSABLE = [
 function focusables(root) {
   if (!root) return [];
   return Array.from(root.querySelectorAll(FOCUSABLE)).filter(
-    (el) => el.offsetWidth || el.offsetHeight || el.getClientRects().length,
+    (el) => el.offsetWidth || el.offsetHeight || el.getClientRects().length
   );
 }
 
@@ -45,8 +45,7 @@ export function useFocusTrap(containerRef, active) {
     return () => {
       cancelAnimationFrame(raf);
       const target = restoreTo.current;
-      if (target && document.contains(target))
-        target.focus?.({ preventScroll: true });
+      if (target && document.contains(target)) target.focus?.({ preventScroll: true });
     };
   }, [active, containerRef]);
 
@@ -70,7 +69,7 @@ export function useFocusTrap(containerRef, active) {
         first.focus({ preventScroll: true });
       }
     },
-    [containerRef],
+    [containerRef]
   );
 }
 
@@ -139,7 +138,7 @@ export function Dialog({
       setLabelled,
       setDescribed,
     }),
-    [close, baseId],
+    [close, baseId]
   );
 
   // Mounted one beat past closing so the panel can settle back out and the
@@ -179,12 +178,10 @@ export function Dialog({
                 "overlay-surface rounded-3xl p-5 outline-none",
                 "animate-overlay-in",
                 sizes[size] ?? sizes.md,
-                className,
+                className
               )}
             >
-              {showClose ? (
-                <DialogClose className="absolute top-4 right-4" />
-              ) : null}
+              {showClose ? <DialogClose className="absolute top-4 right-4" /> : null}
               {children}
             </div>
           </div>
@@ -204,10 +201,7 @@ export function DialogTitle({ className, children, ...props }) {
   return (
     <h2
       id={ctx?.titleId}
-      className={cn(
-        "text-base leading-snug font-medium text-foreground",
-        className,
-      )}
+      className={cn("text-base leading-snug font-medium text-foreground", className)}
       {...props}
     >
       {children}
@@ -225,10 +219,7 @@ export function DialogDescription({ className, children, ...props }) {
   return (
     <p
       id={ctx?.descriptionId}
-      className={cn(
-        "mt-2 text-[13px] leading-relaxed text-muted-foreground",
-        className,
-      )}
+      className={cn("mt-2 text-[13px] leading-relaxed text-muted-foreground", className)}
       {...props}
     >
       {children}
@@ -249,10 +240,7 @@ export function DialogBody({ className, children, ...props }) {
 export function DialogFooter({ className, children, ...props }) {
   return (
     <div
-      className={cn(
-        "mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className,
-      )}
+      className={cn("mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
       {...props}
     >
       {children}
@@ -274,7 +262,7 @@ export function DialogClose({ className, children, onClick, ...props }) {
         "grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground",
         "transition-colors duration-150 ease-out hover:fill-close hover:text-foreground",
         "outline-none focus-visible:fill-close",
-        className,
+        className
       )}
       {...props}
     >

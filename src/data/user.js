@@ -14,13 +14,13 @@
  */
 
 export const CURRENT_USER = {
-  id: 'usr-local',
-  name: '',
-  handle: '',
-  email: '',
-  avatarInitials: '',
+  id: "usr-local",
+  name: "",
+  handle: "",
+  email: "",
+  avatarInitials: "",
   avatarUrl: null,
-  shortName: '',
-  bio: '',
+  shortName: "",
+  bio: "",
   preferences: {},
 };

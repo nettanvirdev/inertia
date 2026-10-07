@@ -288,7 +288,9 @@ const SPECS = {
         "return sealed set super suspend this throw try typealias val var vararg when while"
     ),
     literals: words("true false null it"),
-    types: words("Any Boolean Byte Char Double Float Int List Long Map Set String Unit Array Nothing"),
+    types: words(
+      "Any Boolean Byte Char Double Float Int List Long Map Set String Unit Array Nothing"
+    ),
     annotation: true,
   },
   swift: {

@@ -86,9 +86,7 @@ export function GeneralPane() {
   // starts" on a Mac is the kind of small wrongness that makes somebody wonder
   // what else the app has not noticed about their computer.
   const startupLabel =
-    background.platform === "darwin"
-      ? "Open Inertia at login"
-      : "Start when Windows starts";
+    background.platform === "darwin" ? "Open Inertia at login" : "Start when Windows starts";
   // Closing to the tray is a Windows and Linux idea. macOS already keeps a
   // closed app in the dock, so the switch would describe something the platform
   // decides, and there is no tray icon there to close to.
@@ -123,9 +121,8 @@ export function GeneralPane() {
   }, [prefs.startupView]);
 
   const agentOptions = React.useMemo(
-    () =>
-      agents.map((b) => ({ value: b.id, label: b.name, description: b.role })),
-    [agents],
+    () => agents.map((b) => ({ value: b.id, label: b.name, description: b.role })),
+    [agents]
   );
 
   const localeOptions = React.useMemo(
@@ -134,27 +131,21 @@ export function GeneralPane() {
         const preferences = { locale: entry.value, timezone };
         return {
           ...entry,
-          label:
-            entry.value === SYSTEM
-              ? `Match system (${resolveLocale(SYSTEM)})`
-              : entry.label,
+          label: entry.value === SYSTEM ? `Match system (${resolveLocale(SYSTEM)})` : entry.label,
           description: `${formatDate(now, preferences)} · ${formatNumber(SAMPLE_NUMBER, preferences)}`,
         };
       }),
-    [now, timezone],
+    [now, timezone]
   );
 
   const zoneOptions = React.useMemo(
     () =>
       TIME_ZONES.map((entry) => ({
         ...entry,
-        label:
-          entry.value === SYSTEM
-            ? `Match system (${resolveTimeZone(SYSTEM)})`
-            : entry.label,
+        label: entry.value === SYSTEM ? `Match system (${resolveTimeZone(SYSTEM)})` : entry.label,
         description: zoneOffsetLabel(entry.value, now),
       })),
-    [now],
+    [now]
   );
 
   const example = formatDateTime(now, { locale, timezone });
@@ -189,8 +180,7 @@ export function GeneralPane() {
       // exactly the moment somebody needs to know which path refused.
       toast({
         title: "Nothing was deleted",
-        description:
-          error?.message ?? "The workspace folder could not be cleared.",
+        description: error?.message ?? "The workspace folder could not be cleared.",
         variant: "danger",
       });
     } finally {
@@ -211,11 +201,7 @@ export function GeneralPane() {
           label={user.name}
           description={`${user.handle} · ${user.email}`}
           control={
-            <Button
-              variant="subtle"
-              size="xs"
-              onClick={() => openSettings("identity")}
-            >
+            <Button variant="subtle" size="xs" onClick={() => openSettings("identity")}>
               Edit profile
             </Button>
           }
@@ -255,9 +241,7 @@ export function GeneralPane() {
           label="Right now"
           description="The current time, written with the two settings above."
           control={
-            <span className="font-mono text-xs text-foreground tabular-nums">
-              {example}
-            </span>
+            <span className="font-mono text-xs text-foreground tabular-nums">{example}</span>
           }
         />
       </SettingsSection>
@@ -335,7 +319,11 @@ export function GeneralPane() {
               ariaLabel="Tool access"
               value={prefs.toolAccess ?? PREFERENCE_DEFAULTS.toolAccess}
               onChange={(v) => setPreference("toolAccess", v)}
-              options={TOOL_ACCESS.map((t) => ({ value: t.id, label: t.label, description: t.hint }))}
+              options={TOOL_ACCESS.map((t) => ({
+                value: t.id,
+                label: t.label,
+                description: t.hint,
+              }))}
             />
           }
         />
@@ -403,12 +391,11 @@ export function GeneralPane() {
             silence. A statement of fact replaces it. */}
         <SettingsCard>
           <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Inertia has no analytics, no crash reporter and no account. Nothing
-            about how you use the app leaves this computer. The only outbound
-            traffic is what you ask for: requests to the model providers and
-            integrations you configured yourself, sent straight from here with
-            your own keys. Your conversations, agents and memories are files in
-            your workspace folder, and they stay there.
+            Inertia has no analytics, no crash reporter and no account. Nothing about how you use
+            the app leaves this computer. The only outbound traffic is what you ask for: requests to
+            the model providers and integrations you configured yourself, sent straight from here
+            with your own keys. Your conversations, agents and memories are files in your workspace
+            folder, and they stay there.
           </p>
         </SettingsCard>
       </SettingsSection>
@@ -418,11 +405,7 @@ export function GeneralPane() {
           label="Reset all settings"
           description="Puts every preference in this sheet back to its default. Your threads, agents, memories and computers are untouched."
           control={
-            <Button
-              variant="subtle"
-              size="xs"
-              onClick={() => setConfirm("reset")}
-            >
+            <Button variant="subtle" size="xs" onClick={() => setConfirm("reset")}>
               Reset
             </Button>
           }
@@ -431,11 +414,7 @@ export function GeneralPane() {
           label="Delete all data"
           description="Permanently removes everything Inertia has written into your workspace folder: every agent and its memory, all threads and attachments, every routine, computer and skill. This cannot be undone."
           control={
-            <Button
-              variant="danger"
-              size="xs"
-              onClick={() => setConfirm("delete")}
-            >
+            <Button variant="danger" size="xs" onClick={() => setConfirm("delete")}>
               Delete all data
             </Button>
           }
@@ -462,10 +441,9 @@ export function GeneralPane() {
         title="Delete everything in your workspace?"
         description={
           <>
-            This removes every agent and everything it has learned, every
-            conversation and attachment, every routine, every computer, every
-            skill, the record of which integrations you connected, and your
-            profile. There is no export step and no undo: once the files are
+            This removes every agent and everything it has learned, every conversation and
+            attachment, every routine, every computer, every skill, the record of which integrations
+            you connected, and your profile. There is no export step and no undo: once the files are
             gone, they are gone. It all lives in this folder.
             <span className="mt-2 block font-mono text-[0.6875rem] break-all text-foreground/80">
               {root ?? "No workspace folder is configured."}
@@ -506,10 +484,7 @@ export function GeneralPane() {
               ["Routines", routines.length],
               ["Computers", computers.length],
             ].map(([label, count]) => (
-              <div
-                key={label}
-                className="flex items-baseline justify-between gap-3"
-              >
+              <div key={label} className="flex items-baseline justify-between gap-3">
                 <dt className="text-muted-foreground">{label}</dt>
                 <dd className="tabular-nums text-foreground">{count}</dd>
               </div>
@@ -517,16 +492,12 @@ export function GeneralPane() {
           </dl>
 
           <p className="mt-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
-            The folder itself stays where it is and stays connected, so Inertia
-            reopens empty rather than back at setup. Anything in there that
-            Inertia did not write is left alone. Your API keys and provider
-            settings live outside the workspace and are not touched.
+            The folder itself stays where it is and stays connected, so Inertia reopens empty rather
+            than back at setup. Anything in there that Inertia did not write is left alone. Your API
+            keys and provider settings live outside the workspace and are not touched.
           </p>
 
-          <label
-            htmlFor="wipe-confirm"
-            className="mt-4 block text-xs text-foreground/90"
-          >
+          <label htmlFor="wipe-confirm" className="mt-4 block text-xs text-foreground/90">
             Type {CONFIRM_WORD} to confirm
           </label>
           <Input
@@ -544,12 +515,7 @@ export function GeneralPane() {
         </DialogBody>
 
         <DialogFooter>
-          <Button
-            variant="secondary"
-            size="pill"
-            disabled={wiping}
-            onClick={closeDelete}
-          >
+          <Button variant="secondary" size="pill" disabled={wiping} onClick={closeDelete}>
             Cancel
           </Button>
           <Button

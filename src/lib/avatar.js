@@ -64,7 +64,10 @@ export function pathFor(mime) {
 }
 
 function mimeFor(relPath) {
-  const ext = String(relPath ?? "").split(".").pop()?.toLowerCase();
+  const ext = String(relPath ?? "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
   return MIMES[ext] ?? "image/png";
 }
 

@@ -12,7 +12,16 @@ import { IconButton } from "@/components/ui/icon-button";
  * and the two trailing actions stop the event, because a user reaching for the
  * enable toggle has not asked for a dialog.
  */
-export function PluginRow({ glyph, title, subtitle, badges = [], enabled, onToggle, onEdit, onRemove }) {
+export function PluginRow({
+  glyph,
+  title,
+  subtitle,
+  badges = [],
+  enabled,
+  onToggle,
+  onEdit,
+  onRemove,
+}) {
   const stop = (fn) => (e) => {
     e.stopPropagation();
     fn?.();

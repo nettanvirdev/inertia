@@ -161,7 +161,13 @@ function Flowchart({ diagram }) {
                 rx={5}
                 fill="var(--card-subtle)"
               />
-              <Label lines={[edge.label]} x={edge.labelX} y={edge.labelY} className="text-[11px]" fill="var(--muted-foreground)" />
+              <Label
+                lines={[edge.label]}
+                x={edge.labelX}
+                y={edge.labelY}
+                className="text-[11px]"
+                fill="var(--muted-foreground)"
+              />
             </>
           ) : null}
         </g>
@@ -328,7 +334,11 @@ export function Diagram({ diagram, className }) {
           <path d="M 10 1 L 0 5 L 10 9 z" fill="var(--diagram-line)" />
         </marker>
       </defs>
-      {diagram.kind === "flowchart" ? <Flowchart diagram={diagram} /> : <Sequence diagram={diagram} />}
+      {diagram.kind === "flowchart" ? (
+        <Flowchart diagram={diagram} />
+      ) : (
+        <Sequence diagram={diagram} />
+      )}
     </svg>
   );
 }

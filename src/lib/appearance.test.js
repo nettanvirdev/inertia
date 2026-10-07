@@ -86,7 +86,10 @@ describe("the shipped defaults", () => {
       contrast: CONTRASTS,
     };
     for (const [key, list] of Object.entries(lists)) {
-      expect(list.map((entry) => entry.value), key).toContain(APPEARANCE_DEFAULTS[key]);
+      expect(
+        list.map((entry) => entry.value),
+        key
+      ).toContain(APPEARANCE_DEFAULTS[key]);
     }
   });
 

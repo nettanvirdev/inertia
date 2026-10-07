@@ -52,7 +52,9 @@ export function RoutineRow({ routine, compact = false, onOpen, className }) {
         <span
           className={cn(
             "grid size-7 shrink-0 place-items-center rounded-full fill-control transition-colors",
-            routine.enabled ? "text-muted-foreground group-hover:text-foreground" : "text-muted-foreground/60"
+            routine.enabled
+              ? "text-muted-foreground group-hover:text-foreground"
+              : "text-muted-foreground/60"
           )}
           aria-hidden="true"
         >
@@ -93,7 +95,9 @@ export function RoutineRow({ routine, compact = false, onOpen, className }) {
       <div className="flex shrink-0 items-center gap-2">
         {last ? (
           <Tooltip content={`${runLabel(status)} - ${absoluteTime(last.at)}`}>
-            <span className={cn("hidden items-center gap-1.5 text-[11px] sm:inline-flex", tone.ink)}>
+            <span
+              className={cn("hidden items-center gap-1.5 text-[11px] sm:inline-flex", tone.ink)}
+            >
               <span className={cn("size-1.5 rounded-full", tone.dot)} aria-hidden="true" />
               {running ? "Running" : `${runLabel(status)} ${relativeTime(last.at)}`}
             </span>

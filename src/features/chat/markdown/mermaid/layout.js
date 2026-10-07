@@ -142,7 +142,9 @@ function orderRanks(layers, edges) {
       const keyed = layer.map((id, at) => ({
         id,
         at,
-        key: median((neighbours.get(`${side}:${id}`) ?? []).map((other) => position.get(other) ?? -1)),
+        key: median(
+          (neighbours.get(`${side}:${id}`) ?? []).map((other) => position.get(other) ?? -1)
+        ),
       }));
       keyed.sort((a, b) => {
         if (a.key === -1 || b.key === -1) return a.at - b.at;
@@ -170,12 +172,11 @@ function edgeOfBox(node, towardsX, towardsY) {
 }
 
 export function layoutFlowchart(diagram) {
-  const vertical = diagram.direction === "TD" || diagram.direction === "TB" || diagram.direction === "BT";
+  const vertical =
+    diagram.direction === "TD" || diagram.direction === "TB" || diagram.direction === "BT";
   const reversed = diagram.direction === "BT" || diagram.direction === "RL";
 
-  const sized = new Map(
-    diagram.nodes.map((node) => [node.id, { ...node, ...sizeOf(node) }])
-  );
+  const sized = new Map(diagram.nodes.map((node) => [node.id, { ...node, ...sizeOf(node) }]));
   const ids = diagram.nodes.map((node) => node.id);
   const rank = rankNodes(ids, diagram.edges);
 
@@ -280,8 +281,12 @@ export function layoutFlowchart(diagram) {
     // edges into the same box distinguishable, not enough to make a short
     // link look like a river.
     const bend = Math.min(Math.abs(vertical ? end.y - start.y : end.x - start.x) / 2, 34);
-    const c1 = vertical ? `${start.x} ${start.y + Math.sign(end.y - start.y) * bend}` : `${start.x + Math.sign(end.x - start.x) * bend} ${start.y}`;
-    const c2 = vertical ? `${end.x} ${end.y - Math.sign(end.y - start.y) * bend}` : `${end.x - Math.sign(end.x - start.x) * bend} ${end.y}`;
+    const c1 = vertical
+      ? `${start.x} ${start.y + Math.sign(end.y - start.y) * bend}`
+      : `${start.x + Math.sign(end.x - start.x) * bend} ${start.y}`;
+    const c2 = vertical
+      ? `${end.x} ${end.y - Math.sign(end.y - start.y) * bend}`
+      : `${end.x - Math.sign(end.x - start.x) * bend} ${end.y}`;
 
     return {
       ...edge,

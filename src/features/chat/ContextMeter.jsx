@@ -32,7 +32,12 @@ export function ContextMeter({ context, className }) {
   if (!window) return null;
   const ratio = Math.min(1, used / window);
   const percent = Math.round(ratio * 100);
-  const tone = ratio >= RED_AT ? "text-destructive-ink" : ratio >= AMBER_AT ? "text-warning-ink" : "text-muted-foreground";
+  const tone =
+    ratio >= RED_AT
+      ? "text-destructive-ink"
+      : ratio >= AMBER_AT
+        ? "text-warning-ink"
+        : "text-muted-foreground";
 
   // A ring is read at a glance the way a battery is; a bar this small is a
   // line of a different length. Radius 5 in a 14px box, so the stroke sits
@@ -53,7 +58,15 @@ export function ContextMeter({ context, className }) {
       aria-label={`Context ${percent}% full`}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0">
-        <circle cx="7" cy="7" r={radius} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+        <circle
+          cx="7"
+          cy="7"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.25"
+          strokeWidth="2"
+        />
         <circle
           cx="7"
           cy="7"

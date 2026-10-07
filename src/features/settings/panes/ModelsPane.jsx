@@ -1,13 +1,5 @@
 import * as React from "react";
-import {
-  CircleAlert,
-  Pencil,
-  Plug,
-  Plus,
-  RotateCw,
-  Server,
-  Trash2,
-} from "@/components/icons";
+import { CircleAlert, Pencil, Plug, Plus, RotateCw, Server, Trash2 } from "@/components/icons";
 import { useWorkspace } from "@/lib/workspace";
 import { allModels, normalizeBaseUrl, providerId } from "@shared/providers";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +37,7 @@ function modelOptions(providers) {
   for (const model of allModels(providers)) {
     const key = model.providerName || model.providerId;
     if (!groups.has(key)) groups.set(key, []);
-    groups
-      .get(key)
-      .push({ value: model.ref, label: model.label, description: model.id });
+    groups.get(key).push({ value: model.ref, label: model.label, description: model.id });
   }
   return [...groups].map(([group, options]) => ({ group, options }));
 }
@@ -74,16 +64,11 @@ function ProviderRow({ provider, probe, onToggle, onTest, onEdit, onRemove }) {
   return (
     <div className="flex animate-slide-up flex-col gap-1 rounded-lg px-2 py-1.5 transition-colors duration-150 ease-out hover:fill-control-hover">
       <div className="flex min-w-0 items-center gap-2">
-        <Server
-          className="size-3.5 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
+        <Server className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-xs text-foreground">
-              {provider.name}
-            </span>
+            <span className="truncate text-xs text-foreground">{provider.name}</span>
             <ConnectionBadge probe={probe} />
           </div>
           <p className="truncate font-mono text-[0.6875rem] leading-tight text-muted-foreground">
@@ -96,29 +81,17 @@ function ProviderRow({ provider, probe, onToggle, onTest, onEdit, onRemove }) {
         </span>
 
         <Tooltip content="Test connection">
-          <IconButton
-            size="sm"
-            label={`Test ${provider.name}`}
-            onClick={onTest}
-          >
+          <IconButton size="sm" label={`Test ${provider.name}`} onClick={onTest}>
             {probe?.state === "testing" ? <Spinner size="sm" /> : <RotateCw />}
           </IconButton>
         </Tooltip>
         <Tooltip content="Edit">
-          <IconButton
-            size="sm"
-            label={`Edit ${provider.name}`}
-            onClick={onEdit}
-          >
+          <IconButton size="sm" label={`Edit ${provider.name}`} onClick={onEdit}>
             <Pencil />
           </IconButton>
         </Tooltip>
         <Tooltip content="Remove">
-          <IconButton
-            size="sm"
-            label={`Remove ${provider.name}`}
-            onClick={onRemove}
-          >
+          <IconButton size="sm" label={`Remove ${provider.name}`} onClick={onRemove}>
             <Trash2 />
           </IconButton>
         </Tooltip>
@@ -187,7 +160,7 @@ export function ModelsPane() {
       setDoc(merged);
       return merged;
     },
-    [client, doc],
+    [client, doc]
   );
 
   async function guarded(work, message) {
@@ -269,8 +242,7 @@ export function ModelsPane() {
       >
         {providers.length === 0 ? (
           <p className="px-4 py-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Nothing to choose from yet. Add a provider below and its models land
-            here.
+            Nothing to choose from yet. Add a provider below and its models land here.
           </p>
         ) : (
           <SettingsRow
@@ -286,16 +258,11 @@ export function ModelsPane() {
                 className="w-64"
                 panelClassName="w-72"
                 ariaLabel="Default model"
-                placeholder={
-                  options.length ? "Select a model" : "No models available"
-                }
+                placeholder={options.length ? "Select a model" : "No models available"}
                 disabled={!options.length}
                 value={doc.defaultModel ?? ""}
                 onChange={(value) =>
-                  guarded(
-                    () => commit({ defaultModel: value }),
-                    "Could not save the default model",
-                  )
+                  guarded(() => commit({ defaultModel: value }), "Could not save the default model")
                 }
                 options={options}
               />
@@ -304,7 +271,8 @@ export function ModelsPane() {
         )}
       </SettingsSection>
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Your providers"
         description="Any endpoint that speaks the OpenAI chat-completions API. Keys are stored as named secrets in your workspace, and requests are made from the app itself rather than the window."
       >
@@ -329,10 +297,10 @@ export function ModelsPane() {
                     () =>
                       commit({
                         providers: providers.map((p) =>
-                          p.id === provider.id ? { ...p, enabled } : p,
+                          p.id === provider.id ? { ...p, enabled } : p
                         ),
                       }),
-                    "Could not change that provider",
+                    "Could not change that provider"
                   )
                 }
               />
@@ -348,11 +316,7 @@ export function ModelsPane() {
         </SettingsCard>
 
         <div className="flex">
-          <Button
-            variant="primary"
-            size="xs"
-            onClick={() => setEditing({ provider: null })}
-          >
+          <Button variant="primary" size="xs" onClick={() => setEditing({ provider: null })}>
             <Plus />
             Add provider
           </Button>

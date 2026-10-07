@@ -63,10 +63,7 @@ export function PermissionsPane() {
   // Anything that is not a list of rules came from an older build that stored a
   // map of invented capability ids. There is nothing in it worth migrating, so
   // it is treated as an empty ruleset rather than crashing the pane.
-  const rules = React.useMemo(
-    () => asRules(permissions?.workspace),
-    [permissions]
-  );
+  const rules = React.useMemo(() => asRules(permissions?.workspace), [permissions]);
   const groups = React.useMemo(groupedTools, []);
 
   const [runtime, setRuntime] = React.useState([]);
@@ -138,7 +135,8 @@ export function PermissionsPane() {
 
   return (
     <div className="w-full">
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="What agents may do"
         description="The workspace ruleset. Every agent starts from this and can tighten or loosen any line of it on its own page. The most specific rule that matches a call is the one that decides it, so a narrow rule always beats a broad one no matter where it sits in the list."
       >
@@ -174,8 +172,8 @@ export function PermissionsPane() {
                 Everything else
               </p>
               <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
-                Tools that ask under a name of their own rather than one of the headings above.
-                Each is controlled here, by that name.
+                Tools that ask under a name of their own rather than one of the headings above. Each
+                is controlled here, by that name.
               </p>
             </div>
             {orphans.map((key) => (
@@ -209,7 +207,8 @@ export function PermissionsPane() {
         }
       />
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Try a call"
         description="Type what an agent might actually do and see which rule catches it, before it is a prompt in the middle of a turn."
       >

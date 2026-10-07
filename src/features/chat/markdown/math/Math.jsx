@@ -61,7 +61,7 @@ function Scripts({ node, display }) {
   );
 }
 
-function Fraction({ node, display }) {
+function Fraction({ node }) {
   return (
     <span className="inline-flex flex-col items-center px-[0.15em] align-middle leading-tight">
       <span className="px-[0.25em] pb-[0.1em] text-[0.95em]">
@@ -92,11 +92,18 @@ function Root({ node, display }) {
   );
 }
 
-function Matrix({ node, display }) {
+function Matrix({ node }) {
   return (
     <span className="inline-flex items-center align-middle">
-      {node.open ? <span className="pr-[0.15em] text-[1.6em] leading-none">{node.open}</span> : null}
-      <span className="inline-grid gap-x-[0.7em] gap-y-[0.15em]" style={{ gridTemplateColumns: `repeat(${Math.max(...node.rows.map((row) => row.length), 1)}, auto)` }}>
+      {node.open ? (
+        <span className="pr-[0.15em] text-[1.6em] leading-none">{node.open}</span>
+      ) : null}
+      <span
+        className="inline-grid gap-x-[0.7em] gap-y-[0.15em]"
+        style={{
+          gridTemplateColumns: `repeat(${Math.max(...node.rows.map((row) => row.length), 1)}, auto)`,
+        }}
+      >
         {node.rows.map((row, rowIndex) =>
           row.map((cell, cellIndex) => (
             <span key={`${rowIndex}-${cellIndex}`} className="text-center">

@@ -12,7 +12,11 @@ import { cn } from "@/lib/utils";
 const SIZES = {
   xs: { track: "h-7 p-0.5", item: "h-6 gap-1.5 px-2.5 text-xs", icon: "[&_svg]:size-3.5" },
   md: { track: "h-8 p-0.5", item: "h-7 gap-1.5 px-3 text-[13px]", icon: "[&_svg]:size-4" },
-  lg: { track: "h-[2.375rem] p-1", item: "h-[1.875rem] gap-2 px-4 text-[13px]", icon: "[&_svg]:size-4" },
+  lg: {
+    track: "h-[2.375rem] p-1",
+    item: "h-[1.875rem] gap-2 px-4 text-[13px]",
+    icon: "[&_svg]:size-4",
+  },
   xl: { track: "h-11 p-1", item: "h-9 gap-2 px-5 text-sm", icon: "[&_svg]:size-4" },
 };
 
@@ -45,9 +49,7 @@ function Segmented({
     const at = enabled.findIndex((o) => o.value === value);
     const next = enabled[(at + delta + enabled.length) % enabled.length];
     onChange?.(next.value);
-    trackRef.current
-      ?.querySelector(`[data-value="${CSS.escape(String(next.value))}"]`)
-      ?.focus();
+    trackRef.current?.querySelector(`[data-value="${CSS.escape(String(next.value))}"]`)?.focus();
   }
 
   function handleKeyDown(e) {

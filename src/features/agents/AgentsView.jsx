@@ -13,11 +13,7 @@ import {
   Trash2,
   Icon,
 } from "@/components/icons";
-import {
-  AGENT_STATUS_META,
-  getModel,
-  relativeTime,
-} from "@/data";
+import { AGENT_STATUS_META, getModel, relativeTime } from "@/data";
 import { useApp } from "@/lib/store";
 import { ANY, asRules, evaluate } from "@shared/permission";
 import { parseModelRef } from "@shared/providers";
@@ -27,11 +23,7 @@ import { useToast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DropdownMenu,
-  MenuItem,
-  MenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
 import { SearchInput } from "@/components/ui/input";
@@ -62,15 +54,7 @@ const STATUS_OPTIONS = [
 ];
 
 /** The per-agent overflow menu - identical in grid and list so muscle memory holds. */
-function AgentMenu({
-  agent,
-  onOpenChat,
-  onEdit,
-  onDuplicate,
-  onPause,
-  onDelete,
-  className,
-}) {
+function AgentMenu({ agent, onOpenChat, onEdit, onDuplicate, onPause, onDelete, className }) {
   return (
     <DropdownMenu
       align="end"
@@ -95,10 +79,7 @@ function AgentMenu({
       <MenuItem icon={Copy} onSelect={onDuplicate}>
         Duplicate
       </MenuItem>
-      <MenuItem
-        icon={agent.status === "offline" ? Play : Pause}
-        onSelect={onPause}
-      >
+      <MenuItem icon={agent.status === "offline" ? Play : Pause} onSelect={onPause}>
         {agent.status === "offline" ? "Resume" : "Pause"}
       </MenuItem>
       <MenuSeparator />
@@ -119,10 +100,7 @@ function AgentMenu({
 function ToolRow({ agentId }) {
   const { permissions } = useApp();
   const shown = React.useMemo(() => {
-    const rules = [
-      ...asRules(permissions?.workspace),
-      ...asRules(permissions?.agents?.[agentId]),
-    ];
+    const rules = [...asRules(permissions?.workspace), ...asRules(permissions?.agents?.[agentId])];
     return groupedTools()
       .flatMap((group) => group.tools)
       .filter((tool) => {
@@ -177,27 +155,21 @@ function AgentCard({ agent, routineCount, onOpen, menu }) {
       className={cn(
         "group relative flex animate-slide-up cursor-pointer flex-col gap-3 rounded-2xl card-surface-subtle p-4 text-left outline-none",
         "transition-colors duration-150 ease-out hover:card-surface-raised",
-        "focus-visible:fill-control-hover",
+        "focus-visible:fill-control-hover"
       )}
     >
       <div className="flex items-start gap-3">
         <AgentAvatar agent={agent} size="lg" showStatus />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
-            {agent.name}
-          </p>
-          <p className="truncate text-[11px] text-muted-foreground">
-            {agent.handle}
-          </p>
+          <p className="truncate text-sm font-medium text-foreground">{agent.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{agent.handle}</p>
         </div>
         <div className="absolute top-3 right-3 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
           {menu}
         </div>
       </div>
 
-      <p className="text-[11px] font-medium text-muted-foreground">
-        {agent.role}
-      </p>
+      <p className="text-[11px] font-medium text-muted-foreground">{agent.role}</p>
 
       <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
         {agent.description}
@@ -214,9 +186,7 @@ function AgentCard({ agent, routineCount, onOpen, menu }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
-        <span className="tabular-nums">
-          {agent.stats?.messages ?? 0} messages
-        </span>
+        <span className="tabular-nums">{agent.stats?.messages ?? 0} messages</span>
         <span className="tabular-nums">
           {routineCount} {routineCount === 1 ? "routine" : "routines"}
         </span>
@@ -226,9 +196,8 @@ function AgentCard({ agent, routineCount, onOpen, menu }) {
   );
 }
 
-function AgentListRow({ agent, routineCount, onOpen, menu }) {
-  const statusMeta =
-    AGENT_STATUS_META[agent.status] ?? AGENT_STATUS_META.offline;
+function AgentListRow({ agent, onOpen, menu }) {
+  const statusMeta = AGENT_STATUS_META[agent.status] ?? AGENT_STATUS_META.offline;
   return (
     <div
       role="button"
@@ -244,18 +213,14 @@ function AgentListRow({ agent, routineCount, onOpen, menu }) {
         "group flex animate-slide-up cursor-pointer items-center gap-3 outline-none",
         ROW,
         "transition-colors duration-150 ease-out hover:fill-nav",
-        "focus-visible:fill-nav",
+        "focus-visible:fill-nav"
       )}
     >
       <AgentAvatar agent={agent} size="md" showStatus />
 
       <div className="min-w-0 w-44 shrink-0">
-        <p className="truncate text-[13px] font-medium text-foreground">
-          {agent.name}
-        </p>
-        <p className="truncate text-[11px] text-muted-foreground">
-          {agent.handle}
-        </p>
+        <p className="truncate text-[13px] font-medium text-foreground">{agent.name}</p>
+        <p className="truncate text-[11px] text-muted-foreground">{agent.handle}</p>
       </div>
 
       <p className="hidden w-40 shrink-0 truncate text-[11px] text-muted-foreground md:block">
@@ -319,12 +284,10 @@ export function AgentsView() {
   const [layout, setLayout] = usePersistentState(
     PREF.agentsLayout,
     "grid",
-    (v) => v === "grid" || v === "list",
+    (v) => v === "grid" || v === "list"
   );
-  const [status, setStatus] = usePersistentState(
-    PREF.agentsStatus,
-    "all",
-    (v) => STATUS_OPTIONS.some((o) => o.value === v),
+  const [status, setStatus] = usePersistentState(PREF.agentsStatus, "all", (v) =>
+    STATUS_OPTIONS.some((o) => o.value === v)
   );
   const [editorAgentId, setEditorAgentId] = React.useState(undefined);
   const [editorOpen, setEditorOpen] = React.useState(false);
@@ -335,27 +298,17 @@ export function AgentsView() {
     return agents.filter((agent) => {
       if (status !== "all" && agent.status !== status) return false;
       if (!q) return true;
-      return [
-        agent.name,
-        agent.handle,
-        agent.role,
-        agent.description,
-        ...(agent.tags ?? []),
-      ].some((f) =>
-        String(f ?? "")
-          .toLowerCase()
-          .includes(q),
+      return [agent.name, agent.handle, agent.role, agent.description, ...(agent.tags ?? [])].some(
+        (f) =>
+          String(f ?? "")
+            .toLowerCase()
+            .includes(q)
       );
     });
   }, [agents, query, status]);
 
   if (detailOpen && activeAgentId) {
-    return (
-      <AgentDetail
-        agentId={activeAgentId}
-        onBack={() => setDetailOpen(false)}
-      />
-    );
+    return <AgentDetail agentId={activeAgentId} onBack={() => setDetailOpen(false)} />;
   }
 
   function openDetail(agentId) {
@@ -366,9 +319,7 @@ export function AgentsView() {
   function openChat(agent) {
     const existing = threads
       .filter((t) => t.agentId === agent.id)
-      .sort((a, b) =>
-        String(b.updatedAt).localeCompare(String(a.updatedAt)),
-      )[0];
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
     if (existing) openThread(existing.id);
     else createThread(agent.id);
     setView("chat");
@@ -393,8 +344,7 @@ export function AgentsView() {
     const next = agent.status === "offline" ? "idle" : "offline";
     saveAgent(agent.id, { status: next });
     toast({
-      title:
-        next === "offline" ? `${agent.name} paused` : `${agent.name} resumed`,
+      title: next === "offline" ? `${agent.name} paused` : `${agent.name} resumed`,
     });
   }
 
@@ -413,9 +363,7 @@ export function AgentsView() {
     />
   );
 
-  const onlineCount = agents.filter(
-    (b) => b.status === "online" || b.status === "busy",
-  ).length;
+  const onlineCount = agents.filter((b) => b.status === "online" || b.status === "busy").length;
 
   return (
     <>
@@ -497,14 +445,15 @@ export function AgentsView() {
               }
             />
           ) : layout === "grid" ? (
-            <div key="grid" className="grid animate-fade-in gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div
+              key="grid"
+              className="grid animate-fade-in gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            >
               {visible.map((agent) => (
                 <AgentCard
                   key={agent.id}
                   agent={agent}
-                  routineCount={
-                    routines.filter((r) => r.agentId === agent.id).length
-                  }
+                  routineCount={routines.filter((r) => r.agentId === agent.id).length}
                   onOpen={() => openDetail(agent.id)}
                   menu={menuFor(agent)}
                 />
@@ -516,9 +465,7 @@ export function AgentsView() {
                 <AgentListRow
                   key={agent.id}
                   agent={agent}
-                  routineCount={
-                    routines.filter((r) => r.agentId === agent.id).length
-                  }
+                  routineCount={routines.filter((r) => r.agentId === agent.id).length}
                   onOpen={() => openDetail(agent.id)}
                   menu={menuFor(agent)}
                 />
@@ -528,19 +475,13 @@ export function AgentsView() {
         </div>
       </ScrollArea>
 
-      <AgentEditorDialog
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        agentId={editorAgentId}
-      />
+      <AgentEditorDialog open={editorOpen} onOpenChange={setEditorOpen} agentId={editorAgentId} />
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(next) => !next && setPendingDelete(null)}
         destructive
-        title={
-          pendingDelete ? `Delete ${pendingDelete.name}?` : "Delete agent?"
-        }
+        title={pendingDelete ? `Delete ${pendingDelete.name}?` : "Delete agent?"}
         description="The teammate is removed from Inertia. Its threads stay searchable."
         confirmLabel="Delete agent"
         onConfirm={() => {

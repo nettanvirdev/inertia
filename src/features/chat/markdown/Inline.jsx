@@ -76,7 +76,10 @@ function destination(href) {
     const url = new URL(raw.startsWith("www.") ? `https://${raw}` : raw);
     if (url.protocol === "mailto:") return { where: url.pathname, what: "Writes an email" };
     if (url.protocol === "file:") {
-      return { where: decodeURIComponent(url.pathname.replace(/^\/(?=[A-Za-z]:)/, "")), what: "Opens on this machine" };
+      return {
+        where: decodeURIComponent(url.pathname.replace(/^\/(?=[A-Za-z]:)/, "")),
+        what: "Opens on this machine",
+      };
     }
     const rest = `${url.pathname}${url.search}`.replace(/\/$/, "");
     return {
@@ -279,7 +282,10 @@ function FootRef({ id }) {
   const numbers = React.useContext(FootnoteNumbers);
   const number = numbers?.get(id);
   return (
-    <sup className="ml-px text-[0.7em] text-muted-foreground" title={number ? `Note ${number}` : id}>
+    <sup
+      className="ml-px text-[0.7em] text-muted-foreground"
+      title={number ? `Note ${number}` : id}
+    >
       [{number ?? id}]
     </sup>
   );

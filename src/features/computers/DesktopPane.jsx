@@ -198,8 +198,8 @@ export function DesktopPane({ computer, onStart, initialControlling = false }) {
             <p className="text-[13px] text-muted-foreground">This machine has no display.</p>
             <p className="max-w-96 text-[11px] leading-relaxed text-muted-foreground/70">
               Nothing is drawing a screen inside it. The image in{" "}
-              <span className="font-mono">sandbox/</span> installs an X server and a window
-              manager; a machine built from a plain base image will not have them.
+              <span className="font-mono">sandbox/</span> installs an X server and a window manager;
+              a machine built from a plain base image will not have them.
             </p>
           </div>
         ) : frame ? (

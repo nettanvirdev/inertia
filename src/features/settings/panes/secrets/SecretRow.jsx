@@ -54,11 +54,7 @@ export function SecretRow({
 
   return (
     <div className="flex animate-slide-up items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-150 ease-out hover:fill-control-hover">
-      <Icon
-        name={icon}
-        className="size-3.5 shrink-0 text-muted-foreground"
-        aria-hidden="true"
-      />
+      <Icon name={icon} className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 
       <div className="min-w-0 flex-1">
         <p className="truncate font-mono text-xs text-foreground">{keyName}</p>

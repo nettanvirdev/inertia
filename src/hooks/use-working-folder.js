@@ -64,7 +64,10 @@ export function useWorkingFolder() {
         const previous = Array.isArray(doc.recentWorkingFolders) ? doc.recentWorkingFolders : [];
         await client.writeDocument("settings.app", {
           ...doc,
-          recentWorkingFolders: [dir, ...previous.filter((one) => one !== dir)].slice(0, MAX_RECENT),
+          recentWorkingFolders: [dir, ...previous.filter((one) => one !== dir)].slice(
+            0,
+            MAX_RECENT
+          ),
         });
       } catch {
         // Losing a recent entry is not worth a message. The folder itself was

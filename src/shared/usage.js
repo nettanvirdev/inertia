@@ -109,9 +109,7 @@ export function normalizeUsage(raw) {
   const input = separate ? reported + cached + cacheWrite : reported;
 
   const output = num(raw.completion_tokens ?? raw.completionTokens ?? raw.output_tokens);
-  const reasoning = num(
-    raw.completion_tokens_details?.reasoning_tokens ?? raw.reasoning_tokens
-  );
+  const reasoning = num(raw.completion_tokens_details?.reasoning_tokens ?? raw.reasoning_tokens);
 
   if (!input && !output && !cached && !cacheWrite && !reasoning) return null;
   return { input, output, cached, cacheWrite, reasoning, requests: 1 };

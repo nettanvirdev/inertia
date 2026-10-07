@@ -558,7 +558,10 @@ function PipeTab({ tab, cwd, hidden, onRename, onClose }) {
 function Header({ here, busy = false, onStop, onClose }) {
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-2 py-1.5">
-      <p className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground" title={here}>
+      <p
+        className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground"
+        title={here}
+      >
         {here || "starting…"}
       </p>
       {busy ? (

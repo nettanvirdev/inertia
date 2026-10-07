@@ -133,7 +133,7 @@ export function Rail() {
   // Neither drafts nor temporary conversations: the second is never listed
   // anywhere, because a conversation with a row to go back to is not temporary.
   const byRecency = [...threads.filter((t) => !t.draft && !t.temporary)].sort(
-    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
+    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
   const pinned = byRecency.filter((t) => t.pinned);
   const recent = byRecency.filter((t) => !t.pinned).slice(0, 7);
@@ -171,7 +171,7 @@ export function Rail() {
         // agent name it sits next to share a baseline.
         "flex shrink-0 flex-col gap-1 overflow-hidden px-1.5 pb-2 pt-3",
         "transition-[width,background-color] duration-[var(--motion-panel)] ease-[var(--ease-out)]",
-        railExpanded ? "bg-sidebar" : "bg-transparent hover:bg-sidebar",
+        railExpanded ? "bg-sidebar" : "bg-transparent hover:bg-sidebar"
       )}
     >
       <div className="flex flex-col gap-0.5">
@@ -270,9 +270,7 @@ export function Rail() {
         </div>
       )}
 
-      <div
-        className={cn("mt-auto flex flex-col gap-0.5", railExpanded && "pt-2")}
-      >
+      <div className={cn("mt-auto flex flex-col gap-0.5", railExpanded && "pt-2")}>
         <ThemeRow expanded={railExpanded} />
         <RailRow
           expanded={railExpanded}
@@ -280,11 +278,7 @@ export function Rail() {
           label="Settings"
           onClick={() => openSettings("general")}
         />
-        <UserRow
-          expanded={railExpanded}
-          user={user}
-          onSettings={openSettings}
-        />
+        <UserRow expanded={railExpanded} user={user} onSettings={openSettings} />
       </div>
     </nav>
   );
@@ -320,9 +314,7 @@ export function RailHeader() {
               rail below starts from, so the column reads as one line. */}
           <span className="flex min-w-0 flex-1 items-center gap-2 pl-3.5">
             <img src="./assets/logo-64.png" alt="" className="size-3.5 shrink-0" />
-            <span className="truncate text-[11px] font-medium text-foreground">
-              Inertia
-            </span>
+            <span className="truncate text-[11px] font-medium text-foreground">Inertia</span>
           </span>
           <Tooltip content="Collapse sidebar" side="bottom">
             <TitlebarButton
@@ -380,21 +372,19 @@ function RailSection({ label, count, open, onToggle, className, children }) {
           // thread rows underneath it rather than a second, flatter pill.
           "group flex h-7 w-full items-center gap-1.5 rounded-xl px-2 text-left",
           "outline-none transition-colors duration-150 ease-out",
-          "hover:fill-nav focus-visible:fill-nav",
+          "hover:fill-nav focus-visible:fill-nav"
         )}
       >
         <span
           className={cn(
             "text-[11px] font-semibold text-muted-foreground",
-            "transition-colors duration-150 ease-out group-hover:text-foreground",
+            "transition-colors duration-150 ease-out group-hover:text-foreground"
           )}
         >
           {label}
         </span>
         {!open && count > 0 ? (
-          <span className="text-[11px] tabular-nums text-muted-foreground/60">
-            {count}
-          </span>
+          <span className="text-[11px] tabular-nums text-muted-foreground/60">{count}</span>
         ) : null}
         <ChevronDown
           aria-hidden="true"
@@ -402,7 +392,7 @@ function RailSection({ label, count, open, onToggle, className, children }) {
             "ml-auto size-3.5 shrink-0 text-muted-foreground/50",
             "transition-[transform,color] duration-200 ease-out",
             "group-hover:text-foreground",
-            !open && "-rotate-90",
+            !open && "-rotate-90"
           )}
         />
       </button>
@@ -421,7 +411,8 @@ function RailSection({ label, count, open, onToggle, className, children }) {
  * lands on its centre the same frame the column starts narrowing, rather than
  * being dragged along behind a label that is still easing away.
  */
-const RAIL_REVEAL = "transition-[opacity,transform] duration-[var(--motion-base)] ease-[var(--ease-out)]";
+const RAIL_REVEAL =
+  "transition-[opacity,transform] duration-[var(--motion-base)] ease-[var(--ease-out)]";
 const RAIL_SHOWN = "translate-x-0 opacity-100";
 const RAIL_HIDDEN = "-translate-x-1 opacity-0";
 
@@ -437,7 +428,7 @@ function RailLabel({ expanded, className, children }) {
         "flex min-w-0 items-center gap-2",
         RAIL_REVEAL,
         expanded ? cn("flex-1", RAIL_SHOWN) : cn("w-0 overflow-hidden", RAIL_HIDDEN),
-        className,
+        className
       )}
     >
       {children}
@@ -454,7 +445,7 @@ function RailHeading({ expanded, children, className }) {
         // Height snaps for the same reason a label's width does: the rows
         // underneath must not drift while the heading eases out.
         expanded ? cn("pb-1", RAIL_SHOWN) : cn("h-0 overflow-hidden", RAIL_HIDDEN),
-        className,
+        className
       )}
     >
       {children}
@@ -475,7 +466,7 @@ const ROW_ACTION = cn(
   "transition-[width,opacity,color,background-color] duration-200 ease-out",
   "hover:fill-control-hover hover:text-foreground",
   "focus-visible:w-6 focus-visible:opacity-100 focus-visible:fill-control-hover",
-  "group-hover/row:w-6 group-hover/row:opacity-100",
+  "group-hover/row:w-6 group-hover/row:opacity-100"
 );
 
 /**
@@ -496,16 +487,7 @@ function ThreadFace({ agent }) {
   return <AgentAvatar agent={agent} size="xs" className="shrink-0" />;
 }
 
-function ThreadRow({
-  thread,
-  agent,
-  active,
-  fresh,
-  onOpen,
-  onTogglePin,
-  onRename,
-  onDelete,
-}) {
+function ThreadRow({ thread, agent, active, fresh, onOpen, onTogglePin, onRename, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(thread.title);
   const [confirming, setConfirming] = useState(false);
@@ -572,7 +554,7 @@ function ThreadRow({
           "transition-colors duration-150 ease-out",
           "hover:fill-nav data-[active=true]:fill-nav-active",
           // A row that was not here a moment ago slides in; the rest were.
-          fresh && "animate-slide-up",
+          fresh && "animate-slide-up"
         )}
       >
         <button
@@ -585,7 +567,7 @@ function ThreadRow({
           <span
             className={cn(
               "min-w-0 flex-1 truncate text-[13px]",
-              active ? "font-medium text-foreground" : "text-foreground/90",
+              active ? "font-medium text-foreground" : "text-foreground/90"
             )}
           >
             {thread.title}
@@ -601,7 +583,7 @@ function ThreadRow({
           className={cn(
             "shrink-0 overflow-hidden whitespace-nowrap text-[10px] text-muted-foreground/70",
             "transition-[width,opacity] duration-200 ease-out",
-            "group-hover/row:w-0 group-hover/row:opacity-0",
+            "group-hover/row:w-0 group-hover/row:opacity-0"
           )}
         >
           {thread.unread > 0 ? (
@@ -662,16 +644,7 @@ function ThreadRow({
   );
 }
 
-function RailRow({
-  expanded,
-  icon: Icon,
-  label,
-  active,
-  count,
-  trailing,
-  emphasis,
-  onClick,
-}) {
+function RailRow({ expanded, icon: Icon, label, active, count, trailing, emphasis, onClick }) {
   const row = (
     <button
       type="button"
@@ -685,7 +658,7 @@ function RailRow({
         "data-[active=true]:fill-nav-active",
         // No gap when collapsed: the label is still there at zero width, and
         // a gap beside it would nudge the icon off centre.
-        expanded ? "gap-2 px-2" : "justify-center gap-0 px-0",
+        expanded ? "gap-2 px-2" : "justify-center gap-0 px-0"
       )}
     >
       <span className="flex size-5 shrink-0 items-center justify-center">
@@ -698,7 +671,7 @@ function RailRow({
               ? "accent-ink"
               : emphasis
                 ? "text-foreground"
-                : "text-muted-foreground group-hover:text-foreground",
+                : "text-muted-foreground group-hover:text-foreground"
           )}
         />
       </span>
@@ -706,7 +679,7 @@ function RailRow({
         <span
           className={cn(
             "min-w-0 flex-1 truncate text-[13.5px]",
-            active ? "accent-ink font-medium" : "text-foreground/90",
+            active ? "accent-ink font-medium" : "text-foreground/90"
           )}
         >
           {label}
@@ -741,7 +714,7 @@ function ThemeRow({ expanded }) {
             "outline-none transition-colors duration-150 ease-out",
             "hover:fill-nav focus-visible:fill-nav",
             "data-[state=open]:bg-muted",
-            expanded ? "gap-2 px-2" : "justify-center gap-0 px-0",
+            expanded ? "gap-2 px-2" : "justify-center gap-0 px-0"
           )}
           aria-label="Theme"
         >
@@ -749,37 +722,21 @@ function ThemeRow({ expanded }) {
             <Icon className="size-4 text-muted-foreground group-hover:text-foreground" />
           </span>
           <RailLabel expanded={expanded}>
-            <span className="min-w-0 flex-1 truncate text-[13.5px] text-foreground/90">
-              Theme
-            </span>
-            <span className="text-[11px] capitalize text-muted-foreground">
-              {theme}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-[13.5px] text-foreground/90">Theme</span>
+            <span className="text-[11px] capitalize text-muted-foreground">{theme}</span>
           </RailLabel>
         </button>
       }
     >
       <MenuLabel>Appearance</MenuLabel>
       <MenuGroup>
-        <MenuItem
-          icon={SunMoon}
-          checked={theme === "system"}
-          onSelect={() => setTheme("system")}
-        >
+        <MenuItem icon={SunMoon} checked={theme === "system"} onSelect={() => setTheme("system")}>
           System
         </MenuItem>
-        <MenuItem
-          icon={Sun}
-          checked={theme === "light"}
-          onSelect={() => setTheme("light")}
-        >
+        <MenuItem icon={Sun} checked={theme === "light"} onSelect={() => setTheme("light")}>
           Light
         </MenuItem>
-        <MenuItem
-          icon={Moon}
-          checked={theme === "dark"}
-          onSelect={() => setTheme("dark")}
-        >
+        <MenuItem icon={Moon} checked={theme === "dark"} onSelect={() => setTheme("dark")}>
           Dark
         </MenuItem>
       </MenuGroup>
@@ -807,7 +764,7 @@ function UserRow({ expanded, user, onSettings }) {
             "outline-none transition-colors duration-150 ease-out",
             "hover:fill-nav focus-visible:fill-nav",
             "data-[state=open]:bg-muted",
-            expanded ? "gap-2 px-2" : "justify-center gap-0 px-0",
+            expanded ? "gap-2 px-2" : "justify-center gap-0 px-0"
           )}
         >
           <span className="flex size-5 shrink-0 items-center justify-center">
@@ -830,9 +787,7 @@ function UserRow({ expanded, user, onSettings }) {
         <Avatar size="md" src={avatarSrc ?? undefined} name={user.name} />
         <div className="min-w-0">
           <div className="truncate text-[13px] font-medium">{user.name}</div>
-          <div className="truncate text-[11px] text-muted-foreground">
-            {user.email}
-          </div>
+          <div className="truncate text-[11px] text-muted-foreground">{user.email}</div>
         </div>
       </div>
       <MenuSeparator />

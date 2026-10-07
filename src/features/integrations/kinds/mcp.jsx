@@ -103,7 +103,15 @@ function toRecord(draft) {
     timeoutMs: Number(draft.timeoutMs) > 0 ? Number(draft.timeoutMs) : 0,
   };
   if (draft.type === "http") {
-    return { ...base, url: draft.url.trim(), headers: draft.headers ?? {}, command: "", args: [], cwd: "", env: {} };
+    return {
+      ...base,
+      url: draft.url.trim(),
+      headers: draft.headers ?? {},
+      command: "",
+      args: [],
+      cwd: "",
+      env: {},
+    };
   }
   return {
     ...base,
@@ -118,7 +126,8 @@ function toRecord(draft) {
 
 function validate(draft) {
   if (!draft.name.trim()) return "Give the server a name.";
-  if (draft.type === "stdio" && !draft.command.trim()) return "A local server needs a command to run.";
+  if (draft.type === "stdio" && !draft.command.trim())
+    return "A local server needs a command to run.";
   if (draft.type === "http" && !draft.url.trim()) return "A remote server needs a URL.";
   return null;
 }
@@ -178,7 +187,10 @@ function ServerRow({ record, busy, tools, onConnect, onDisconnect, onTools, onEd
               </Badge>
             ) : null}
           </div>
-          <p className="truncate font-mono text-[11px] text-muted-foreground" title={describe(record)}>
+          <p
+            className="truncate font-mono text-[11px] text-muted-foreground"
+            title={describe(record)}
+          >
             {describe(record) || "Nothing configured to start"}
           </p>
         </div>
@@ -243,9 +255,7 @@ function ServerRow({ record, busy, tools, onConnect, onDisconnect, onTools, onEd
               ))}
             </div>
           ) : tools?.error ? (
-            <p className="py-2 text-[11px] leading-relaxed text-destructive-ink">
-              {tools.error}
-            </p>
+            <p className="py-2 text-[11px] leading-relaxed text-destructive-ink">{tools.error}</p>
           ) : (
             <p className="py-2 text-[11px] leading-relaxed text-muted-foreground">
               This server is connected and publishes no tools. There is nothing here for a model to
@@ -269,7 +279,10 @@ function TestReport({ report }) {
         {report.ok ? (
           <CircleCheck className="mt-px size-3.5 shrink-0 text-success-ink" aria-hidden="true" />
         ) : (
-          <CircleAlert className="mt-px size-3.5 shrink-0 text-destructive-ink" aria-hidden="true" />
+          <CircleAlert
+            className="mt-px size-3.5 shrink-0 text-destructive-ink"
+            aria-hidden="true"
+          />
         )}
         <div className="min-w-0 flex-1 text-[11px] leading-relaxed text-muted-foreground">
           {report.ok ? (
@@ -407,73 +420,76 @@ function ServerDialog({ open, draft, editingId, onChange, onClose, onSaved }) {
             {/* Keyed on the transport so its fields arrive as a set rather
                 than a command box turning into a URL box. */}
             <div key={draft.type} className="flex animate-fade-in flex-col gap-4">
-            {stdio ? (
-              <>
-                <Field label="Command" hint="The executable only. Its arguments go below.">
-                  <Input
-                    size="sm"
-                    className="font-mono"
-                    value={draft.command}
-                    placeholder="npx"
-                    onChange={(e) => set({ command: e.target.value })}
-                  />
-                </Field>
+              {stdio ? (
+                <>
+                  <Field label="Command" hint="The executable only. Its arguments go below.">
+                    <Input
+                      size="sm"
+                      className="font-mono"
+                      value={draft.command}
+                      placeholder="npx"
+                      onChange={(e) => set({ command: e.target.value })}
+                    />
+                  </Field>
 
-                <Field
-                  label="Arguments"
-                  hint="One per row, in order. Kept separate so an argument containing a space stays one argument."
-                >
-                  <ListEditor
-                    value={draft.args}
-                    onChange={(args) => set({ args })}
-                    placeholder="-y"
-                    addLabel="Add argument"
-                  />
-                </Field>
+                  <Field
+                    label="Arguments"
+                    hint="One per row, in order. Kept separate so an argument containing a space stays one argument."
+                  >
+                    <ListEditor
+                      value={draft.args}
+                      onChange={(args) => set({ args })}
+                      placeholder="-y"
+                      addLabel="Add argument"
+                    />
+                  </Field>
 
-                <Field label="Working directory" hint="Optional. Where the process is started from.">
-                  <Input
-                    size="sm"
-                    className="font-mono"
-                    value={draft.cwd}
-                    placeholder="C:\\projects\\tools"
-                    onChange={(e) => set({ cwd: e.target.value })}
-                  />
-                </Field>
+                  <Field
+                    label="Working directory"
+                    hint="Optional. Where the process is started from."
+                  >
+                    <Input
+                      size="sm"
+                      className="font-mono"
+                      value={draft.cwd}
+                      placeholder="C:\\projects\\tools"
+                      onChange={(e) => set({ cwd: e.target.value })}
+                    />
+                  </Field>
 
-                <Field label="Environment" hint={SECRET_SYNTAX}>
-                  <SecretKeyValueEditor
-                    value={draft.env}
-                    onChange={(env) => set({ env })}
-                    keyPlaceholder="GITHUB_TOKEN"
-                    valuePlaceholder="{secret:GITHUB_TOKEN}"
-                    addLabel="Add variable"
-                  />
-                </Field>
-              </>
-            ) : (
-              <>
-                <Field label="URL">
-                  <Input
-                    size="sm"
-                    className="font-mono"
-                    value={draft.url}
-                    placeholder="https://mcp.example.com/mcp"
-                    onChange={(e) => set({ url: e.target.value })}
-                  />
-                </Field>
+                  <Field label="Environment" hint={SECRET_SYNTAX}>
+                    <SecretKeyValueEditor
+                      value={draft.env}
+                      onChange={(env) => set({ env })}
+                      keyPlaceholder="GITHUB_TOKEN"
+                      valuePlaceholder="{secret:GITHUB_TOKEN}"
+                      addLabel="Add variable"
+                    />
+                  </Field>
+                </>
+              ) : (
+                <>
+                  <Field label="URL">
+                    <Input
+                      size="sm"
+                      className="font-mono"
+                      value={draft.url}
+                      placeholder="https://mcp.example.com/mcp"
+                      onChange={(e) => set({ url: e.target.value })}
+                    />
+                  </Field>
 
-                <Field label="Headers" hint={SECRET_SYNTAX}>
-                  <SecretKeyValueEditor
-                    value={draft.headers}
-                    onChange={(headers) => set({ headers })}
-                    keyPlaceholder="Authorization"
-                    valuePlaceholder="Bearer {secret:MY_TOKEN}"
-                    addLabel="Add header"
-                  />
-                </Field>
-              </>
-            )}
+                  <Field label="Headers" hint={SECRET_SYNTAX}>
+                    <SecretKeyValueEditor
+                      value={draft.headers}
+                      onChange={(headers) => set({ headers })}
+                      keyPlaceholder="Authorization"
+                      valuePlaceholder="Bearer {secret:MY_TOKEN}"
+                      addLabel="Add header"
+                    />
+                  </Field>
+                </>
+              )}
             </div>
 
             <Field
@@ -502,7 +518,9 @@ function ServerDialog({ open, draft, editingId, onChange, onClose, onSaved }) {
             <TestReport report={report} />
 
             {error ? (
-              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">{error}</p>
+              <p className="animate-fade-in text-[11px] leading-relaxed text-destructive-ink">
+                {error}
+              </p>
             ) : null}
           </div>
         </ScrollArea>
@@ -570,7 +588,11 @@ function McpScreen({ query, addToken }) {
     try {
       const result = await mcp.connect(record.id);
       if (!result.ok) {
-        toast({ variant: "danger", title: `${record.name} did not start`, description: result.error });
+        toast({
+          variant: "danger",
+          title: `${record.name} did not start`,
+          description: result.error,
+        });
       }
     } catch (failure) {
       toast({ variant: "danger", title: "Could not start that", description: failure.message });
@@ -651,7 +673,11 @@ function McpScreen({ query, addToken }) {
               Reading the workspace folder
             </div>
           ) : error ? (
-            <EmptyState icon={CircleAlert} title="That folder could not be read" description={error} />
+            <EmptyState
+              icon={CircleAlert}
+              title="That folder could not be read"
+              description={error}
+            />
           ) : filtered.length ? (
             <div className="flex flex-col gap-1.5">
               {filtered.map((record) => (

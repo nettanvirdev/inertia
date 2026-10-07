@@ -82,23 +82,19 @@ export function SecretsPane() {
     const name = editing.name.trim();
     if (!NAME.test(name)) {
       setFormError(
-        "A name must start with a letter or underscore and hold only letters, digits and underscores.",
+        "A name must start with a letter or underscore and hold only letters, digits and underscores."
       );
       return;
     }
     if (editing.isNew && entries.some((e) => e.name === name)) {
-      setFormError(
-        `${name} already exists. Edit it instead, or choose another name.`,
-      );
+      setFormError(`${name} already exists. Edit it instead, or choose another name.`);
       return;
     }
     // A key the app looks up by name has a row of its own above, with a Test
     // button and no delete. Letting a second one in through this dialog would
     // put the same key on screen twice.
     if (editing.isNew && REQUIRED_NAMES.includes(name)) {
-      setFormError(
-        `${name} has a row of its own at the top of this pane. Set it there.`,
-      );
+      setFormError(`${name} has a row of its own at the top of this pane. Set it there.`);
       return;
     }
     if (editing.isNew && editing.value === "") {
@@ -163,7 +159,8 @@ export function SecretsPane() {
     <div className="w-full">
       <RequiredKeys entries={entries} loading={loading} onChanged={reload} />
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Keys and tokens"
         description="Credentials your plugins and agents use. They are stored as plain text in the secrets folder of your workspace, not encrypted - anyone who can read that folder can read them. Keep the folder somewhere you would keep a password file."
       >
@@ -171,9 +168,7 @@ export function SecretsPane() {
           {loading ? (
             <SkeletonRow lines={3} className="p-2" />
           ) : error ? (
-            <p className="p-2 text-[0.6875rem] leading-relaxed text-muted-foreground">
-              {error}
-            </p>
+            <p className="p-2 text-[0.6875rem] leading-relaxed text-muted-foreground">{error}</p>
           ) : rest.length ? (
             rest.map((entry) => (
               <SecretRow
@@ -223,11 +218,10 @@ export function SecretsPane() {
       <SettingsSection flat title="Using a secret">
         <SettingsCard className="flex flex-col gap-2.5">
           <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-            Anywhere the app takes a config value - an MCP server header, an
-            OpenAPI auth field, a plugin setting - write the reference instead
-            of the key itself. Inertia swaps in the stored value at the moment
-            it is used, so a config you export or share names the secret without
-            carrying it.
+            Anywhere the app takes a config value - an MCP server header, an OpenAPI auth field, a
+            plugin setting - write the reference instead of the key itself. Inertia swaps in the
+            stored value at the moment it is used, so a config you export or share names the secret
+            without carrying it.
           </p>
           <div className="flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg fill-control px-2.5 py-1.5 font-mono text-xs text-foreground">

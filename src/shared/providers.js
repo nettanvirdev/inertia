@@ -148,23 +148,17 @@ export function validateProvider(provider, existing = []) {
   const baseUrl = String(provider?.baseUrl ?? "").trim();
 
   if (!name) errors.name = "Give this provider a name.";
-  else if (
-    existing.some((p) => p.id !== provider.id && p.name.trim() === name)
-  ) {
+  else if (existing.some((p) => p.id !== provider.id && p.name.trim() === name)) {
     errors.name = "Another provider already has that name.";
   }
 
   if (!baseUrl) errors.baseUrl = "A base URL is required.";
   else {
     try {
-      const url = new URL(
-        /^https?:\/\//i.test(baseUrl) ? baseUrl : `https://${baseUrl}`,
-      );
+      const url = new URL(/^https?:\/\//i.test(baseUrl) ? baseUrl : `https://${baseUrl}`);
       // A key sent to a plaintext endpoint is a key sent in the clear. Local
       // addresses are the honest exception - that traffic never leaves the box.
-      const local = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/i.test(
-        url.hostname,
-      );
+      const local = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/i.test(url.hostname);
       if (url.protocol === "http:" && !local) {
         errors.baseUrl = "Use https, or the key travels in the clear.";
       }
@@ -214,8 +208,12 @@ export function allModels(providers) {
         // the cost the session panel shows. Undefined when they left it blank.
         ...(Number.isFinite(Number(detail.input)) ? { input: Number(detail.input) } : {}),
         ...(Number.isFinite(Number(detail.output)) ? { output: Number(detail.output) } : {}),
-        ...(Number.isFinite(Number(detail.cachedInput)) ? { cachedInput: Number(detail.cachedInput) } : {}),
-        ...(Number.isFinite(Number(detail.cacheWrite)) ? { cacheWrite: Number(detail.cacheWrite) } : {}),
+        ...(Number.isFinite(Number(detail.cachedInput))
+          ? { cachedInput: Number(detail.cachedInput) }
+          : {}),
+        ...(Number.isFinite(Number(detail.cacheWrite))
+          ? { cacheWrite: Number(detail.cacheWrite) }
+          : {}),
         ...(Number.isFinite(Number(detail.context)) ? { context: Number(detail.context) } : {}),
       });
     }

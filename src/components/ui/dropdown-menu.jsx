@@ -171,7 +171,18 @@ export const MenuPanel = React.forwardRef(function MenuPanel(
  * irreversible action is never the neighbour of a mis-click.
  */
 export const MenuItem = React.forwardRef(function MenuItem(
-  { icon, children, description, shortcut, danger, disabled, checked, onSelect, className, ...props },
+  {
+    icon,
+    children,
+    description,
+    shortcut,
+    danger,
+    disabled,
+    checked,
+    onSelect,
+    className,
+    ...props
+  },
   ref
 ) {
   const menu = useMenu();
@@ -198,13 +209,15 @@ export const MenuItem = React.forwardRef(function MenuItem(
       onPointerEnter={(e) => !disabled && e.currentTarget.focus({ preventScroll: true })}
       // A row with a second line is taller than the fixed 32px, and its icon and
       // tick belong at the top of it rather than floating in the middle.
-      className={cn(itemBase, description && "h-auto items-start py-1.5", danger && dangerInk, className)}
+      className={cn(
+        itemBase,
+        description && "h-auto items-start py-1.5",
+        danger && dangerInk,
+        className
+      )}
       {...props}
     >
-      {renderIcon(
-        icon,
-        cn("size-3.5", danger && "text-destructive-ink")
-      )}
+      {renderIcon(icon, cn("size-3.5", danger && "text-destructive-ink"))}
       <span className={cn("flex min-w-0 flex-1 flex-col", description && "gap-0.5")}>
         <span className="truncate">{children}</span>
         {description ? (
@@ -226,10 +239,7 @@ export const MenuItem = React.forwardRef(function MenuItem(
 export function MenuLabel({ className, children, ...props }) {
   return (
     <div
-      className={cn(
-        "px-2.5 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground",
-        className
-      )}
+      className={cn("px-2.5 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground", className)}
       {...props}
     >
       {children}

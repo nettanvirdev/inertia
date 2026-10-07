@@ -51,7 +51,8 @@ const buttonVariants = cva(
           "active:bg-control-pressed",
         ].join(" "),
         ghost: "bg-transparent text-foreground hover:fill-nav focus-visible:fill-nav",
-        subtle: "fill-control text-foreground hover:fill-control-hover focus-visible:fill-control-hover",
+        subtle:
+          "fill-control text-foreground hover:fill-control-hover focus-visible:fill-control-hover",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive-hover focus-visible:bg-destructive-hover active:bg-destructive-pressed",
         // The same idea for the dangerous one: a wash of the destructive

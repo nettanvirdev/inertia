@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils";
  */
 export function isStale(memory, nowIso) {
   if (!memory?.lastUsedAt) return false;
-  const cutoff = (nowIso == null ? Date.now() : new Date(nowIso).getTime()) - STALE_AFTER_DAYS * 86_400_000;
+  const cutoff =
+    (nowIso == null ? Date.now() : new Date(nowIso).getTime()) - STALE_AFTER_DAYS * 86_400_000;
   return new Date(memory.lastUsedAt).getTime() < cutoff;
 }
 
@@ -36,7 +37,9 @@ export function isLowConfidence(memory) {
  */
 export function projectOf(memory) {
   if (memory?.scope !== "project" || !memory?.folder) return null;
-  const parts = String(memory.folder).replace(/[\\/]+$/, "").split(/[\\/]/);
+  const parts = String(memory.folder)
+    .replace(/[\\/]+$/, "")
+    .split(/[\\/]/);
   return parts[parts.length - 1] || null;
 }
 
@@ -230,7 +233,9 @@ export function MemoryCard({
             </Tooltip>
           ) : null}
           {low ? (
-            <Tooltip content={`Confidence is ${Math.round(memory.confidence * 100)}% - verify this before relying on it.`}>
+            <Tooltip
+              content={`Confidence is ${Math.round(memory.confidence * 100)}% - verify this before relying on it.`}
+            >
               <span>
                 <Badge variant="warning" size="sm">
                   Low confidence
@@ -239,7 +244,9 @@ export function MemoryCard({
             </Tooltip>
           ) : null}
           {stale ? (
-            <Tooltip content={`Not recalled since ${relativeTime(memory.lastUsedAt)} - over ${STALE_AFTER_DAYS} days ago.`}>
+            <Tooltip
+              content={`Not recalled since ${relativeTime(memory.lastUsedAt)} - over ${STALE_AFTER_DAYS} days ago.`}
+            >
               <span>
                 <Badge variant="warning" size="sm">
                   Stale

@@ -19,7 +19,9 @@ describe("the current task list", () => {
       },
       {
         role: "agent",
-        parts: [{ type: "tool", callId: "2", name: "todowrite", metadata: { todos: list("three") } }],
+        parts: [
+          { type: "tool", callId: "2", name: "todowrite", metadata: { todos: list("three") } },
+        ],
       },
     ];
     expect(todosOf(messages).map((t) => t.content)).toEqual(["three"]);
@@ -96,7 +98,9 @@ describe("a turn that ends", () => {
 
   it("keeps whatever output a call had already streamed", () => {
     const message = {
-      parts: [{ type: "tool", callId: "1", name: "shell", state: "running", output: "half a build" }],
+      parts: [
+        { type: "tool", callId: "1", name: "shell", state: "running", output: "half a build" },
+      ],
     };
     expect(applyEvent(message, { type: "done" }).parts[0].output).toBe("half a build");
   });
@@ -132,7 +136,9 @@ describe("whether a conversation is working", () => {
   it("is, while a question is waiting on the person", () => {
     // A permission card is a tool suspended mid-call. Nothing in the
     // transcript says so, which is why the prompts are asked separately.
-    expect(isThreadWorking([{ role: "agent", status: "sent" }], [{ question: { id: "ask-1" } }])).toBe(true);
+    expect(
+      isThreadWorking([{ role: "agent", status: "sent" }], [{ question: { id: "ask-1" } }])
+    ).toBe(true);
   });
 });
 

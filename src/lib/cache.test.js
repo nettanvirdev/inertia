@@ -113,7 +113,11 @@ describe("fetching", () => {
   });
 
   it("leaves nothing behind when the loader fails, so the next reader retries", async () => {
-    await expect(load("a", async () => { throw new Error("no bridge"); })).rejects.toThrow("no bridge");
+    await expect(
+      load("a", async () => {
+        throw new Error("no bridge");
+      })
+    ).rejects.toThrow("no bridge");
     expect(peek("a")).toBeUndefined();
     await load("a", async () => "second time");
     expect(peek("a").value).toBe("second time");
@@ -121,7 +125,11 @@ describe("fetching", () => {
 
   it("does not keep a stale value from a failed refresh", async () => {
     await load("a", async () => "good");
-    await expect(load("a", async () => { throw new Error("gone"); })).rejects.toThrow();
+    await expect(
+      load("a", async () => {
+        throw new Error("gone");
+      })
+    ).rejects.toThrow();
     // The last good answer is still what a screen shows.
     expect(peek("a").value).toBe("good");
   });

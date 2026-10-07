@@ -171,8 +171,8 @@ export function RuleEditor({
 
       {rules.length > 1 ? (
         <p className="animate-fade-in text-[0.6875rem] leading-relaxed text-muted-foreground">
-          Order does not matter. The rule with the most to say about a call is
-          the one that decides it.
+          Order does not matter. The rule with the most to say about a call is the one that decides
+          it.
         </p>
       ) : null}
     </div>

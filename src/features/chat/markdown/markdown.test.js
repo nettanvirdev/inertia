@@ -224,7 +224,10 @@ describe("inline", () => {
       href: "https://x.dev",
     });
     expect(parseInline('[l](https://x.dev "title")')[0].href).toBe("https://x.dev");
-    expect(parseInline("<https://x.dev>")[0]).toMatchObject({ type: "link", href: "https://x.dev" });
+    expect(parseInline("<https://x.dev>")[0]).toMatchObject({
+      type: "link",
+      href: "https://x.dev",
+    });
     const [, link] = parseInline("see https://x.dev/a_b.");
     expect(link).toMatchObject({ type: "link", href: "https://x.dev/a_b" });
     expect(parseInline("www.x.dev")[0].href).toBe("https://www.x.dev");
@@ -431,7 +434,9 @@ describe("mentions", () => {
   });
 
   it("does not read an email address as a mention", () => {
-    expect(parseInline("mail nick@nova.dev")).toEqual([{ type: "text", value: "mail nick@nova.dev" }]);
+    expect(parseInline("mail nick@nova.dev")).toEqual([
+      { type: "text", value: "mail nick@nova.dev" },
+    ]);
   });
 
   it("leaves a bare @ alone", () => {

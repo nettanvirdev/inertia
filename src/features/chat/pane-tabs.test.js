@@ -114,16 +114,23 @@ describe("labelFor", () => {
   });
 
   it("names a browser tab after the page", () => {
-    expect(labelFor({ kind: "web", serial: 1, title: "Example Domain", url: "https://example.com" })).toBe(
-      "Example Domain"
-    );
+    expect(
+      labelFor({ kind: "web", serial: 1, title: "Example Domain", url: "https://example.com" })
+    ).toBe("Example Domain");
   });
 
   it("uses the host when the page has no title of its own", () => {
-    expect(labelFor({ kind: "web", serial: 1, title: "", url: "https://example.com/a" })).toBe("example.com");
+    expect(labelFor({ kind: "web", serial: 1, title: "", url: "https://example.com/a" })).toBe(
+      "example.com"
+    );
     // A title that is only the URL again is not a title.
     expect(
-      labelFor({ kind: "web", serial: 1, title: "https://example.com/a", url: "https://example.com/a" })
+      labelFor({
+        kind: "web",
+        serial: 1,
+        title: "https://example.com/a",
+        url: "https://example.com/a",
+      })
     ).toBe("example.com");
   });
 

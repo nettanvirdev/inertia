@@ -1,11 +1,5 @@
 import * as React from "react";
-import {
-  Check,
-  ChevronRight,
-  ExternalLink,
-  TriangleAlert,
-  getIcon,
-} from "@/components/icons";
+import { Check, ChevronRight, ExternalLink, TriangleAlert, getIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/data";
 import { keyForTool, toolByKey } from "@shared/tools";
@@ -22,7 +16,14 @@ import { PlanCard } from "@/features/chat/PlanCard";
 import { FilePreview, useLocalImage } from "@/features/chat/FilePreview";
 import { McpResult } from "@/features/chat/McpResult";
 import { useArrival } from "@/features/chat/arrival";
-import { GROUPED_TOOL, fileName, runCount, runDuration, runState, runTitle } from "@/features/chat/tool-groups";
+import {
+  GROUPED_TOOL,
+  fileName,
+  runCount,
+  runDuration,
+  runState,
+  runTitle,
+} from "@/features/chat/tool-groups";
 
 /**
  * One tool call in the transcript.
@@ -112,7 +113,9 @@ function asText(value) {
 }
 
 function lastLine(text) {
-  const lines = asText(text).split("\n").filter((l) => l.trim());
+  const lines = asText(text)
+    .split("\n")
+    .filter((l) => l.trim());
   return lines[lines.length - 1] ?? "";
 }
 
@@ -141,15 +144,43 @@ const TOOL_LABEL = {
 
 /** The fence tag for a file, from its name, so a preview is coloured. */
 const LANG_BY_EXTENSION = {
-  ts: "ts", tsx: "tsx", js: "js", jsx: "jsx", mjs: "js", cjs: "js",
-  json: "json", css: "css", scss: "css", html: "html", md: "md", mdx: "md",
-  py: "python", rs: "rust", go: "go", java: "java", rb: "ruby", php: "php",
-  sh: "bash", bash: "bash", zsh: "bash", yml: "yaml", yaml: "yaml",
-  toml: "toml", sql: "sql", c: "c", h: "c", cpp: "cpp", cs: "cs", swift: "swift",
+  ts: "ts",
+  tsx: "tsx",
+  js: "js",
+  jsx: "jsx",
+  mjs: "js",
+  cjs: "js",
+  json: "json",
+  css: "css",
+  scss: "css",
+  html: "html",
+  md: "md",
+  mdx: "md",
+  py: "python",
+  rs: "rust",
+  go: "go",
+  java: "java",
+  rb: "ruby",
+  php: "php",
+  sh: "bash",
+  bash: "bash",
+  zsh: "bash",
+  yml: "yaml",
+  yaml: "yaml",
+  toml: "toml",
+  sql: "sql",
+  c: "c",
+  h: "c",
+  cpp: "cpp",
+  cs: "cs",
+  swift: "swift",
 };
 
 function langFor(file) {
-  const name = String(file ?? "").split(/[\\/]/).pop() ?? "";
+  const name =
+    String(file ?? "")
+      .split(/[\\/]/)
+      .pop() ?? "";
   const dot = name.lastIndexOf(".");
   if (dot < 0) return "";
   return LANG_BY_EXTENSION[name.slice(dot + 1).toLowerCase()] ?? "";
@@ -189,7 +220,10 @@ function StateMark({ state, durationMs }) {
   if (state === "running") {
     return (
       <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-        <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-muted-foreground" />
+        <span
+          aria-hidden="true"
+          className="size-1.5 animate-pulse rounded-full bg-muted-foreground"
+        />
         Running
       </span>
     );
@@ -289,9 +323,14 @@ function Steps({ steps }) {
   return (
     <ol className="flex flex-col gap-1">
       {steps.map((step, i) => (
-        <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed text-muted-foreground">
+        <li
+          key={i}
+          className="flex items-start gap-2 text-[12px] leading-relaxed text-muted-foreground"
+        >
           <span className="w-4 shrink-0 tabular-nums text-muted-foreground/60">{i + 1}</span>
-          <span className="min-w-0 flex-1">{typeof step === "string" ? step : (step?.title ?? asText(step))}</span>
+          <span className="min-w-0 flex-1">
+            {typeof step === "string" ? step : (step?.title ?? asText(step))}
+          </span>
         </li>
       ))}
     </ol>
@@ -362,7 +401,10 @@ function Body({ call }) {
     return (
       <div className="flex flex-col gap-2">
         <ToolDiff diff={metadata.diff} />
-        <Args args={args} skip={["content", "oldString", "newString", "old_string", "new_string", "diff"]} />
+        <Args
+          args={args}
+          skip={["content", "oldString", "newString", "old_string", "new_string", "diff"]}
+        />
       </div>
     );
   }
@@ -406,7 +448,9 @@ function Body({ call }) {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-[11px] text-muted-foreground">{agent}</p>
-        {Array.isArray(metadata.steps) && metadata.steps.length ? <Steps steps={metadata.steps} /> : null}
+        {Array.isArray(metadata.steps) && metadata.steps.length ? (
+          <Steps steps={metadata.steps} />
+        ) : null}
         <Args args={args} skip={["subagent_type", "agent"]} />
         <Output output={output} outputPath={metadata.outputPath} />
       </div>
@@ -421,7 +465,9 @@ function Body({ call }) {
           <span aria-hidden="true" className={cn(MONO, "select-none text-muted-foreground")}>
             $
           </span>
-          <span className={cn(MONO, "min-w-0 flex-1 text-foreground")}>{args.command ?? call.title}</span>
+          <span className={cn(MONO, "min-w-0 flex-1 text-foreground")}>
+            {args.command ?? call.title}
+          </span>
         </div>
         {exit ? (
           <Badge variant="danger" size="sm">
@@ -638,12 +684,15 @@ function RunRow({ call }) {
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "flex h-8 w-full items-center gap-2 rounded-xl px-2 text-left outline-none",
-          "transition-colors duration-150 ease-out hover:fill-nav focus-visible:fill-nav",
+          "transition-colors duration-150 ease-out hover:fill-nav focus-visible:fill-nav"
         )}
       >
         <RowIcon
           aria-hidden="true"
-          className={cn("size-3.5 shrink-0", failed ? "text-destructive-ink" : "text-muted-foreground")}
+          className={cn(
+            "size-3.5 shrink-0",
+            failed ? "text-destructive-ink" : "text-muted-foreground"
+          )}
         />
         <Title text={read ? fileName(call) : (call.title ?? call.name ?? "")} />
         <StateMark state={call.state} durationMs={call.durationMs} />
@@ -696,7 +745,7 @@ export function ToolRun({ calls, className }) {
       className={cn(
         "my-2 rounded-2xl card-surface-subtle dark:card-surface-subtle",
         arrival.arriving && "animate-fade-in",
-        className,
+        className
       )}
     >
       <button
@@ -706,12 +755,15 @@ export function ToolRun({ calls, className }) {
         className={cn(
           "flex h-9 w-full items-center gap-2 rounded-2xl px-3 text-left outline-none",
           "transition-colors duration-150 ease-out hover:fill-nav",
-          "focus-visible:fill-nav",
+          "focus-visible:fill-nav"
         )}
       >
         <ToolIcon
           aria-hidden="true"
-          className={cn("size-3.5 shrink-0", failed ? "text-destructive-ink" : "text-muted-foreground")}
+          className={cn(
+            "size-3.5 shrink-0",
+            failed ? "text-destructive-ink" : "text-muted-foreground"
+          )}
         />
         <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
         <Title text={runTitle(calls)} />
@@ -747,7 +799,7 @@ function ToolCallCardInner({ part, block, className }) {
   // the agent was handed the picture itself - so the reader gets it too,
   // without having to guess that there is something behind the chevron.
   const [open, setOpen] = React.useState(
-    call?.state === "failed" || Boolean(call?.metadata?.image),
+    call?.state === "failed" || Boolean(call?.metadata?.image)
   );
 
   // A call that fails after the fact opens itself. Only on the transition, so
@@ -795,7 +847,7 @@ function ToolCallCardInner({ part, block, className }) {
       className={cn(
         "my-2 rounded-2xl card-surface-subtle dark:card-surface-subtle",
         arrival.arriving && "animate-fade-in",
-        className,
+        className
       )}
     >
       <button
@@ -810,7 +862,10 @@ function ToolCallCardInner({ part, block, className }) {
       >
         <ToolIcon
           aria-hidden="true"
-          className={cn("size-3.5 shrink-0", failed ? "text-destructive-ink" : "text-muted-foreground")}
+          className={cn(
+            "size-3.5 shrink-0",
+            failed ? "text-destructive-ink" : "text-muted-foreground"
+          )}
         />
         <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
         <Title text={title ?? name} fromLeft={PATHISH.has(name)} />

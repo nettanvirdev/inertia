@@ -84,9 +84,7 @@ export function SnapshotsDialog({ open, onOpenChange, computer }) {
     <>
       <Dialog open={open} onOpenChange={onOpenChange} size="md">
         <DialogTitle>Snapshots</DialogTitle>
-        <DialogDescription>
-          A copy of {computer.name} as it was, to come back to.
-        </DialogDescription>
+        <DialogDescription>A copy of {computer.name} as it was, to come back to.</DialogDescription>
 
         <DialogBody>
           <ScrollArea className="max-h-[min(24rem,calc(100dvh-20rem))] -mx-1 px-1">

@@ -47,8 +47,7 @@ export function openapiBridge() {
     operations: (id) => call("openapi_operations", { id }),
     setOperations: (id, operations) =>
       call("openapi_set_operations", { id, operations: operations ?? [] }),
-    test: (id, operationId, args) =>
-      call("openapi_test", { id, operationId, args: args ?? {} }),
+    test: (id, operationId, args) => call("openapi_test", { id, operationId, args: args ?? {} }),
     details: (id) => call("openapi_details", { id }),
   };
 }

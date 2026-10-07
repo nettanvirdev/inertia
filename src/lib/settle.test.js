@@ -106,7 +106,12 @@ describe("settleRoutine", () => {
       expression: "0 9 * * *",
       humanLabel: "0 9 * * *",
     });
-    const kept = { kind: "interval", expression: "PT1H", humanLabel: "Every hour", nextRunAt: null };
+    const kept = {
+      kind: "interval",
+      expression: "PT1H",
+      humanLabel: "Every hour",
+      nextRunAt: null,
+    };
     expect(settleRoutine({ id: "r", schedule: kept }).schedule).toEqual(kept);
   });
 });
@@ -134,7 +139,15 @@ describe("settleThread", () => {
 
   it("leaves a well-formed list alone", () => {
     const rows = [
-      { id: "t", title: "Hi", draft: false, pinned: false, unread: 0, messageCount: 2, agentId: "a" },
+      {
+        id: "t",
+        title: "Hi",
+        draft: false,
+        pinned: false,
+        unread: 0,
+        messageCount: 2,
+        agentId: "a",
+      },
     ];
     expect(settleThreads(rows)).toBe(rows);
   });

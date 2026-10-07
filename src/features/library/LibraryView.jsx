@@ -1,21 +1,35 @@
 import * as React from "react";
-import { FileSearch, LayoutGrid, Library as LibraryIcon, MessageCircle, MoreHorizontal, Pencil, Pin, PinOff, Rows3, SearchX, Trash2, Icon } from "@/components/icons";
+import {
+  FileSearch,
+  LayoutGrid,
+  Library as LibraryIcon,
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Pin,
+  PinOff,
+  Rows3,
+  SearchX,
+  Trash2,
+  Icon,
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/store";
 import { useNow } from "@/hooks/use-now";
 import { PREF, usePersistentState } from "@/lib/persist";
 import { useDateFormat, utcDayKey } from "@/lib/datetime";
-import {
-  LIBRARY_CATEGORIES,
-  LIBRARY_CATEGORY_META,
-  formatBytes,
-  relativeTime,
-} from "@/data";
+import { LIBRARY_CATEGORIES, LIBRARY_CATEGORY_META, formatBytes, relativeTime } from "@/data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ContextMenu } from "@/components/ui/context-menu";
-import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { DropdownMenu, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
@@ -33,8 +47,18 @@ import { GUTTER, HEADER_GAP } from "@/components/layout/View";
 /* ── small shared bits ─────────────────────────────────────────────────── */
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const SORT_OPTIONS = [
@@ -82,7 +106,7 @@ function dayLabel(dayKey, nowIso) {
 
 /* ── artifact card & row ───────────────────────────────────────────────── */
 
-function MetaLine({ item, agent, thread }) {
+function MetaLine({ agent, thread }) {
   return (
     <span className="truncate text-[11px] text-muted-foreground">
       {agent?.name ?? "Workspace"}
@@ -122,7 +146,9 @@ function ArtifactCard({ item, agent, thread, onOpen }) {
             <Icon name={meta.icon} className="size-3" />
             {meta.label.replace(/s$/, "")}
           </Badge>
-          <span className="text-[11px] tabular-nums text-muted-foreground">{formatBytes(item.sizeBytes)}</span>
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {formatBytes(item.sizeBytes)}
+          </span>
           <span className="text-[11px] text-muted-foreground">·</span>
           <span className="text-[11px] text-muted-foreground">{relativeTime(item.createdAt)}</span>
         </div>
@@ -301,7 +327,10 @@ export function LibraryView() {
   }, [items]);
 
   const agentOptions = React.useMemo(
-    () => [{ value: "all", label: "All agents" }, ...agents.map((b) => ({ value: b.id, label: b.name }))],
+    () => [
+      { value: "all", label: "All agents" },
+      ...agents.map((b) => ({ value: b.id, label: b.name })),
+    ],
     [agents]
   );
 
@@ -356,7 +385,8 @@ export function LibraryView() {
   );
 
   const visible = React.useMemo(() => {
-    const list = tab === "all" || tab === "conversation" ? scoped : scoped.filter((i) => i.category === tab);
+    const list =
+      tab === "all" || tab === "conversation" ? scoped : scoped.filter((i) => i.category === tab);
     const sorted = list.slice();
     // Every comparator reads a field a record can be missing, and a sort that
     // throws takes the screen with it. Coercing is the right answer here rather
@@ -540,7 +570,13 @@ export function LibraryView() {
                       ? "Nothing here answers to that search and filter combination."
                       : "Start a chat with a teammate and it will be archived here."
                   }
-                  action={filtering ? <Button size="sm" onClick={clearFilters}>Clear filters</Button> : null}
+                  action={
+                    filtering ? (
+                      <Button size="sm" onClick={clearFilters}>
+                        Clear filters
+                      </Button>
+                    ) : null
+                  }
                   className="mt-10"
                 />
               ) : (
@@ -577,7 +613,13 @@ export function LibraryView() {
                     ? "Try a shorter query, or widen the agent filter."
                     : "Files your teammates attach, capture or export land here automatically."
                 }
-                action={filtering ? <Button size="sm" onClick={clearFilters}>Clear filters</Button> : null}
+                action={
+                  filtering ? (
+                    <Button size="sm" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  ) : null
+                }
                 className="mt-10"
               />
             ) : (
@@ -652,7 +694,9 @@ export function LibraryView() {
       {/* ── rename ──────────────────────────────────────────────────────── */}
       <Dialog open={Boolean(renaming)} onOpenChange={() => setRenaming(null)} size="sm">
         <DialogTitle>Rename conversation</DialogTitle>
-        <DialogDescription>Only the title changes - the transcript and its artifacts stay put.</DialogDescription>
+        <DialogDescription>
+          Only the title changes - the transcript and its artifacts stay put.
+        </DialogDescription>
         <DialogBody>
           <Input
             autoFocus

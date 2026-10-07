@@ -90,8 +90,7 @@ export function computersBridge() {
      * an empty list, which is the truth about what this build can see.
      */
     cookieSources: () => call("cookie_sources"),
-    importCookies: (id, options) =>
-      call("computer_import_cookies", { id, options: options ?? {} }),
+    importCookies: (id, options) => call("computer_import_cookies", { id, options: options ?? {} }),
 
     onEvent: (callback) => subscribe("computer:event", callback),
   };

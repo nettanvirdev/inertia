@@ -288,7 +288,7 @@
      indicator, and it measures 2.8-3.0:1 on every surface a field sits on in
      this theme. Dark needs less for the same result, and gets it below. */
   --focus-ring: rgb(var(--ink) / 0.55);
-  --scrim: rgb(var(--ink) / 0.40);
+  --scrim: rgb(var(--ink) / 0.4);
 
   /* ── floating layers ──────────────────────────────────────────────────────
    * A menu no longer has to be a step DOWN to be visible. It used to: with no
@@ -456,13 +456,13 @@
   --fill-secondary: rgb(var(--ink) / 0.06);
   --fill-control-hover: rgb(var(--ink) / 0.075);
   --fill-close: rgb(var(--ink) / 0.08);
-  --fill-secondary-hover: rgb(var(--ink) / 0.10);
+  --fill-secondary-hover: rgb(var(--ink) / 0.1);
   --fill-track: rgb(var(--ink) / 0.18);
 
   /* A rung firmer than light, the way every other pair here is: white laid
      over #2a2a2a covers less ground than black laid over #f2f4f8. */
   --fill-field: rgb(var(--ink) / 0.07);
-  --fill-field-hover: rgb(var(--ink) / 0.10);
+  --fill-field-hover: rgb(var(--ink) / 0.1);
 
   --focus-ring: rgb(var(--ink) / 0.38);
   /* Black, not the ink: dimming a dark room with a light scrim washes it out.
@@ -585,17 +585,16 @@
    * this IS the system face; on Windows it is Segoe UI Variable, which is what
    * every native app there is set in. */
   --font-sans:
-    "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
-    "Segoe UI Variable Text", "Segoe UI", Inter, "Inter var", system-ui,
-    Roboto, "Helvetica Neue", Arial, sans-serif;
+    "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", Inter, "Inter var", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* The code face, as one name. The theme block is `inline`, which means
      Tailwind bakes this stack straight into the `font-mono` utility rather
      than pointing it at the variable - so the rule further down is what
      actually lets the setting move it, and this is only the default. */
   --font-mono:
-    "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", "Cascadia Mono",
-    Menlo, Consolas, "Liberation Mono", monospace;
+    "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 }
 
 /* ── spacing ────────────────────────────────────────────────────────────────
@@ -863,7 +862,6 @@ pre code {
   --user-message-background: transparent;
 }
 
-
 /* -- grounds ----------------------------------------------------------------
  * The palettes, one per theme, chosen in Settings > Appearance.
  *
@@ -1084,7 +1082,6 @@ pre code {
   --shadow-lg: 0 12px 32px rgba(44, 58, 80, 0.12);
 }
 
-
 /* Pale green-grey, the calmest of the cool ones. */
 :root[data-light-palette="sage"]:not(.dark),
 :root[data-light-palette="sage"] .light {
@@ -1135,7 +1132,6 @@ pre code {
   --shadow-lg: 0 12px 32px rgba(45, 58, 40, 0.12);
 }
 
-
 /* Warm and pink rather than yellow. Sepia without the age. */
 :root[data-light-palette="linen"]:not(.dark),
 :root[data-light-palette="linen"] .light {
@@ -1185,7 +1181,6 @@ pre code {
   --shadow-md: 0 4px 12px rgba(68, 52, 44, 0.08);
   --shadow-lg: 0 12px 32px rgba(68, 52, 44, 0.12);
 }
-
 
 /* A blue-black ground. Deeper, without going to pure black. */
 :root[data-dark-palette="midnight"].dark,
@@ -1371,7 +1366,6 @@ pre code {
   --input-foreground: var(--foreground);
 }
 
-
 /* Dark green-grey. The quietest of the dark grounds. */
 :root[data-dark-palette="forest"].dark,
 :root[data-dark-palette="forest"] .dark {
@@ -1417,7 +1411,6 @@ pre code {
   --popover-foreground: var(--foreground);
   --input-foreground: var(--foreground);
 }
-
 
 /* A deep violet-black, for a dark room. */
 :root[data-dark-palette="plum"].dark,
@@ -1504,12 +1497,7 @@ pre code {
 @keyframes inertia-in {
   from {
     opacity: 0;
-    transform: translate3d(
-        var(--overlay-in-x, 0px),
-        var(--overlay-in-y, 0px),
-        0
-      )
-      scale(0.94);
+    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.94);
   }
   to {
     opacity: 1;
@@ -1523,12 +1511,7 @@ pre code {
   }
   to {
     opacity: 0;
-    transform: translate3d(
-        var(--overlay-in-x, 0px),
-        var(--overlay-in-y, 0px),
-        0
-      )
-      scale(0.96);
+    transform: translate3d(var(--overlay-in-x, 0px), var(--overlay-in-y, 0px), 0) scale(0.96);
   }
 }
 @keyframes inertia-fade-in {

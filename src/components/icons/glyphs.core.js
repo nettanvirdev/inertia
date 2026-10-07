@@ -118,9 +118,7 @@ export const GLYPHS_CORE = {
 
   // Every vertex of the triangle is an arc, so the play head reads as a guitar
   // pick rather than a shard.
-  Play: [
-    "M9.4 5.6a1.3 1.3 0 0 1 2-1.1l8.3 5.3a1.4 1.4 0 0 1 0 2.4l-8.3 5.3a1.3 1.3 0 0 1-2-1.1z",
-  ],
+  Play: ["M9.4 5.6a1.3 1.3 0 0 1 2-1.1l8.3 5.3a1.4 1.4 0 0 1 0 2.4l-8.3 5.3a1.3 1.3 0 0 1-2-1.1z"],
   Pause: ["r 6.8 4.5 4 15 2", "r 13.2 4.5 4 15 2"],
   Loader: ["M12 3.5a8.5 8.5 0 1 0 8.5 8.5"],
 

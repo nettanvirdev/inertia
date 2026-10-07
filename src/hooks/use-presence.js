@@ -82,7 +82,7 @@ export function usePresence(open, { exit = MOTION.exit } = {}) {
       clearTimeout(timer.current);
       cancelAnimationFrame(frame.current);
     },
-    [],
+    []
   );
 
   return { mounted, state, closing: state === "closing" };

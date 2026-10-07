@@ -64,9 +64,7 @@ describe("the document", () => {
   });
 
   it("writes the header even when there is nothing to export", () => {
-    expect(toCsv([], [])).toBe(
-      "at,severity,category,agent,actor,title,detail,target\r\n"
-    );
+    expect(toCsv([], [])).toBe("at,severity,category,agent,actor,title,detail,target\r\n");
   });
 
   it("falls back to the id when the agent is gone", () => {

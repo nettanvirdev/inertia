@@ -49,10 +49,7 @@ function ShellMock({ theme, split }) {
   return (
     <div className="flex h-[4.5rem] w-full overflow-hidden rounded-md xl:h-[6.5rem]">
       {panes.map((mode) => (
-        <div
-          key={mode}
-          className={cn(mode, "bg-background flex h-full flex-1 flex-col")}
-        >
+        <div key={mode} className={cn(mode, "bg-background flex h-full flex-1 flex-col")}>
           <div className="bg-sidebar h-2 w-full shrink-0" />
           <div className="flex min-h-0 flex-1">
             <div className="bg-sidebar h-full w-3 shrink-0 p-1">
@@ -97,7 +94,7 @@ function Tile({ selected, onClick, ariaLabel, className, children }) {
         "transition-colors duration-150 ease-out",
         "focus-visible:fill-control-hover",
         selected ? "bg-muted" : "fill-control hover:fill-control-hover",
-        className,
+        className
       )}
     >
       {children}
@@ -115,23 +112,10 @@ function Tile({ selected, onClick, ariaLabel, className, children }) {
  * to be able to choose.
  */
 function AccentSwatch({ accent, isDark, selected, onClick }) {
-  const color = accent.light
-    ? isDark
-      ? accent.dark
-      : accent.light
-    : "var(--foreground)";
-  const on = accent.on
-    ? isDark
-      ? accent.on.dark
-      : accent.on.light
-    : "var(--background)";
+  const color = accent.light ? (isDark ? accent.dark : accent.light) : "var(--foreground)";
+  const on = accent.on ? (isDark ? accent.on.dark : accent.on.light) : "var(--background)";
   return (
-    <Tile
-      selected={selected}
-      onClick={onClick}
-      ariaLabel={accent.label}
-      className="gap-1"
-    >
+    <Tile selected={selected} onClick={onClick} ariaLabel={accent.label} className="gap-1">
       <span
         aria-hidden="true"
         className="flex h-8 w-full items-center justify-center rounded-md"
@@ -249,11 +233,7 @@ export function AppearancePane() {
   return (
     <div className="w-full">
       <SettingsSection flat title="Theme">
-        <div
-          role="radiogroup"
-          aria-label="Theme"
-          className="grid grid-cols-3 gap-2"
-        >
+        <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">
           {THEME_TILES.map((tile) => {
             const selected = theme === tile.value;
             const Icon = tile.icon;
@@ -266,10 +246,7 @@ export function AppearancePane() {
               >
                 <ShellMock theme={tile.theme} split={tile.split} />
                 <span className="flex items-center gap-1 px-0.5 pb-0.5 text-xs text-foreground/90">
-                  <Icon
-                    className="size-3.5 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
+                  <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                   <span className="truncate">{tile.label}</span>
                   {selected ? (
                     <Check
@@ -284,7 +261,8 @@ export function AppearancePane() {
         </div>
       </SettingsSection>
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Accent"
         description="Used for the primary button and whatever is currently selected. Ink is the original: no colour at all."
       >
@@ -310,7 +288,8 @@ export function AppearancePane() {
           daylight still wants near-black at night. The pane shows both at once
           instead of only the theme that happens to be on, so switching theme
           never reveals a palette nobody chose. */}
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Light ground"
         description="The paper the app is drawn on in the light theme. Only the surfaces move - status colours, code highlighting and your accent are the same in every one."
       >
@@ -334,10 +313,7 @@ export function AppearancePane() {
         </p>
       </SettingsSection>
 
-      <SettingsSection flat
-        title="Dark ground"
-        description="The same choice for the dark theme."
-      >
+      <SettingsSection flat title="Dark ground" description="The same choice for the dark theme.">
         <ExpandingGrid
           label="Dark ground"
           options={DARK_PALETTES}
@@ -358,7 +334,8 @@ export function AppearancePane() {
         </p>
       </SettingsSection>
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Typeface"
         description="Mostly the faces this computer already has. Inter and Source Serif are bundled, as is a Bengali partner for every one of them - so বাংলা is drawn deliberately rather than by whatever the platform happens to find."
       >
@@ -408,7 +385,8 @@ export function AppearancePane() {
         </div>
       </SettingsSection>
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Monospace"
         description="Used for code blocks, file paths and anything that has to line up in a column. The sample is the test that matters: a zero you cannot mistake for an O."
       >
@@ -715,7 +693,7 @@ export function AppearancePane() {
         <div
           className={cn(
             "flex flex-col rounded-lg card-surface-subtle",
-            a.density === "compact" ? "gap-2 p-2.5" : "gap-3 p-3.5",
+            a.density === "compact" ? "gap-2 p-2.5" : "gap-3 p-3.5"
           )}
         >
           {/* justify-end rather than ml-auto: the bubble's own width is the
@@ -727,9 +705,7 @@ export function AppearancePane() {
                 Summarise yesterday&apos;s incident in three lines.
               </p>
               <Collapse open={Boolean(a.showTimestamps)}>
-                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
-                  2 minutes ago
-                </p>
+                <p className="mt-1 text-[0.6875rem] text-muted-foreground">2 minutes ago</p>
               </Collapse>
             </div>
           </div>
@@ -740,21 +716,16 @@ export function AppearancePane() {
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-foreground">Atlas</p>
               <p className="chat-text chat-measure mt-0.5 leading-relaxed text-foreground">
-                The API gateway dropped 4% of requests for eleven minutes after
-                a bad config rollout. Traffic recovered on rollback. A guard is
-                now in place.
+                The API gateway dropped 4% of requests for eleven minutes after a bad config
+                rollout. Traffic recovered on rollback. A guard is now in place.
               </p>
               {/* the one place code font size shows itself; it used to sit
                   beside its slider, which made that row the odd one out */}
               <pre className="mt-2 overflow-x-auto rounded-lg card-surface-raised px-3 py-2">
-                <code className="font-mono text-foreground">
-                  git rebase --onto main 0O1l~1
-                </code>
+                <code className="font-mono text-foreground">git rebase --onto main 0O1l~1</code>
               </pre>
               <Collapse open={Boolean(a.showTimestamps)}>
-                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
-                  Just now
-                </p>
+                <p className="mt-1 text-[0.6875rem] text-muted-foreground">Just now</p>
               </Collapse>
             </div>
           </div>
@@ -766,9 +737,7 @@ export function AppearancePane() {
             <Button variant="subtle" size="xs">
               Decline
             </Button>
-            <span className="accent-ink ml-auto text-[0.6875rem] font-medium">
-              Selected
-            </span>
+            <span className="accent-ink ml-auto text-[0.6875rem] font-medium">Selected</span>
           </div>
         </div>
       </SettingsSection>

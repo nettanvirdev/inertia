@@ -41,7 +41,8 @@ function readAll() {
   if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
   const out = {};
   for (const [id, entry] of Object.entries(stored)) {
-    if (typeof entry?.text === "string" && entry.text) out[id] = { text: entry.text, at: entry.at ?? 0 };
+    if (typeof entry?.text === "string" && entry.text)
+      out[id] = { text: entry.text, at: entry.at ?? 0 };
   }
   return out;
 }

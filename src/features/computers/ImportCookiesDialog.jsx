@@ -108,9 +108,9 @@ export function ImportCookiesDialog({ open, onOpenChange, target }) {
     <Dialog open={open} onOpenChange={onOpenChange} size="md">
       <DialogTitle>Bring your sessions to {target.name}</DialogTitle>
       <DialogDescription>
-        Copy the sites you are signed in to from a browser on this computer, so {target.name}{" "}
-        opens them already logged in. Nothing is typed and no password leaves this computer -
-        only the cookies you already have.
+        Copy the sites you are signed in to from a browser on this computer, so {target.name} opens
+        them already logged in. Nothing is typed and no password leaves this computer - only the
+        cookies you already have.
       </DialogDescription>
 
       <DialogBody className="flex flex-col gap-4">
@@ -138,7 +138,11 @@ export function ImportCookiesDialog({ open, onOpenChange, target }) {
                 From
               </p>
               <ScrollArea className="max-h-[min(20rem,calc(100dvh-26rem))] -mx-1 px-1">
-                <RadioGroup value={picked} onChange={setPicked} label="Browser profile to copy from">
+                <RadioGroup
+                  value={picked}
+                  onChange={setPicked}
+                  label="Browser profile to copy from"
+                >
                   {sources.map((entry) => (
                     <RadioItem
                       key={entry.id}
@@ -173,8 +177,8 @@ export function ImportCookiesDialog({ open, onOpenChange, target }) {
                 autoComplete="off"
               />
               <p className="mt-1.5 text-[11px] text-muted-foreground">
-                Narrowing to the sites the agent actually needs is the safer choice: everything
-                else stays on this computer.
+                Narrowing to the sites the agent actually needs is the safer choice: everything else
+                stays on this computer.
               </p>
             </div>
 

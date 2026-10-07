@@ -43,7 +43,9 @@ export const preview = {
    * noise about a window that is simply closing.
    */
   place: (id, rect, visible) => {
-    api()?.place?.(id, rect, visible)?.catch?.(() => {});
+    api()
+      ?.place?.(id, rect, visible)
+      ?.catch?.(() => {});
   },
   state: (id) => call("state", id),
   screenshot: (id) => call("screenshot", id),

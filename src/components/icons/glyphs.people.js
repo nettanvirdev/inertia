@@ -21,13 +21,7 @@
 export const GLYPHS_PEOPLE = {
   // The app's most-used glyph. A wide, very round head (rx 4.5 on a 12-tall
   // box), eyes as the set's only paired pips, and one short antenna.
-  Agent: [
-    "r 3.5 8 17 12 4.5",
-    "M12 5.5v2.5",
-    "!c 12 4.2 1.3",
-    "!c 9 14 1.2",
-    "!c 15 14 1.2",
-  ],
+  Agent: ["r 3.5 8 17 12 4.5", "M12 5.5v2.5", "!c 12 4.2 1.3", "!c 9 14 1.2", "!c 15 14 1.2"],
 
   // Two mirrored lobes; the `z` of each half draws the central fissure, so the
   // whole glyph is two strokes and no separate divider line.
@@ -119,10 +113,7 @@ export const GLYPHS_PEOPLE = {
     "M6.7 11.6h2a2 2 0 0 1 1.7 1l2.4 4.2a2.3 2.3 0 0 0 4.3-1.3l-.5-3h2.6a2.2 2.2 0 0 0 2-2.6l-.9-3.9a2.5 2.5 0 0 0-2.4-1.9H6.7",
   ],
 
-  User: [
-    "c 12 8.2 3.2",
-    "M4.9 19.8v-1a4.8 4.8 0 0 1 4.8-4.8h4.6a4.8 4.8 0 0 1 4.8 4.8v1",
-  ],
+  User: ["c 12 8.2 3.2", "M4.9 19.8v-1a4.8 4.8 0 0 1 4.8-4.8h4.6a4.8 4.8 0 0 1 4.8 4.8v1"],
   UserPlus: [
     "c 9.6 8.2 3.2",
     "M2.6 19.8v-1a4.8 4.8 0 0 1 4.8-4.8h4.4a4.8 4.8 0 0 1 4.8 4.8v1",
@@ -144,9 +135,7 @@ export const GLYPHS_PEOPLE = {
     "M4.9 18.6 4 8.7a1 1 0 0 1 1.6-.9l3 2.3a1.3 1.3 0 0 0 1.9-.4l1.4-3a1.3 1.3 0 0 1 2.2 0l1.4 3a1.3 1.3 0 0 0 1.9.4l3-2.3a1 1 0 0 1 1.6.9l-.9 9.9z",
   ],
   // Drawn from the bottom so the point is a fillet, not a vertex.
-  Heart: [
-    "M12.9 19.6 19.8 12.8a5 5 0 0 0-7.8-6.2 5 5 0 0 0-7.8 6.2l6.9 6.8a1.3 1.3 0 0 0 1.8 0z",
-  ],
+  Heart: ["M12.9 19.6 19.8 12.8a5 5 0 0 0-7.8-6.2 5 5 0 0 0-7.8 6.2l6.9 6.8a1.3 1.3 0 0 0 1.8 0z"],
   // Four-point stars whose sides are quadratics pulled to the star's own centre.
   // Two stars, not three. The third was a 2.8-radius star, and below about
   // 20px a concave four-pointer that small stops resolving into a shape - it

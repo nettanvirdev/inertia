@@ -72,10 +72,7 @@ export function appBridge() {
 
   return {
     minimize: () => appWindow()?.minimize().catch(ignore),
-    maximize: () =>
-      appWindow()
-        ?.toggleMaximize()
-        .catch(ignore),
+    maximize: () => appWindow()?.toggleMaximize().catch(ignore),
     close: () => appWindow()?.close().catch(ignore),
     beginDrag: () => appWindow()?.startDragging().catch(ignore),
 
@@ -149,7 +146,8 @@ export function appBridge() {
     /** Only http and https. A `file:` here would be a way to run a program. */
     openExternal: async (url) => {
       const target = String(url ?? "");
-      if (!/^https?:\/\//i.test(target)) return { ok: false, error: "Only web links can be opened." };
+      if (!/^https?:\/\//i.test(target))
+        return { ok: false, error: "Only web links can be opened." };
       try {
         await openUrl(target);
         return { ok: true };
@@ -202,7 +200,9 @@ export function appBridge() {
      */
     setZoom: (factor) => {
       try {
-        getCurrentWebview().setZoom(Number(factor) || 1).catch(ignore);
+        getCurrentWebview()
+          .setZoom(Number(factor) || 1)
+          .catch(ignore);
       } catch {
         /* no webview: a browser tab, where the browser's own zoom applies */
       }

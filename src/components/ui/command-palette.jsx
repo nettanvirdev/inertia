@@ -115,9 +115,7 @@ export function CommandPalette({
 
     const out = [];
     for (const group of scored) {
-      const items = dropSubsequence
-        ? group.items.filter((x) => x.s >= TIER.keyword)
-        : group.items;
+      const items = dropSubsequence ? group.items.filter((x) => x.s >= TIER.keyword) : group.items;
       if (!items.length) continue;
       if (q) items.sort((a, b) => b.s - a.s);
       out.push({ label: group.label, items: items.map((x) => x.item) });
@@ -179,7 +177,11 @@ export function CommandPalette({
   return (
     <Portal>
       <div className={cn("fixed inset-0 z-50", state === "closing" && "pointer-events-none")}>
-        <div data-state={state} className="absolute inset-0 scrim animate-fade-in" onClick={close} />
+        <div
+          data-state={state}
+          className="absolute inset-0 scrim animate-fade-in"
+          onClick={close}
+        />
         <div className="pointer-events-none absolute inset-0 flex justify-center px-4 pt-[15vh]">
           <div
             ref={panelRef}

@@ -32,9 +32,7 @@ const BY_TOOL = {
 function promptsFor(agent, rules) {
   if (!agent) return [];
   const topic = agent.tags?.[0] ?? "our roadmap";
-  const list = [
-    { id: "role", icon: "Sparkles", label: `What are you working on, ${agent.name}?` },
-  ];
+  const list = [{ id: "role", icon: "Sparkles", label: `What are you working on, ${agent.name}?` }];
   for (const [key, template] of Object.entries(BY_TOOL)) {
     const verdict = evaluate(rules ?? [], key, ANY);
     if (verdict.action === "deny" && (verdict.rule?.pattern ?? ANY) === ANY) continue;

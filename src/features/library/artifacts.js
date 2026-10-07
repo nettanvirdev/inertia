@@ -80,7 +80,11 @@ const MIME_BY_EXT = {
   mkv: "video/x-matroska",
 };
 
-const extensionOf = (name) => String(name ?? "").split(".").pop()?.toLowerCase() ?? "";
+const extensionOf = (name) =>
+  String(name ?? "")
+    .split(".")
+    .pop()
+    ?.toLowerCase() ?? "";
 
 /** Which Library tab an artifact belongs under. Unknown is `document` rather
  *  than a tab of its own: a file with no extension is still a thing you read. */
@@ -152,7 +156,8 @@ export function saveTargetPath(artifact) {
 export function openTargetFor(path) {
   const target = String(path ?? "");
   if (!target) return { how: "unknown", target };
-  const absolute = target.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(target) || target.startsWith("\\\\");
+  const absolute =
+    target.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(target) || target.startsWith("\\\\");
   return { how: absolute ? "os" : "workspace", target };
 }
 

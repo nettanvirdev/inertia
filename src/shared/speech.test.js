@@ -19,7 +19,7 @@ describe("speakable", () => {
     ].join("\n");
 
     expect(speakable(markdown)).toBe(
-      "Here is the fix. (a TypeScript code block) That should do it.",
+      "Here is the fix. (a TypeScript code block) That should do it."
     );
   });
 
@@ -45,18 +45,16 @@ describe("speakable", () => {
 
   it("drops list markers, including from a nested list", () => {
     const markdown = ["- First item", "  - Nested item", "* Second item", "1. Third item"].join(
-      "\n",
+      "\n"
     );
     expect(speakable(markdown)).toBe("First item Nested item Second item Third item");
   });
 
   it("reads a link as its text and a bare URL as a link", () => {
     expect(speakable("See [the docs](https://example.com/a/b/c) for more.")).toBe(
-      "See the docs for more.",
+      "See the docs for more."
     );
-    expect(speakable("See https://example.com/a/b?q=1 for more.")).toBe(
-      "See (a link) for more.",
-    );
+    expect(speakable("See https://example.com/a/b?q=1 for more.")).toBe("See (a link) for more.");
   });
 
   it("reads an image as its alt text, or says there was one", () => {
@@ -77,13 +75,13 @@ describe("speakable", () => {
 
   it("strips emphasis markers and keeps the words", () => {
     expect(speakable("That is **really** _quite_ ~~bad~~ *urgent*.")).toBe(
-      "That is really quite bad urgent.",
+      "That is really quite bad urgent."
     );
   });
 
   it("leaves an underscore that is part of an identifier alone", () => {
     expect(speakable("The flag is auto_save_enabled today.")).toBe(
-      "The flag is auto_save_enabled today.",
+      "The flag is auto_save_enabled today."
     );
   });
 
@@ -97,13 +95,13 @@ describe("speakable", () => {
 
   it("shortens a deep path to its filename", () => {
     expect(speakable("Look at apps/web/src/lib/dictation.ts for the answer.")).toBe(
-      "Look at dictation.ts for the answer.",
+      "Look at dictation.ts for the answer."
     );
   });
 
   it("leaves a shallow path and anything with spaces alone", () => {
     expect(speakable("The ratio is src/lib and 3 / 4 of the way in.")).toBe(
-      "The ratio is src/lib and 3 / 4 of the way in.",
+      "The ratio is src/lib and 3 / 4 of the way in."
     );
   });
 
@@ -145,9 +143,9 @@ describe("toUtterances", () => {
   });
 
   it("does not end a sentence on an abbreviation", () => {
-    expect(
-      toUtterances("Some formats, e.g. YAML and TOML, are supported by the parser."),
-    ).toEqual(["Some formats, e.g. YAML and TOML, are supported by the parser."]);
+    expect(toUtterances("Some formats, e.g. YAML and TOML, are supported by the parser.")).toEqual([
+      "Some formats, e.g. YAML and TOML, are supported by the parser.",
+    ]);
 
     expect(toUtterances("Prefer a queue vs. a raw array in this hot path.")).toEqual([
       "Prefer a queue vs. a raw array in this hot path.",
@@ -211,7 +209,7 @@ describe("toUtterances", () => {
 describe("speechFor", () => {
   it("composes the two halves", () => {
     const markdown = ["# Result", "", "The suite is green.", "", "```js", "run();", "```"].join(
-      "\n",
+      "\n"
     );
 
     expect(speechFor(markdown)).toEqual([

@@ -36,12 +36,24 @@ const ALL = [
   "acme_fetch_invoice",
 ];
 
-const idsIn = (mode) => toolsForMode(ALL.map((id) => ({ id })), mode).map((tool) => tool.id);
+const idsIn = (mode) =>
+  toolsForMode(
+    ALL.map((id) => ({ id })),
+    mode
+  ).map((tool) => tool.id);
 
 describe("what each mode may do", () => {
   it("chat cannot change anything", () => {
     const tools = idsIn("chat");
-    for (const forbidden of ["write", "edit", "patch", "shell", "task", "computer_act", "inertia_save"]) {
+    for (const forbidden of [
+      "write",
+      "edit",
+      "patch",
+      "shell",
+      "task",
+      "computer_act",
+      "inertia_save",
+    ]) {
       expect(tools).not.toContain(forbidden);
     }
   });
@@ -85,7 +97,15 @@ describe("what each mode may do", () => {
 
   it("autonomous holds everything else", () => {
     const tools = idsIn("autonomous");
-    for (const allowed of ["write", "edit", "patch", "shell", "task", "computer_act", "inertia_save"]) {
+    for (const allowed of [
+      "write",
+      "edit",
+      "patch",
+      "shell",
+      "task",
+      "computer_act",
+      "inertia_save",
+    ]) {
       expect(tools).toContain(allowed);
     }
   });
@@ -131,7 +151,10 @@ describe("what a turn costs, with caching", () => {
     const price = { input: 3, output: 15 };
     const fresh = 100_000 - 80_000 - 5_000;
     const expected =
-      (fresh * 3 + 80_000 * 3 * CACHE_READ_MULTIPLIER + 5_000 * 3 * CACHE_WRITE_MULTIPLIER + 10_000 * 15) /
+      (fresh * 3 +
+        80_000 * 3 * CACHE_READ_MULTIPLIER +
+        5_000 * 3 * CACHE_WRITE_MULTIPLIER +
+        10_000 * 15) /
       1_000_000;
     expect(costOf(usage, price)).toBeCloseTo(expected, 6);
   });

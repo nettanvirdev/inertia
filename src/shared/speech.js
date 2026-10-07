@@ -75,7 +75,9 @@ const LANGUAGE_NAMES = {
 };
 
 function codeBlockPlaceholder(language) {
-  const tag = String(language ?? "").trim().toLowerCase();
+  const tag = String(language ?? "")
+    .trim()
+    .toLowerCase();
   if (!tag) return "(a code block)";
   const name = LANGUAGE_NAMES[tag] ?? `a ${tag}`;
   return `(${name} code block)`;
@@ -113,14 +115,16 @@ function shortenPath(match) {
 }
 
 function stripEmphasis(text) {
-  return text
-    .replace(/\*\*([^*]+?)\*\*/g, "$1")
-    .replace(/__([^_]+?)__/g, "$1")
-    .replace(/~~([^~]+?)~~/g, "$1")
-    .replace(/\*([^*\n]+?)\*/g, "$1")
-    // A single underscore only counts as emphasis at a word edge, so
-    // `snake_case_names` survives intact rather than being welded together.
-    .replace(/(^|[\s(["'])_([^_\n]+?)_(?=[\s).,!?:;\]"']|$)/g, "$1$2");
+  return (
+    text
+      .replace(/\*\*([^*]+?)\*\*/g, "$1")
+      .replace(/__([^_]+?)__/g, "$1")
+      .replace(/~~([^~]+?)~~/g, "$1")
+      .replace(/\*([^*\n]+?)\*/g, "$1")
+      // A single underscore only counts as emphasis at a word edge, so
+      // `snake_case_names` survives intact rather than being welded together.
+      .replace(/(^|[\s(["'])_([^_\n]+?)_(?=[\s).,!?:;\]"']|$)/g, "$1$2")
+  );
 }
 
 function speakableInline(text) {

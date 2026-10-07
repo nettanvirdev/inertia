@@ -182,7 +182,6 @@ function trimUrlTail(url) {
   return out;
 }
 
-
 /**
  * The small amount of HTML a model actually writes in a message.
  *
@@ -202,15 +201,41 @@ function trimUrlTail(url) {
 const VOID_TAGS = { br: "break", img: "image", wbr: "break" };
 
 const INLINE_TAGS = new Set([
-  "b", "strong", "i", "em", "u", "s", "del", "strike", "code", "kbd", "mark",
-  "small", "sub", "sup", "span", "a", "abbr", "cite", "q", "big", "var", "samp",
+  "b",
+  "strong",
+  "i",
+  "em",
+  "u",
+  "s",
+  "del",
+  "strike",
+  "code",
+  "kbd",
+  "mark",
+  "small",
+  "sub",
+  "sup",
+  "span",
+  "a",
+  "abbr",
+  "cite",
+  "q",
+  "big",
+  "var",
+  "samp",
 ]);
 
 /** The node an inline tag becomes, so the renderer has no HTML of its own. */
 const TAG_NODE = {
-  b: "strong", strong: "strong",
-  i: "em", em: "em", var: "em", cite: "em",
-  s: "del", del: "del", strike: "del",
+  b: "strong",
+  strong: "strong",
+  i: "em",
+  em: "em",
+  var: "em",
+  cite: "em",
+  s: "del",
+  del: "del",
+  strike: "del",
 };
 
 function readAttributes(text) {

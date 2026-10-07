@@ -417,7 +417,7 @@ export function ChatView() {
   const model =
     chatModels.find((m) => m.ref === (agent?.model ?? defaultModelRef)) ??
     (chatModels.length
-      ? chatModels.find((m) => m.ref === defaultModelRef) ?? chatModels[0]
+      ? (chatModels.find((m) => m.ref === defaultModelRef) ?? chatModels[0])
       : MODELS.find((m) => m.id === agent?.model));
 
   // Where a Run button in a code block runs. The worktree this conversation
@@ -435,7 +435,10 @@ export function ChatView() {
               <header className={cn("flex h-14 shrink-0 items-center gap-2", GUTTER)}>
                 {speaking ? <AgentAvatar agent={speaking} size="sm" showStatus /> : null}
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="truncate text-sm font-medium text-foreground" title={thread.title}>
+                  <span
+                    className="truncate text-sm font-medium text-foreground"
+                    title={thread.title}
+                  >
                     {speaking?.name ?? "Thread"}
                   </span>
                   {/* Who else is in here. Straight after the name, because the
@@ -618,7 +621,12 @@ export function ChatView() {
                 <>
                   <div className="relative flex min-h-0 flex-1 flex-col">
                     <ScrollArea viewportRef={scrollRef} onScroll={onScroll} className="flex-1">
-                      <div className={cn("mx-auto flex min-h-full flex-col justify-end px-6 py-4", columnClass)}>
+                      <div
+                        className={cn(
+                          "mx-auto flex min-h-full flex-col justify-end px-6 py-4",
+                          columnClass
+                        )}
+                      >
                         {/* The conversation before the window. A button rather
                             than an automatic load on scroll: loading on scroll
                             means the reader who is dragging the bar upward gets
@@ -774,11 +782,7 @@ export function ChatView() {
                 title="No conversation open"
                 description="Pick a thread on the left, or start a new one with any of your teammates."
                 action={
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => createThread(startingAgentId)}
-                  >
+                  <Button variant="primary" size="sm" onClick={() => createThread(startingAgentId)}>
                     <MessageSquarePlus />
                     New chat
                   </Button>

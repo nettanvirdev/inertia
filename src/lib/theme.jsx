@@ -35,7 +35,9 @@ function readStored() {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
     if (v === "dark" || v === "light" || v === "system") return v;
-  } catch {}
+  } catch {
+    // Storage blocked or unavailable: fall through to the default.
+  }
   return DEFAULT_THEME;
 }
 
@@ -69,9 +71,7 @@ export function ThemeProvider({ children }) {
 
     const root = document.documentElement;
     const style = document.createElement("style");
-    style.appendChild(
-      document.createTextNode("*,*::before,*::after{transition:none !important}")
-    );
+    style.appendChild(document.createTextNode("*,*::before,*::after{transition:none !important}"));
     document.head.appendChild(style);
 
     root.classList.toggle("dark", next === "dark");

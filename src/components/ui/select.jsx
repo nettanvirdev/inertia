@@ -61,10 +61,7 @@ export function Select({
   const baseId = React.useId();
 
   const rows = React.useMemo(() => flatten(options), [options]);
-  const selectable = React.useMemo(
-    () => rows.filter((r) => !r.__group && !r.disabled),
-    [rows]
-  );
+  const selectable = React.useMemo(() => rows.filter((r) => !r.__group && !r.disabled), [rows]);
   const selected = React.useMemo(
     () => rows.find((r) => !r.__group && r.value === value) ?? null,
     [rows, value]
@@ -241,10 +238,7 @@ export function Select({
             one line and removes a whole class of "is this broken?".
           */}
           {rows.length === 0 ? (
-            <div
-              role="presentation"
-              className="px-2.5 py-2 text-[12px] text-muted-foreground"
-            >
+            <div role="presentation" className="px-2.5 py-2 text-[12px] text-muted-foreground">
               {emptyLabel}
             </div>
           ) : null}
@@ -285,9 +279,7 @@ export function Select({
                   ) : null}
                 </span>
                 <span className="flex w-3.5 shrink-0 justify-end">
-                  {row.value === value ? (
-                    <Check className="size-3.5 text-foreground" />
-                  ) : null}
+                  {row.value === value ? <Check className="size-3.5 text-foreground" /> : null}
                 </span>
               </div>
             )

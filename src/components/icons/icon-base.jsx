@@ -39,9 +39,7 @@ const NUM = /\s+/;
 function renderElement(spec, i) {
   const filled = spec[0] === "!";
   const body = filled ? spec.slice(1) : spec;
-  const paint = filled
-    ? { fill: "currentColor", stroke: "none" }
-    : undefined;
+  const paint = filled ? { fill: "currentColor", stroke: "none" } : undefined;
   const kind = body[0];
 
   if (kind === "c" && body[1] === " ") {

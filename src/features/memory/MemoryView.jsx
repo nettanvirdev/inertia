@@ -79,8 +79,8 @@ function MemoryDialog({ memory, open, onOpenChange, agentName, onSave, onDelete 
         <ScrollArea className="max-h-[min(30rem,calc(100dvh-16rem))] -mx-1 px-1">
           <div className="flex flex-col gap-4 pb-1">
             <p className="text-[11px] text-muted-foreground">
-              {agentName} · {memory.useCount} uses · last recalled {relativeTime(memory.lastUsedAt)} ·{" "}
-              {Math.round(memory.confidence * 100)}% confidence
+              {agentName} · {memory.useCount} uses · last recalled {relativeTime(memory.lastUsedAt)}{" "}
+              · {Math.round(memory.confidence * 100)}% confidence
             </p>
 
             <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
@@ -249,13 +249,21 @@ export function MemoryView() {
       if (kind !== "all" && m.kind !== kind) return false;
       if (!q) return true;
       return [m.title, m.body, ...(m.tags ?? [])].some((f) =>
-        String(f ?? "").toLowerCase().includes(q)
+        String(f ?? "")
+          .toLowerCase()
+          .includes(q)
       );
     });
   }, [memories, query, agentId, kind]);
 
-  const pinned = sortMemories(visible.filter((m) => m.pinned), sort);
-  const rest = sortMemories(visible.filter((m) => !m.pinned), sort);
+  const pinned = sortMemories(
+    visible.filter((m) => m.pinned),
+    sort
+  );
+  const rest = sortMemories(
+    visible.filter((m) => !m.pinned),
+    sort
+  );
 
   const openMemory = openId ? memories.find((m) => m.id === openId) : null;
   const pendingDelete = confirmDeleteId ? memories.find((m) => m.id === confirmDeleteId) : null;
@@ -388,9 +396,16 @@ export function MemoryView() {
               {rest.length ? (
                 <section>
                   {pinned.length ? (
-                    <h2 className="text-[11px] font-semibold text-muted-foreground">Everything else</h2>
+                    <h2 className="text-[11px] font-semibold text-muted-foreground">
+                      Everything else
+                    </h2>
                   ) : null}
-                  <div className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4", pinned.length && "mt-2")}>
+                  <div
+                    className={cn(
+                      "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                      pinned.length && "mt-2"
+                    )}
+                  >
                     {rest.map((memory) => (
                       <MemoryCard key={memory.id} {...cardProps(memory)} />
                     ))}
@@ -406,7 +421,9 @@ export function MemoryView() {
         open={creating}
         onOpenChange={setCreating}
         agentId={agentId === "all" ? undefined : agentId}
-        onCreated={(id, title) => toast({ variant: "success", title: "Memory added", description: title })}
+        onCreated={(id, title) =>
+          toast({ variant: "success", title: "Memory added", description: title })
+        }
       />
 
       <MemoryDialog

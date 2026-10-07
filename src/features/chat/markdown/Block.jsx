@@ -159,7 +159,11 @@ export function BlockList({ blocks, caret, tight = false }) {
     return <Text text={blocks[0].text} caret={caret} />;
 
   return blocks.map((block, index) => (
-    <BlockView key={`${index}-${block.type}`} block={block} caret={caret && index === blocks.length - 1} />
+    <BlockView
+      key={`${index}-${block.type}`}
+      block={block}
+      caret={caret && index === blocks.length - 1}
+    />
   ));
 }
 

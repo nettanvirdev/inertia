@@ -37,7 +37,15 @@ const TONES = {
 };
 
 /** A labelled resource gauge (CPU / RAM) - the bar plus its readout as one unit. */
-function Meter({ value = 0, max = 100, label, tone = "neutral", formatValue, className, ...props }) {
+function Meter({
+  value = 0,
+  max = 100,
+  label,
+  tone = "neutral",
+  formatValue,
+  className,
+  ...props
+}) {
   const p = pct(value, max);
   return (
     <div className={cn("flex w-full flex-col gap-1.5", className)} {...props}>
@@ -58,7 +66,10 @@ function Meter({ value = 0, max = 100, label, tone = "neutral", formatValue, cla
         className="h-1 w-full overflow-hidden rounded-full fill-track"
       >
         <div
-          className={cn("h-full rounded-full transition-[width] duration-200 ease-out", TONES[tone] ?? TONES.neutral)}
+          className={cn(
+            "h-full rounded-full transition-[width] duration-200 ease-out",
+            TONES[tone] ?? TONES.neutral
+          )}
           style={{ width: `${p}%` }}
         />
       </div>

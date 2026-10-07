@@ -17,10 +17,9 @@ const agents = [
 
 describe("handles in a reply", () => {
   it("finds the agents named, in order, once each", () => {
-    expect(mentionedAgents("@folder-organizer what do you think? @nova too. @folder-organizer", agents)).toEqual([
-      "a3",
-      "a1",
-    ]);
+    expect(
+      mentionedAgents("@folder-organizer what do you think? @nova too. @folder-organizer", agents)
+    ).toEqual(["a3", "a1"]);
   });
 
   it("reads the whole hyphenated word as the handle", () => {

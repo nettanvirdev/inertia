@@ -26,7 +26,10 @@ export function ActivityRow({ event, showAgent = true, timeLabel, className, ...
   const { agents } = useApp();
 
   const severity = SEVERITY_META[event.severity] ?? SEVERITY_META.info;
-  const category = ACTIVITY_CATEGORY_META[event.category] ?? { label: event.category, icon: "Circle" };
+  const category = ACTIVITY_CATEGORY_META[event.category] ?? {
+    label: event.category,
+    icon: "Circle",
+  };
   const agent = showAgent && event.agentId ? agents.find((b) => b.id === event.agentId) : null;
 
   const interactive = typeof props.onClick === "function";
@@ -38,8 +41,7 @@ export function ActivityRow({ event, showAgent = true, timeLabel, className, ...
       className={cn(
         "group flex w-full items-start gap-3 text-left transition-colors",
         ROW,
-        interactive &&
-          "outline-none hover:fill-nav focus-visible:fill-nav",
+        interactive && "outline-none hover:fill-nav focus-visible:fill-nav",
         className
       )}
       {...props}

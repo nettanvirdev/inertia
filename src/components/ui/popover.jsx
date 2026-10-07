@@ -30,7 +30,7 @@ export const Popover = React.forwardRef(function Popover(
     dismissOnOutside = true,
     ...props
   },
-  ref,
+  ref
 ) {
   // Held on the page through its exit, so a closing menu folds back into the
   // control it came out of rather than ceasing to exist. Positioning follows
@@ -49,10 +49,7 @@ export const Popover = React.forwardRef(function Popover(
   const close = React.useCallback(() => onOpenChange?.(false), [onOpenChange]);
 
   // stable array identity - useDismiss re-binds its listeners whenever it changes
-  const dismissRefs = React.useMemo(
-    () => [floatingRef, anchorRef],
-    [floatingRef, anchorRef],
-  );
+  const dismissRefs = React.useMemo(() => [floatingRef, anchorRef], [floatingRef, anchorRef]);
   useDismiss(dismissRefs, open && dismissOnOutside, close);
   useEscapeLayer(open, close);
 
@@ -74,7 +71,7 @@ export const Popover = React.forwardRef(function Popover(
           "z-50 min-w-32 overflow-y-auto no-scrollbar outline-none",
           "overlay-surface rounded-2xl p-1.5",
           "animate-overlay-in",
-          className,
+          className
         )}
         {...props}
       >

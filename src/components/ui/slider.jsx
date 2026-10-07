@@ -118,10 +118,7 @@ function Slider({
       {...props}
     >
       <div ref={trackRef} className="relative h-1 w-full rounded-full fill-track">
-        <div
-          className={cn("h-full rounded-full", skin.fill)}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={cn("h-full rounded-full", skin.fill)} style={{ width: `${pct}%` }} />
         <div
           className={cn(
             "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full",

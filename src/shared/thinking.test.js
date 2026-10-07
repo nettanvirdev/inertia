@@ -8,11 +8,21 @@ import { thinkingControl, thinkingFor, BUDGETS, EFFORTS } from "./thinking.js";
  */
 describe("which dial a model gets", () => {
   it("gives Claude on Anthropic's own protocol a thinking budget", () => {
-    expect(thinkingControl("claude-sonnet-4-5", "anthropic")).toEqual({ kind: "budget", options: BUDGETS });
+    expect(thinkingControl("claude-sonnet-4-5", "anthropic")).toEqual({
+      kind: "budget",
+      options: BUDGETS,
+    });
   });
 
   it("gives OpenAI's reasoning families an effort level", () => {
-    for (const id of ["gpt-5", "openai/gpt-5.2-codex", "o3-mini", "o4-mini", "openai/gpt-oss-120b", "grok-4"]) {
+    for (const id of [
+      "gpt-5",
+      "openai/gpt-5.2-codex",
+      "o3-mini",
+      "o4-mini",
+      "openai/gpt-oss-120b",
+      "grok-4",
+    ]) {
       expect(thinkingControl(id, "openai").kind, id).toBe("effort");
     }
     expect(thinkingControl("gpt-5", "openai").options).toBe(EFFORTS);
@@ -24,7 +34,13 @@ describe("which dial a model gets", () => {
   });
 
   it("says so for a model that decides for itself", () => {
-    for (const id of ["MiniMax-M3", "Qwen/Qwen3.8-27B-TEE", "deepseek-ai/DeepSeek-V4-Flash", "glm-4.6", "kimi-k2"]) {
+    for (const id of [
+      "MiniMax-M3",
+      "Qwen/Qwen3.8-27B-TEE",
+      "deepseek-ai/DeepSeek-V4-Flash",
+      "glm-4.6",
+      "kimi-k2",
+    ]) {
       const control = thinkingControl(id, "openai");
       expect(control.kind, id).toBe("none");
       expect(control.options[0].label).toBe("Not adjustable");
@@ -38,28 +54,36 @@ describe("which dial a model gets", () => {
 
 describe("what gets sent", () => {
   it("sends the budget to Claude and nothing else", () => {
-    expect(thinkingFor({ thinkingBudget: 8192, reasoningEffort: "high" }, "claude-opus-4", "anthropic")).toEqual({
+    expect(
+      thinkingFor({ thinkingBudget: 8192, reasoningEffort: "high" }, "claude-opus-4", "anthropic")
+    ).toEqual({
       thinkingBudget: 8192,
       reasoningEffort: null,
     });
   });
 
   it("sends the effort to a reasoning model and no budget", () => {
-    expect(thinkingFor({ thinkingBudget: 8192, reasoningEffort: "high" }, "gpt-5", "openai")).toEqual({
+    expect(
+      thinkingFor({ thinkingBudget: 8192, reasoningEffort: "high" }, "gpt-5", "openai")
+    ).toEqual({
       thinkingBudget: 0,
       reasoningEffort: "high",
     });
   });
 
   it("sends neither to a model with no dial, whatever the agent has on file", () => {
-    expect(thinkingFor({ thinkingBudget: 24576, reasoningEffort: "high" }, "MiniMax-M3", "openai")).toEqual({
+    expect(
+      thinkingFor({ thinkingBudget: 24576, reasoningEffort: "high" }, "MiniMax-M3", "openai")
+    ).toEqual({
       thinkingBudget: 0,
       reasoningEffort: null,
     });
   });
 
   it("treats the default effort, and an unknown one, as leaving the field out", () => {
-    expect(thinkingFor({ reasoningEffort: "default" }, "gpt-5", "openai").reasoningEffort).toBeNull();
+    expect(
+      thinkingFor({ reasoningEffort: "default" }, "gpt-5", "openai").reasoningEffort
+    ).toBeNull();
     expect(thinkingFor({ reasoningEffort: "ultra" }, "gpt-5", "openai").reasoningEffort).toBeNull();
     expect(thinkingFor({}, "gpt-5", "openai").reasoningEffort).toBeNull();
   });

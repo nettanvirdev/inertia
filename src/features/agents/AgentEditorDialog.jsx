@@ -5,22 +5,13 @@ import { groupedTools } from "@shared/tools";
 import { thinkingControl } from "@shared/thinking";
 import { useApp } from "@/lib/store";
 import { useWorkspace } from "@/lib/workspace";
-import {
-  clearAgentPicture,
-  saveAgentPicture,
-  useAvatarSrc,
-} from "@/lib/avatar";
+import { clearAgentPicture, saveAgentPicture, useAvatarSrc } from "@/lib/avatar";
 import { formatBytes } from "@/data";
 import { useToast } from "@/components/ui/toast";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select } from "@/components/ui/select";
@@ -38,9 +29,7 @@ function Field({ label, description, htmlFor, children, className }) {
       </label>
       <div className="mt-1">{children}</div>
       {description ? (
-        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
     </div>
   );
@@ -104,8 +93,7 @@ function readAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () =>
-      reject(reader.error ?? new Error("Could not read that file"));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read that file"));
     reader.readAsDataURL(file);
   });
 }
@@ -137,17 +125,9 @@ function deniedFor(rules) {
 function withDenies(rules, denied) {
   const owned = new Set(TOOL_ROWS.map((tool) => tool.key));
   const kept = (rules ?? []).filter(
-    (rule) =>
-      !(
-        owned.has(rule.tool) &&
-        (rule.pattern ?? ANY) === ANY &&
-        rule.action === "deny"
-      ),
+    (rule) => !(owned.has(rule.tool) && (rule.pattern ?? ANY) === ANY && rule.action === "deny")
   );
-  return [
-    ...kept,
-    ...denied.map((tool) => ({ tool, pattern: ANY, action: "deny" })),
-  ];
+  return [...kept, ...denied.map((tool) => ({ tool, pattern: ANY, action: "deny" }))];
 }
 
 /**
@@ -161,20 +141,17 @@ const SPAWN_ROWS = [
   {
     key: "subagents",
     label: "Use subagents",
-    description:
-      "May hand work to a temporary helper and keep working while it runs.",
+    description: "May hand work to a temporary helper and keep working while it runs.",
   },
   {
     key: "agents",
     label: "Start other agents",
-    description:
-      "May run one of your configured agents, not only an anonymous helper.",
+    description: "May run one of your configured agents, not only an anonymous helper.",
   },
   {
     key: "recursive",
     label: "Helpers may delegate",
-    description:
-      "Its own subagents may spawn subagents. Off by default: a tree grows fast.",
+    description: "Its own subagents may spawn subagents. Off by default: a tree grows fast.",
   },
 ];
 
@@ -217,10 +194,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
 
   const models = React.useMemo(() => {
     const fallback = chatModels?.find((m) => m.ref === defaultModelRef);
-    return modelOptions(
-      chatModels,
-      fallback ? `Currently ${fallback.label}` : "",
-    );
+    return modelOptions(chatModels, fallback ? `Currently ${fallback.label}` : "");
   }, [chatModels, defaultModelRef]);
   const [draft, setDraft] = React.useState(EMPTY);
   const [tagDraft, setTagDraft] = React.useState("");
@@ -247,12 +221,10 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
             // it is a leftover. Showing it selected would be a picker that
             // cannot send, so it reads as the workspace default, which is what
             // the turn was falling back to anyway.
-            model: chatModels?.some((m) => m.ref === existing.model)
-              ? existing.model
-              : INHERIT,
+            model: chatModels?.some((m) => m.ref === existing.model) ? existing.model : INHERIT,
             tags: existing.tags ?? [],
           }
-        : EMPTY,
+        : EMPTY
     );
   }, [open, agentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -269,14 +241,11 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
   const addTag = (raw) => {
     const tag = raw.trim().replace(/^#/, "").toLowerCase();
     if (!tag) return;
-    setDraft((d) =>
-      d.tags.includes(tag) ? d : { ...d, tags: [...d.tags, tag] },
-    );
+    setDraft((d) => (d.tags.includes(tag) ? d : { ...d, tags: [...d.tags, tag] }));
     setTagDraft("");
   };
 
-  const removeTag = (tag) =>
-    setDraft((d) => ({ ...d, tags: d.tags.filter((t) => t !== tag) }));
+  const removeTag = (tag) => setDraft((d) => ({ ...d, tags: d.tags.filter((t) => t !== tag) }));
 
   const onTagKeyDown = (e) => {
     if (e.key === "Enter" || e.key === ",") {
@@ -300,13 +269,12 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
    * nothing. Off by default in every case, because thinking is not free.
    */
   const chosen = React.useMemo(() => {
-    const ref =
-      draft.model && draft.model !== INHERIT ? draft.model : defaultModelRef;
+    const ref = draft.model && draft.model !== INHERIT ? draft.model : defaultModelRef;
     return chatModels?.find((m) => m.ref === ref) ?? null;
   }, [draft.model, defaultModelRef, chatModels]);
   const thinking = React.useMemo(
     () => thinkingControl(chosen?.id, chosen?.protocol ?? "openai"),
-    [chosen],
+    [chosen]
   );
   const thinkingValue =
     thinking.kind === "budget"
@@ -316,8 +284,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
         : "none";
   const onThinking = (v) => {
     if (thinking.kind === "budget") patch({ thinkingBudget: Number(v) });
-    else if (thinking.kind === "effort")
-      patch({ reasoningEffort: v === "default" ? null : v });
+    else if (thinking.kind === "effort") patch({ reasoningEffort: v === "default" ? null : v });
   };
 
   async function pickPicture(event) {
@@ -384,16 +351,14 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
           toast({
             variant: "danger",
             title: "The picture could not be saved",
-            description:
-              error?.message ?? "The workspace folder could not be written to.",
-          }),
+            description: error?.message ?? "The workspace folder could not be written to.",
+          })
         );
       toast({ title: `${payload.name} saved`, variant: "success" });
     } else {
       const id = createAgent(payload);
       // The rules need the id, which only exists once the agent does.
-      if (deniedTools.length)
-        setAgentRules(id, (current) => withDenies(current, deniedTools));
+      if (deniedTools.length) setAgentRules(id, (current) => withDenies(current, deniedTools));
       // And so does the picture: the file is named after the agent.
       commitPicture(id, null)
         .then((patch) => {
@@ -435,15 +400,8 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
   ];
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-      size="lg"
-      className="max-h-[calc(100dvh-4rem)]"
-    >
-      <DialogTitle>
-        {existing ? `Edit ${existing.name}` : "New agent"}
-      </DialogTitle>
+    <Dialog open={open} onOpenChange={onOpenChange} size="lg" className="max-h-[calc(100dvh-4rem)]">
+      <DialogTitle>{existing ? `Edit ${existing.name}` : "New agent"}</DialogTitle>
 
       <DialogBody className="min-h-0">
         <ScrollArea className="max-h-[min(32rem,calc(100dvh-16rem))] -mx-1 px-1">
@@ -459,11 +417,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                 icon={draft.icon ? <Icon name={draft.icon} /> : undefined}
               />
               <div className="flex flex-wrap items-center gap-1.5">
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  onClick={() => fileRef.current?.click()}
-                >
+                <Button variant="subtle" size="xs" onClick={() => fileRef.current?.click()}>
                   <Camera className="size-3.5" aria-hidden="true" />
                   {pictureUrl ? "Replace picture" : "Upload picture"}
                 </Button>
@@ -583,14 +537,12 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                   ariaLabel="Computer"
                   value={draft.computerId ?? "__none"}
                   options={computerChoices}
-                  onChange={(v) =>
-                    patch({ computerId: v === "__none" ? null : v })
-                  }
+                  onChange={(v) => patch({ computerId: v === "__none" ? null : v })}
                 />
                 {hasComputers ? null : (
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Nothing to assign yet. Computers, then New computer - a
-                    Docker container here, or a sandbox in the cloud.
+                    Nothing to assign yet. Computers, then New computer - a Docker container here,
+                    or a sandbox in the cloud.
                   </p>
                 )}
               </Field>
@@ -605,8 +557,8 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                   Permissions tab on the agent is where patterns and Ask live. */}
               <p className="text-xs text-foreground/90">Tools</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                What this agent may reach for. Switching one off hides it from
-                the model entirely, rather than letting it try and be refused.
+                What this agent may reach for. Switching one off hides it from the model entirely,
+                rather than letting it try and be refused.
               </p>
               <div className="mt-1.5 grid gap-x-4 gap-y-1 sm:grid-cols-2">
                 {TOOL_ROWS.map((tool) => {
@@ -619,7 +571,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                       title={tool.description}
                       className={cn(
                         "flex h-7 cursor-pointer items-center gap-2 rounded-lg px-2",
-                        "transition-colors duration-150 ease-out hover:fill-nav",
+                        "transition-colors duration-150 ease-out hover:fill-nav"
                       )}
                     >
                       <Checkbox
@@ -633,12 +585,10 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                         aria-hidden="true"
                         className={cn(
                           "size-3.5",
-                          checked ? "text-foreground" : "text-muted-foreground",
+                          checked ? "text-foreground" : "text-muted-foreground"
                         )}
                       />
-                      <span className="text-xs text-foreground/90">
-                        {tool.label}
-                      </span>
+                      <span className="text-xs text-foreground/90">{tool.label}</span>
                     </label>
                   );
                 })}
@@ -652,9 +602,8 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                   switch for that should not be one checkbox in a grid of eight. */}
               <p className="text-xs text-foreground/90">Delegation</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                Whether this agent may build a team. There is no cap on how many
-                it starts unless you set one - what a run costs is shown while
-                it runs, in the panel beside the chat.
+                Whether this agent may build a team. There is no cap on how many it starts unless
+                you set one - what a run costs is shown while it runs, in the panel beside the chat.
               </p>
               <div className="mt-1.5 grid gap-x-4 gap-y-1 sm:grid-cols-2">
                 {SPAWN_ROWS.map((row) => {
@@ -667,25 +616,21 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                       title={row.description}
                       className={cn(
                         "flex h-7 cursor-pointer items-center gap-2 rounded-lg px-2",
-                        "transition-colors duration-150 ease-out hover:fill-nav",
+                        "transition-colors duration-150 ease-out hover:fill-nav"
                       )}
                     >
                       <Checkbox
                         id={id}
                         size="sm"
                         checked={checked}
-                        disabled={
-                          row.key !== "subagents" && !draft.spawn?.subagents
-                        }
+                        disabled={row.key !== "subagents" && !draft.spawn?.subagents}
                         onCheckedChange={() =>
                           patch({
                             spawn: { ...draft.spawn, [row.key]: !checked },
                           })
                         }
                       />
-                      <span className="text-xs text-foreground/90">
-                        {row.label}
-                      </span>
+                      <span className="text-xs text-foreground/90">{row.label}</span>
                     </label>
                   );
                 })}
@@ -703,11 +648,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                     className="h-6 w-16 text-xs"
                     placeholder="No limit"
                     disabled={!draft.spawn?.subagents}
-                    value={
-                      draft.spawn?.maxConcurrent
-                        ? String(draft.spawn.maxConcurrent)
-                        : ""
-                    }
+                    value={draft.spawn?.maxConcurrent ? String(draft.spawn.maxConcurrent) : ""}
                     onChange={(e) =>
                       patch({
                         spawn: {
@@ -740,7 +681,7 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
                       className={cn(
                         "grid size-4 place-items-center rounded-full outline-none",
                         "transition-colors duration-150 ease-out hover:fill-close hover:text-foreground",
-                        "focus-visible:fill-close",
+                        "focus-visible:fill-close"
                       )}
                     >
                       <X className="size-3" aria-hidden="true" />
@@ -764,19 +705,10 @@ export function AgentEditorDialog({ open, onOpenChange, agentId }) {
       </DialogBody>
 
       <DialogFooter>
-        <Button
-          variant="secondary"
-          size="pill"
-          onClick={() => onOpenChange?.(false)}
-        >
+        <Button variant="secondary" size="pill" onClick={() => onOpenChange?.(false)}>
           Cancel
         </Button>
-        <Button
-          variant="primary"
-          size="pill"
-          disabled={!valid}
-          onClick={submit}
-        >
+        <Button variant="primary" size="pill" disabled={!valid} onClick={submit}>
           {existing ? "Save changes" : "Create agent"}
         </Button>
       </DialogFooter>

@@ -182,7 +182,9 @@ export function ModelsField({ draft, value, onChange }) {
     return catalog.filter(
       (entry) =>
         entry.id.toLowerCase().includes(needle) ||
-        String(entry.label ?? "").toLowerCase().includes(needle)
+        String(entry.label ?? "")
+          .toLowerCase()
+          .includes(needle)
     );
   }, [catalog, query]);
 
@@ -226,7 +228,15 @@ export function ModelsField({ draft, value, onChange }) {
     }
     onChange([
       ...models,
-      { id, label: "", context: null, input: null, output: null, cachedInput: null, cacheWrite: null },
+      {
+        id,
+        label: "",
+        context: null,
+        input: null,
+        output: null,
+        cachedInput: null,
+        cacheWrite: null,
+      },
     ]);
     setManual("");
   }
@@ -241,7 +251,10 @@ export function ModelsField({ draft, value, onChange }) {
             const patch = (fields) =>
               onChange(models.map((m, i) => (i === index ? { ...m, ...fields } : m)));
             return (
-              <div key={model.id} className="flex animate-slide-up flex-col gap-1 rounded-md fill-control/40 p-1.5">
+              <div
+                key={model.id}
+                className="flex animate-slide-up flex-col gap-1 rounded-md fill-control/40 p-1.5"
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-foreground">
                     {model.id}

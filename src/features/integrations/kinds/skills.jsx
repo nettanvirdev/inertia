@@ -268,7 +268,9 @@ export const SKILLS_KIND = {
   row: (record) => ({
     glyph: Sparkles,
     title: record.name || record.id,
-    subtitle: record.problems?.length ? record.problems[0] : record.description || `skills/${record.id}/`,
+    subtitle: record.problems?.length
+      ? record.problems[0]
+      : record.description || `skills/${record.id}/`,
     badges: [
       // First, and in the loud colour. A skill that no agent will ever reach
       // for looks exactly like a working one in this list, which is the whole

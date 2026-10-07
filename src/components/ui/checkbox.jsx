@@ -54,9 +54,7 @@ function Checkbox({
         // Unchecked is the secondary fill - the firmest of the quiet rungs,
         // because an empty box is the one control that has nothing else to
         // show for itself once the outline is gone.
-        on
-          ? "bg-foreground text-background"
-          : "fill-secondary hover:fill-secondary-hover",
+        on ? "bg-foreground text-background" : "fill-secondary hover:fill-secondary-hover",
         SIZES[size] ?? SIZES.md,
         className
       )}

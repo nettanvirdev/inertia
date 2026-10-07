@@ -220,12 +220,12 @@ export function SetupView() {
             {recovery ? "Point Inertia at a workspace" : "Choose a workspace folder"}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Everything Inertia keeps lives in one folder: your settings, agents, skills,
-            plugins, conversations, memory and keys. Nothing is stored anywhere else.
+            Everything Inertia keeps lives in one folder: your settings, agents, skills, plugins,
+            conversations, memory and keys. Nothing is stored anywhere else.
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            That makes it portable. Copy the folder to another machine, point a fresh
-            install at it, and everything is back exactly as you left it.
+            That makes it portable. Copy the folder to another machine, point a fresh install at it,
+            and everything is back exactly as you left it.
           </p>
 
           {recovery ? (
@@ -248,10 +248,7 @@ export function SetupView() {
           ) : null}
 
           <div className="mt-8 flex flex-col gap-2">
-            <label
-              htmlFor="workspace-path"
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <label htmlFor="workspace-path" className="text-xs font-medium text-muted-foreground">
               Folder
             </label>
             <div className="flex items-center gap-2">
@@ -291,8 +288,8 @@ export function SetupView() {
             </div>
             {native ? null : (
               <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-                Running outside the desktop app, so there is no folder picker here. Type the
-                full path instead.
+                Running outside the desktop app, so there is no folder picker here. Type the full
+                path instead.
               </p>
             )}
           </div>
@@ -306,31 +303,37 @@ export function SetupView() {
           <div className="mt-3 rounded-xl fill-whisper px-3.5 py-2.5">
             {/* Keyed on the outcome, so each verdict fades in as a new thing
                 rather than the previous sentence being edited into it. */}
-            <div key={checking ? "checking" : (report?.action ?? "empty")} className="animate-fade-in">
-            {checking ? (
-              <div className="flex min-h-5 items-center gap-2.5 text-[13px] text-muted-foreground">
-                <Spinner size="sm" label="Checking the folder" />
-                Checking that folder…
-              </div>
-            ) : verdict ? (
-              <div className="flex items-start gap-2.5">
-                <Verdict className={cn("size-4 shrink-0 translate-y-px", tone)} aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className={cn("text-[13px] leading-5", blocked ? tone : "text-foreground")}>
-                    {verdict.title}
-                  </p>
-                  {verdict.body ? (
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {verdict.body}
-                    </p>
-                  ) : null}
+            <div
+              key={checking ? "checking" : (report?.action ?? "empty")}
+              className="animate-fade-in"
+            >
+              {checking ? (
+                <div className="flex min-h-5 items-center gap-2.5 text-[13px] text-muted-foreground">
+                  <Spinner size="sm" label="Checking the folder" />
+                  Checking that folder…
                 </div>
-              </div>
-            ) : (
-              <p className="min-h-5 text-[13px] leading-5 text-muted-foreground">
-                Enter a folder to see what Inertia will do with it.
-              </p>
-            )}
+              ) : verdict ? (
+                <div className="flex items-start gap-2.5">
+                  <Verdict
+                    className={cn("size-4 shrink-0 translate-y-px", tone)}
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className={cn("text-[13px] leading-5", blocked ? tone : "text-foreground")}>
+                      {verdict.title}
+                    </p>
+                    {verdict.body ? (
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                        {verdict.body}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <p className="min-h-5 text-[13px] leading-5 text-muted-foreground">
+                  Enter a folder to see what Inertia will do with it.
+                </p>
+              )}
             </div>
           </div>
 

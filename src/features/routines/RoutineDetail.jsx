@@ -1,5 +1,15 @@
 import * as React from "react";
-import { ChevronDown, ChevronLeft, Copy, Download, MessageSquare, MoreHorizontal, Play, Trash2, Icon } from "@/components/icons";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Copy,
+  Download,
+  MessageSquare,
+  MoreHorizontal,
+  Play,
+  Trash2,
+  Icon,
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/store";
 import { formatDuration, relativeTime } from "@/data";
@@ -24,12 +34,7 @@ import { absoluteTime, runLabel, runTone } from "@/features/routines/run-status"
 import { MODES } from "@shared/modes";
 import { APPROVALS } from "@shared/approval";
 import { routineApproval, routineMode } from "@shared/routines";
-import {
-  cronToHuman,
-  nextRunLabel,
-  useScheduleCheck,
-} from "@/features/routines/schedule-check";
-
+import { cronToHuman, nextRunLabel, useScheduleCheck } from "@/features/routines/schedule-check";
 
 /** ISO to the value a datetime-local input wants, in local time. */
 function toLocalInput(iso) {
@@ -85,11 +90,18 @@ function RunHistoryRow({ run }) {
         className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left outline-none focus-visible:fill-nav"
       >
         <span className={cn("size-2 shrink-0 rounded-full", tone.dot)} aria-hidden="true" />
-        <span className="w-24 shrink-0 text-[11px] text-muted-foreground">{relativeTime(run.at)}</span>
+        <span className="w-24 shrink-0 text-[11px] text-muted-foreground">
+          {relativeTime(run.at)}
+        </span>
         <span className="w-16 shrink-0 text-[11px] tabular-nums text-muted-foreground">
           {run.status === "running" ? "-" : formatDuration(run.durationMs)}
         </span>
-        <span className={cn("min-w-0 flex-1 truncate text-[13px]", open ? "text-foreground" : "text-foreground/90")}>
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate text-[13px]",
+            open ? "text-foreground" : "text-foreground/90"
+          )}
+        >
           {run.summary}
         </span>
         <ChevronDown
@@ -113,8 +125,17 @@ function RunHistoryRow({ run }) {
 }
 
 export function RoutineDetail({ routineId, onBack }) {
-  const { routines, agents, threads, openThread, toggleRoutine, runRoutine, saveRoutine, createRoutine, deleteRoutine } =
-    useApp();
+  const {
+    routines,
+    agents,
+    threads,
+    openThread,
+    toggleRoutine,
+    runRoutine,
+    saveRoutine,
+    createRoutine,
+    deleteRoutine,
+  } = useApp();
   const { toast } = useToast();
 
   const routine = routines.find((r) => r.id === routineId);
@@ -189,7 +210,14 @@ export function RoutineDetail({ routineId, onBack }) {
       manual: { expression: null, humanLabel: "Run manually" },
     }[nextKind];
     setCronDraft(defaults.expression ?? "");
-    patchSchedule({ kind: nextKind, ...defaults, nextRunAt: nextKind === "manual" || nextKind === "trigger" ? null : routine.schedule?.nextRunAt ?? null });
+    patchSchedule({
+      kind: nextKind,
+      ...defaults,
+      nextRunAt:
+        nextKind === "manual" || nextKind === "trigger"
+          ? null
+          : (routine.schedule?.nextRunAt ?? null),
+    });
   }
 
   function save() {
@@ -210,7 +238,11 @@ export function RoutineDetail({ routineId, onBack }) {
       enabled: false,
       schedule: { ...routine.schedule, nextRunAt: null },
     });
-    toast({ title: "Duplicated", description: `${name} is open and disabled.`, variant: "success" });
+    toast({
+      title: "Duplicated",
+      description: `${name} is open and disabled.`,
+      variant: "success",
+    });
   }
 
   return (
@@ -227,7 +259,9 @@ export function RoutineDetail({ routineId, onBack }) {
         </span>
         <div className="flex min-w-0 items-baseline gap-2">
           <h1 className="truncate text-sm font-medium text-foreground">{routine.name}</h1>
-          {agent ? <span className="shrink-0 text-[11px] text-muted-foreground">{agent.name}</span> : null}
+          {agent ? (
+            <span className="shrink-0 text-[11px] text-muted-foreground">{agent.name}</span>
+          ) : null}
           {status === "error" ? (
             <Badge variant="danger" size="sm">
               Failing
@@ -248,7 +282,12 @@ export function RoutineDetail({ routineId, onBack }) {
               {running ? "Watch" : "Open conversation"}
             </Button>
           ) : null}
-          <Button variant="primary" size="sm" disabled={running} onClick={() => runRoutine(routine.id)}>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={running}
+            onClick={() => runRoutine(routine.id)}
+          >
             {running ? <Spinner size="sm" /> : <Play />}
             {running ? "Running" : "Run now"}
           </Button>
@@ -266,7 +305,12 @@ export function RoutineDetail({ routineId, onBack }) {
             </MenuItem>
             <MenuItem
               icon={Download}
-              onSelect={() => toast({ title: "Exported", description: `${routine.name}.md written to the workspace.` })}
+              onSelect={() =>
+                toast({
+                  title: "Exported",
+                  description: `${routine.name}.md written to the workspace.`,
+                })
+              }
             >
               Export
             </MenuItem>
@@ -281,7 +325,9 @@ export function RoutineDetail({ routineId, onBack }) {
       <ScrollArea className="flex-1">
         <div className="w-full px-4 pb-12 sm:px-6">
           {routine.description ? (
-            <p className="pt-1 text-[13px] leading-relaxed text-muted-foreground">{routine.description}</p>
+            <p className="pt-1 text-[13px] leading-relaxed text-muted-foreground">
+              {routine.description}
+            </p>
           ) : null}
 
           {/* Schedule */}
@@ -299,104 +345,115 @@ export function RoutineDetail({ routineId, onBack }) {
               {/* One box keyed on the kind, so changing it fades the fields
                   in as a set rather than swapping a label for a picker. */}
               <div key={kind} className="animate-fade-in">
-              {kind === "cron" ? (
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="routine-cron" className="text-[11px] text-foreground/90">
-                    Cron expression
-                  </label>
-                  <Input
-                    id="routine-cron"
-                    size="xs"
-                    value={cronDraft}
-                    onChange={(e) => setCronDraft(e.target.value)}
-                    spellCheck={false}
-                    className="max-w-64 font-mono"
-                    aria-invalid={check.checked && !check.valid ? true : undefined}
-                    aria-describedby="routine-cron-reading"
-                  />
-                  {check.checked && !check.valid ? (
-                    <p
-                      id="routine-cron-reading"
-                      className="text-[11px] leading-relaxed text-destructive-ink"
-                    >
-                      {check.reason} It has not been saved.
-                    </p>
-                  ) : (
-                    <p id="routine-cron-reading" className="text-[11px] leading-relaxed text-muted-foreground">
-                      {cronToHuman(cronDraft) ?? check.words ?? "Checking..."}
-                      {nextRunLabel(check.nextRunAt) ? ` Next run ${nextRunLabel(check.nextRunAt)}.` : ""}
-                    </p>
-                  )}
-                </div>
-              ) : null}
+                {kind === "cron" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="routine-cron" className="text-[11px] text-foreground/90">
+                      Cron expression
+                    </label>
+                    <Input
+                      id="routine-cron"
+                      size="xs"
+                      value={cronDraft}
+                      onChange={(e) => setCronDraft(e.target.value)}
+                      spellCheck={false}
+                      className="max-w-64 font-mono"
+                      aria-invalid={check.checked && !check.valid ? true : undefined}
+                      aria-describedby="routine-cron-reading"
+                    />
+                    {check.checked && !check.valid ? (
+                      <p
+                        id="routine-cron-reading"
+                        className="text-[11px] leading-relaxed text-destructive-ink"
+                      >
+                        {check.reason} It has not been saved.
+                      </p>
+                    ) : (
+                      <p
+                        id="routine-cron-reading"
+                        className="text-[11px] leading-relaxed text-muted-foreground"
+                      >
+                        {cronToHuman(cronDraft) ?? check.words ?? "Checking..."}
+                        {nextRunLabel(check.nextRunAt)
+                          ? ` Next run ${nextRunLabel(check.nextRunAt)}.`
+                          : ""}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
 
-              {kind === "interval" ? (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] text-foreground/90">Interval</span>
-                  <Select
-                    size="xs"
-                    value={routine.schedule?.expression ?? "PT1H"}
-                    onChange={(value) =>
-                      patchSchedule({
-                        expression: value,
-                        humanLabel: INTERVALS.find((i) => i.value === value)?.label ?? "Custom interval",
-                      })
-                    }
-                    options={INTERVALS}
-                    ariaLabel="Interval"
-                    className="max-w-64"
-                  />
-                </div>
-              ) : null}
+                {kind === "interval" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] text-foreground/90">Interval</span>
+                    <Select
+                      size="xs"
+                      value={routine.schedule?.expression ?? "PT1H"}
+                      onChange={(value) =>
+                        patchSchedule({
+                          expression: value,
+                          humanLabel:
+                            INTERVALS.find((i) => i.value === value)?.label ?? "Custom interval",
+                        })
+                      }
+                      options={INTERVALS}
+                      ariaLabel="Interval"
+                      className="max-w-64"
+                    />
+                  </div>
+                ) : null}
 
-              {kind === "once" ? (
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="routine-once" className="text-[11px] text-foreground/90">
-                    Run at
-                  </label>
-                  <Input
-                    id="routine-once"
-                    size="xs"
-                    type="datetime-local"
-                    value={toLocalInput(routine.schedule?.expression)}
-                    onChange={(e) => {
-                      const iso = fromLocalInput(e.target.value);
-                      if (!iso) return;
-                      patchSchedule({ expression: iso, humanLabel: `Once, at ${new Date(iso).toLocaleString()}`, nextRunAt: iso });
-                    }}
-                    className="max-w-64"
-                  />
+                {kind === "once" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="routine-once" className="text-[11px] text-foreground/90">
+                      Run at
+                    </label>
+                    <Input
+                      id="routine-once"
+                      size="xs"
+                      type="datetime-local"
+                      value={toLocalInput(routine.schedule?.expression)}
+                      onChange={(e) => {
+                        const iso = fromLocalInput(e.target.value);
+                        if (!iso) return;
+                        patchSchedule({
+                          expression: iso,
+                          humanLabel: `Once, at ${new Date(iso).toLocaleString()}`,
+                          nextRunAt: iso,
+                        });
+                      }}
+                      className="max-w-64"
+                    />
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      Runs one time at that moment, then stays here as a record. A conversation can
+                      write one of these with the `later` tool.
+                    </p>
+                  </div>
+                ) : null}
+
+                {kind === "trigger" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] text-foreground/90">Trigger</span>
+                    <Select
+                      size="xs"
+                      value={routine.schedule?.expression ?? TRIGGERS[0].value}
+                      onChange={(value) =>
+                        patchSchedule({
+                          expression: value,
+                          humanLabel:
+                            TRIGGERS.find((t) => t.value === value)?.label ?? "Custom trigger",
+                        })
+                      }
+                      options={TRIGGERS}
+                      ariaLabel="Trigger"
+                      className="max-w-72"
+                    />
+                  </div>
+                ) : null}
+
+                {kind === "manual" ? (
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Runs one time at that moment, then stays here as a record. A conversation can
-                    write one of these with the `later` tool.
+                    This routine only runs when someone presses Run now.
                   </p>
-                </div>
-              ) : null}
-
-              {kind === "trigger" ? (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] text-foreground/90">Trigger</span>
-                  <Select
-                    size="xs"
-                    value={routine.schedule?.expression ?? TRIGGERS[0].value}
-                    onChange={(value) =>
-                      patchSchedule({
-                        expression: value,
-                        humanLabel: TRIGGERS.find((t) => t.value === value)?.label ?? "Custom trigger",
-                      })
-                    }
-                    options={TRIGGERS}
-                    ariaLabel="Trigger"
-                    className="max-w-72"
-                  />
-                </div>
-              ) : null}
-
-              {kind === "manual" ? (
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  This routine only runs when someone presses Run now.
-                </p>
-              ) : null}
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[11px]">
@@ -431,7 +488,11 @@ export function RoutineDetail({ routineId, onBack }) {
                     size="xs"
                     value={routineMode(routine)}
                     onChange={(mode) => saveRoutine(routine.id, { mode })}
-                    options={MODES.map((m) => ({ value: m.id, label: m.label, description: m.hint }))}
+                    options={MODES.map((m) => ({
+                      value: m.id,
+                      label: m.label,
+                      description: m.hint,
+                    }))}
                     ariaLabel="Routine mode"
                     className="w-44"
                   />
@@ -442,7 +503,11 @@ export function RoutineDetail({ routineId, onBack }) {
                     size="xs"
                     value={routineApproval(routine)}
                     onChange={(approval) => saveRoutine(routine.id, { approval })}
-                    options={APPROVALS.map((a) => ({ value: a.id, label: a.label, description: a.hint }))}
+                    options={APPROVALS.map((a) => ({
+                      value: a.id,
+                      label: a.label,
+                      description: a.hint,
+                    }))}
                     ariaLabel="Routine approval"
                     className="w-44"
                   />
@@ -484,7 +549,12 @@ export function RoutineDetail({ routineId, onBack }) {
                 ) : (
                   <span className="animate-fade-in text-[11px] text-muted-foreground">Saved</span>
                 )}
-                <Button size="sm" variant={dirty ? "primary" : "secondary"} disabled={!dirty} onClick={save}>
+                <Button
+                  size="sm"
+                  variant={dirty ? "primary" : "secondary"}
+                  disabled={!dirty}
+                  onClick={save}
+                >
                   Save
                 </Button>
               </div>

@@ -1,13 +1,5 @@
 import * as React from "react";
-import {
-  AudioLines,
-  Check,
-  Mic,
-  Play,
-  RotateCcw,
-  Search,
-  Square,
-} from "@/components/icons";
+import { AudioLines, Check, Mic, Play, RotateCcw, Search, Square } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/store";
 import { voice as voiceClient, isDesktop } from "@/lib/voice";
@@ -59,7 +51,7 @@ function VoiceRow({ voice, selected, onSelect, playing, busy, onToggle }) {
     <div
       className={cn(
         "flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-150 ease-out",
-        selected ? "bg-muted" : "hover:fill-nav",
+        selected ? "bg-muted" : "hover:fill-nav"
       )}
     >
       <button
@@ -70,20 +62,12 @@ function VoiceRow({ voice, selected, onSelect, playing, busy, onToggle }) {
         className="flex min-w-0 flex-1 items-center gap-2 rounded-lg text-left outline-none focus-visible:fill-nav"
       >
         <span className="flex size-4 shrink-0 items-center justify-center">
-          {selected ? (
-            <Check className="size-3.5 text-foreground" aria-hidden="true" />
-          ) : null}
+          {selected ? <Check className="size-3.5 text-foreground" aria-hidden="true" /> : null}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs text-foreground/90">
-            {voice.name}
-          </span>
+          <span className="block truncate text-xs text-foreground/90">{voice.name}</span>
           <span className="mt-0.5 block truncate text-[0.6875rem] leading-relaxed text-muted-foreground">
-            {busy
-              ? "Synthesising a sample…"
-              : playing
-                ? "Playing…"
-                : voice.tone || voice.category}
+            {busy ? "Synthesising a sample…" : playing ? "Playing…" : voice.tone || voice.category}
           </span>
         </span>
       </button>
@@ -166,10 +150,7 @@ export function VoicePane() {
   // nothing selected and every reply failing. Fall back to the first real one.
   React.useEffect(() => {
     if (loading || !voices.length) return;
-    if (
-      !settings.voiceId ||
-      !voices.some((entry) => entry.id === settings.voiceId)
-    ) {
+    if (!settings.voiceId || !voices.some((entry) => entry.id === settings.voiceId)) {
       update({ voiceId: voices[0].id });
     }
   }, [loading, voices, settings.voiceId, update]);
@@ -178,9 +159,7 @@ export function VoicePane() {
     const needle = filter.trim().toLowerCase();
     if (!needle) return voices;
     return voices.filter((entry) =>
-      `${entry.name} ${entry.tone} ${entry.category}`
-        .toLowerCase()
-        .includes(needle),
+      `${entry.name} ${entry.tone} ${entry.category}`.toLowerCase().includes(needle)
     );
   }, [voices, filter]);
 
@@ -265,7 +244,8 @@ export function VoicePane() {
       </SettingsSection>
 
       <div className="mt-5">
-        <SettingsSection flat
+        <SettingsSection
+          flat
           title="ElevenLabs"
           description="Speech and transcription both run through ElevenLabs, using the key stored under Secrets. Nothing is recorded or sent until you press the microphone."
         >
@@ -282,7 +262,7 @@ export function VoicePane() {
                     ? error
                     : ready && account
                       ? `On the ${account.tier} plan, with ${NUMBER.format(
-                          account.remaining,
+                          account.remaining
                         )} of ${NUMBER.format(account.limit)} characters left.`
                       : ready
                         ? "A key is stored."
@@ -292,42 +272,24 @@ export function VoicePane() {
             {/* A stored key and a working key are different states, and the
                 badge has to say which. Reporting "Connected" over a line that
                 says the key was rejected is the pane lying to itself. */}
-            <Badge
-              variant={error ? "danger" : working ? "success" : "neutral"}
-              size="sm"
-              dot
-            >
-              {loading
-                ? "Checking"
-                : error
-                  ? "Rejected"
-                  : working
-                    ? "Connected"
-                    : "Not connected"}
+            <Badge variant={error ? "danger" : working ? "success" : "neutral"} size="sm" dot>
+              {loading ? "Checking" : error ? "Rejected" : working ? "Connected" : "Not connected"}
             </Badge>
             {ready ? (
-              <Button
-                size="xs"
-                variant="subtle"
-                onClick={load}
-                disabled={loading}
-              >
+              <Button size="xs" variant="subtle" onClick={load} disabled={loading}>
                 {loading ? <Spinner size="sm" /> : <RotateCcw />}
                 Refresh
               </Button>
             ) : (
-              <Button
-                size="xs"
-                variant="primary"
-                onClick={() => openSettings("secrets")}
-              >
+              <Button size="xs" variant="primary" onClick={() => openSettings("secrets")}>
                 Add the key
               </Button>
             )}
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection flat
+        <SettingsSection
+          flat
           title="Voice"
           description="The voices on your ElevenLabs account. Add more in their voice library and they appear here."
         >
@@ -353,8 +315,7 @@ export function VoicePane() {
             // on screen, and telling someone their account has no voices when
             // the key was rejected sends them to the wrong place entirely.
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-              The voices could not be read, so there is nothing to choose from
-              yet.
+              The voices could not be read, so there is nothing to choose from yet.
             </p>
           ) : shown.length ? (
             <SettingsCard
@@ -369,18 +330,14 @@ export function VoicePane() {
                   selected={entry.id === settings.voiceId}
                   onSelect={(id) => update({ voiceId: id })}
                   busy={preview?.id === entry.id && preview.phase === "loading"}
-                  playing={
-                    preview?.id === entry.id && preview.phase === "playing"
-                  }
+                  playing={preview?.id === entry.id && preview.phase === "playing"}
                   onToggle={togglePreview}
                 />
               ))}
             </SettingsCard>
           ) : (
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-              {filter
-                ? "No voice matches that."
-                : "This account has no voices yet."}
+              {filter ? "No voice matches that." : "This account has no voices yet."}
             </p>
           )}
         </SettingsSection>
@@ -445,10 +402,7 @@ export function VoicePane() {
                 ariaLabel="Microphone"
                 value={settings.inputDeviceId}
                 onChange={(value) => update({ inputDeviceId: value })}
-                options={[
-                  { value: "default", label: "System default" },
-                  ...inputs,
-                ]}
+                options={[{ value: "default", label: "System default" }, ...inputs]}
               />
             }
           />
@@ -462,10 +416,7 @@ export function VoicePane() {
                 ariaLabel="Output device"
                 value={settings.outputDeviceId}
                 onChange={(value) => update({ outputDeviceId: value })}
-                options={[
-                  { value: "default", label: "System default" },
-                  ...outputs,
-                ]}
+                options={[{ value: "default", label: "System default" }, ...outputs]}
               />
             }
           />
@@ -477,16 +428,10 @@ export function VoicePane() {
                 variant={dictation.state === "listening" ? "danger" : "subtle"}
                 disabled={!ready || dictation.state === "thinking"}
                 onClick={() =>
-                  dictation.state === "listening"
-                    ? dictation.stop()
-                    : dictation.start()
+                  dictation.state === "listening" ? dictation.stop() : dictation.start()
                 }
               >
-                {dictation.state === "thinking" ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Mic />
-                )}
+                {dictation.state === "thinking" ? <Spinner size="sm" /> : <Mic />}
                 {dictation.state === "listening"
                   ? "Stop and transcribe"
                   : dictation.state === "thinking"
@@ -499,11 +444,7 @@ export function VoicePane() {
             </div>
 
             <Collapse open={dictation.state === "listening"}>
-              <Progress
-                value={dictation.level}
-                max={1}
-                label="Microphone level"
-              />
+              <Progress value={dictation.level} max={1} label="Microphone level" />
             </Collapse>
 
             <Collapse open={Boolean(heard)}>

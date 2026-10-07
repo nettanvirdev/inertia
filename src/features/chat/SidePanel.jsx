@@ -38,11 +38,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { absoluteTime } from "@/features/routines/run-status";
 import { ArtifactDialog } from "@/features/library/ArtifactDialog";
 import { ComputerDialog } from "@/features/computers/ComputerDialog";
-import {
-  FILE_KIND_ICON,
-  collectThreadFiles,
-  formatBytes,
-} from "@/features/chat/thread-files";
+import { FILE_KIND_ICON, collectThreadFiles, formatBytes } from "@/features/chat/thread-files";
 
 /**
  * The chat's right panel: what the agent is working WITH, next to what it is
@@ -90,19 +86,17 @@ function Section({ id, title, count, action, children, defaultOpen = true }) {
           className={cn(
             "group -ml-1.5 flex min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-left outline-none",
             "transition-colors duration-75 ease-out hover:fill-nav",
-            "focus-visible:fill-nav",
+            "focus-visible:fill-nav"
           )}
         >
           <ChevronDown
             aria-hidden="true"
             className={cn(
               "size-3.5 shrink-0 text-muted-foreground transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
-              !open && "-rotate-90",
+              !open && "-rotate-90"
             )}
           />
-          <span className="truncate text-[11px] tracking-wide text-muted-foreground">
-            {title}
-          </span>
+          <span className="truncate text-[11px] tracking-wide text-muted-foreground">{title}</span>
           {count != null ? (
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
               {count}
@@ -123,13 +117,8 @@ function Section({ id, title, count, action, children, defaultOpen = true }) {
 function Fact({ label, value, title }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="truncate text-[10.5px] text-muted-foreground">
-        {label}
-      </span>
-      <span
-        className="truncate text-[12px] text-foreground"
-        title={title ?? value}
-      >
+      <span className="truncate text-[10.5px] text-muted-foreground">{label}</span>
+      <span className="truncate text-[12px] text-foreground" title={title ?? value}>
         {value}
       </span>
     </div>
@@ -146,7 +135,7 @@ function Empty({ children }) {
 
 /* ── computer ─────────────────────────────────────────────────────────────── */
 
-function ComputerSection({ computer, agent, thread }) {
+function ComputerSection({ computer, thread }) {
   const { setView, setActiveComputerId } = useApp();
   const [frame, setFrame] = React.useState(null);
   // "view" or "control" while the screen dialog is open, null otherwise.
@@ -184,15 +173,10 @@ function ComputerSection({ computer, agent, thread }) {
     return (
       <div className="flex flex-col gap-2">
         <Empty>
-          No computer is attached to this thread. Without one the agent can
-          talk, but it cannot run a command, open a file or drive a browser.
+          No computer is attached to this thread. Without one the agent can talk, but it cannot run
+          a command, open a file or drive a browser.
         </Empty>
-        <Button
-          variant="subtle"
-          size="xs"
-          className="w-full"
-          onClick={() => setView("computers")}
-        >
+        <Button variant="subtle" size="xs" className="w-full" onClick={() => setView("computers")}>
           <Monitor />
           Attach a computer
         </Button>
@@ -200,8 +184,7 @@ function ComputerSection({ computer, agent, thread }) {
     );
   }
 
-  const status =
-    COMPUTER_STATUS_META[computer.status] ?? COMPUTER_STATUS_META.stopped;
+  const status = COMPUTER_STATUS_META[computer.status] ?? COMPUTER_STATUS_META.stopped;
   const provider = PROVIDER_META[computer.provider];
   const open = () => {
     setActiveComputerId(computer.id);
@@ -228,9 +211,7 @@ function ComputerSection({ computer, agent, thread }) {
             <Monitor className="size-5 text-muted-foreground/60" aria-hidden="true" />
             <p className="text-[11px] text-muted-foreground">{computer.os || computer.provider}</p>
             <p className="line-clamp-3 text-[10.5px] leading-relaxed text-muted-foreground/70">
-              {running
-                ? "No display on this machine."
-                : `${status.label} - nothing is running.`}
+              {running ? "No display on this machine." : `${status.label} - nothing is running.`}
             </p>
           </div>
         )}
@@ -238,10 +219,7 @@ function ComputerSection({ computer, agent, thread }) {
         <span className="absolute top-2.5 left-2.5 inline-flex h-5 items-center gap-1.5 rounded-full fill-secondary px-2 text-[10.5px] text-muted-foreground">
           <span
             aria-hidden="true"
-            className={cn(
-              "size-1.5 rounded-full",
-              running && "animate-soft-pulse",
-            )}
+            className={cn("size-1.5 rounded-full", running && "animate-soft-pulse")}
             style={{ backgroundColor: status.color }}
           />
           {status.label}
@@ -262,12 +240,7 @@ function ComputerSection({ computer, agent, thread }) {
           a real control channel - the machine's own VNC - and the dialog
           carries the composer, so the person can drive and talk at once. */}
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="subtle"
-          size="xs"
-          disabled={!running}
-          onClick={() => setScreen("control")}
-        >
+        <Button variant="subtle" size="xs" disabled={!running} onClick={() => setScreen("control")}>
           <Hand />
           Take control
         </Button>
@@ -297,9 +270,21 @@ function ComputerSection({ computer, agent, thread }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Meter label="CPU" value={computer.usage?.cpuPct ?? 0} tone={meterTone(computer.usage?.cpuPct)} />
-        <Meter label="Memory" value={computer.usage?.memPct ?? 0} tone={meterTone(computer.usage?.memPct)} />
-        <Meter label="Disk" value={computer.usage?.diskPct ?? 0} tone={meterTone(computer.usage?.diskPct)} />
+        <Meter
+          label="CPU"
+          value={computer.usage?.cpuPct ?? 0}
+          tone={meterTone(computer.usage?.cpuPct)}
+        />
+        <Meter
+          label="Memory"
+          value={computer.usage?.memPct ?? 0}
+          tone={meterTone(computer.usage?.memPct)}
+        />
+        <Meter
+          label="Disk"
+          value={computer.usage?.diskPct ?? 0}
+          tone={meterTone(computer.usage?.diskPct)}
+        />
       </div>
     </div>
   );
@@ -323,9 +308,7 @@ function FilesSection({ files, agents }) {
     file?.agentId ? (agents.find((a) => a.id === file.agentId) ?? null) : null;
 
   if (!files.length) {
-    return (
-      <Empty>Nothing has been attached or written in this thread yet.</Empty>
-    );
+    return <Empty>Nothing has been attached or written in this thread yet.</Empty>;
   }
 
   /**
@@ -370,22 +353,15 @@ function FilesSection({ files, agents }) {
               className={cn(
                 "group flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left outline-none",
                 "transition-colors duration-75 ease-out hover:fill-nav",
-                "focus-visible:fill-nav",
+                "focus-visible:fill-nav"
               )}
             >
               <span className="grid size-7 shrink-0 place-items-center rounded-lg fill-whisper text-muted-foreground">
-                <Icon
-                  name={FILE_KIND_ICON[file.kind] ?? "File"}
-                  className="size-3.5"
-                />
+                <Icon name={FILE_KIND_ICON[file.kind] ?? "File"} className="size-3.5" />
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[12px] text-foreground">
-                  {file.name}
-                </span>
-                <span className="truncate text-[10.5px] text-muted-foreground">
-                  {meta}
-                </span>
+                <span className="truncate text-[12px] text-foreground">{file.name}</span>
+                <span className="truncate text-[10.5px] text-muted-foreground">{meta}</span>
               </span>
               <span className="shrink-0 text-[10.5px] tabular-nums text-muted-foreground/70">
                 {relativeTime(file.at)}
@@ -441,10 +417,7 @@ function RoutinesSection({ routines }) {
 
   if (!routines.length) {
     return (
-      <Empty>
-        This agent has no routines. A routine is work it runs without being
-        asked.
-      </Empty>
+      <Empty>This agent has no routines. A routine is work it runs without being asked.</Empty>
     );
   }
 
@@ -461,13 +434,13 @@ function RoutinesSection({ routines }) {
             className={cn(
               "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left outline-none",
               "transition-colors duration-75 ease-out hover:fill-nav",
-              "focus-visible:fill-nav",
+              "focus-visible:fill-nav"
             )}
           >
             <span
               className={cn(
                 "grid size-7 shrink-0 place-items-center rounded-lg fill-whisper",
-                routine.enabled ? "text-success-ink" : "text-muted-foreground",
+                routine.enabled ? "text-success-ink" : "text-muted-foreground"
               )}
             >
               {routine.enabled ? (
@@ -477,13 +450,9 @@ function RoutinesSection({ routines }) {
               )}
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-[12px] text-foreground">
-                {routine.name}
-              </span>
+              <span className="truncate text-[12px] text-foreground">{routine.name}</span>
               <span className="truncate text-[10.5px] text-muted-foreground">
-                {routine.enabled
-                  ? (routine.schedule?.humanLabel ?? "On demand")
-                  : "Paused"}
+                {routine.enabled ? (routine.schedule?.humanLabel ?? "On demand") : "Paused"}
               </span>
             </span>
           </button>
@@ -511,8 +480,7 @@ export function ChatSidePanel({ thread, agent, blocks, runs }) {
     defaultModelRef,
   } = useApp();
 
-  const computer =
-    computers.find((c) => c.id === thread?.computerAttached) ?? null;
+  const computer = computers.find((c) => c.id === thread?.computerAttached) ?? null;
   const files = React.useMemo(() => collectThreadFiles(blocks), [blocks]);
   const agentRoutines = routines.filter((r) => r.agentId === thread?.agentId);
   const agentMemories = memories.filter((m) => m.agentId === thread?.agentId);
@@ -524,7 +492,7 @@ export function ChatSidePanel({ thread, agent, blocks, runs }) {
   const model =
     chatModels.find((m) => m.ref === (agent?.model ?? defaultModelRef)) ??
     (chatModels.length
-      ? chatModels.find((m) => m.ref === defaultModelRef) ?? chatModels[0]
+      ? (chatModels.find((m) => m.ref === defaultModelRef) ?? chatModels[0])
       : MODELS.find((m) => m.id === agent?.model));
   const modelName = model?.label ?? model?.name ?? "Default";
 
@@ -615,11 +583,7 @@ export function ChatSidePanel({ thread, agent, blocks, runs }) {
           <IconButton size="md" label="Open agent" onClick={openAgent}>
             <Settings2 />
           </IconButton>
-          <IconButton
-            size="md"
-            label="Close panel"
-            onClick={() => setChatPanelOpen(false)}
-          >
+          <IconButton size="md" label="Close panel" onClick={() => setChatPanelOpen(false)}>
             <X />
           </IconButton>
         </header>
@@ -688,7 +652,7 @@ export function ChatSidePanel({ thread, agent, blocks, runs }) {
                   value={
                     spend.unpriced && !spend.dollars
                       ? "No price"
-                      : formatCost(spend.dollars) ?? "-"
+                      : (formatCost(spend.dollars) ?? "-")
                   }
                   title={
                     spend.unpriced
@@ -715,12 +679,7 @@ export function ChatSidePanel({ thread, agent, blocks, runs }) {
               </div>
 
               <div className="mt-3 flex flex-col gap-1.5">
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  className="w-full"
-                  onClick={openAgent}
-                >
+                <Button variant="subtle" size="xs" className="w-full" onClick={openAgent}>
                   <Sparkles />
                   Agent settings
                 </Button>

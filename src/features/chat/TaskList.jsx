@@ -20,9 +20,7 @@ export const TODO_STATE = {
 
 /** Items still to do - what "2 tasks left" counts, and what decides "finished". */
 export function openTodos(todos) {
-  return (todos ?? []).filter(
-    (todo) => todo.status !== "completed" && todo.status !== "cancelled"
-  );
+  return (todos ?? []).filter((todo) => todo.status !== "completed" && todo.status !== "cancelled");
 }
 
 export function TaskList({ todos, className }) {

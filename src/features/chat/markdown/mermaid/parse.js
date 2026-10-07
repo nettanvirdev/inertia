@@ -100,10 +100,26 @@ function normaliseEdgeLabels(line) {
   return line.replace(
     /(--|==|-\.)[ \t]+([^|\n]+?)[ \t]+(-{2,3}[>xo]?|={2,3}>?|\.-{1,2}>?)/g,
     (whole, left, text, right) => {
-      const head = right.includes(">") ? ">" : right.endsWith("x") ? "x" : right.endsWith("o") ? "o" : "";
+      const head = right.includes(">")
+        ? ">"
+        : right.endsWith("x")
+          ? "x"
+          : right.endsWith("o")
+            ? "o"
+            : "";
       const stroke = left === "==" ? "==" : left === "-." ? "-." : "--";
       const arrow =
-        stroke === "-." ? (head ? "-.->" : "-.-") : stroke === "==" ? (head ? "==>" : "===") : head ? `--${head}` : "---";
+        stroke === "-."
+          ? head
+            ? "-.->"
+            : "-.-"
+          : stroke === "=="
+            ? head
+              ? "==>"
+              : "==="
+            : head
+              ? `--${head}`
+              : "---";
       return `${arrow}|${text}|`;
     }
   );

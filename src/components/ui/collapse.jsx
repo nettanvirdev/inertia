@@ -37,7 +37,7 @@ import { MOTION } from "@/lib/motion";
  */
 export const Collapse = React.forwardRef(function Collapse(
   { open, children, className, innerClassName, keepMounted = false, as: Tag = "div", ...props },
-  ref,
+  ref
 ) {
   const { mounted, state } = usePresence(open, { exit: MOTION.collapse });
   if (!mounted && !keepMounted) return null;

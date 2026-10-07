@@ -34,7 +34,13 @@ describe("copyText", () => {
   });
 
   it("falls back to the older way when the clipboard is refused", async () => {
-    vi.stubGlobal("navigator", { clipboard: { writeText: async () => { throw new Error("denied"); } } });
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        writeText: async () => {
+          throw new Error("denied");
+        },
+      },
+    });
     const execCommand = vi.fn(() => true);
     vi.stubGlobal("document", fakeDocument(execCommand));
     expect(await copyText("hello")).toBe(true);
@@ -42,8 +48,17 @@ describe("copyText", () => {
   });
 
   it("says no when neither way works, so the toast can tell the truth", async () => {
-    vi.stubGlobal("navigator", { clipboard: { writeText: async () => { throw new Error("denied"); } } });
-    vi.stubGlobal("document", fakeDocument(() => false));
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        writeText: async () => {
+          throw new Error("denied");
+        },
+      },
+    });
+    vi.stubGlobal(
+      "document",
+      fakeDocument(() => false)
+    );
     expect(await copyText("hello")).toBe(false);
   });
 
@@ -57,7 +72,10 @@ describe("copyText", () => {
 
   it("survives a window with no clipboard API at all", async () => {
     vi.stubGlobal("navigator", {});
-    vi.stubGlobal("document", fakeDocument(() => true));
+    vi.stubGlobal(
+      "document",
+      fakeDocument(() => true)
+    );
     expect(await copyText("hello")).toBe(true);
   });
 });

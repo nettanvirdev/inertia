@@ -22,9 +22,9 @@
  * that answer arrives.
  */
 export const PROVIDER_META = {
-  local: { label: 'Local', icon: 'Laptop' },
-  docker: { label: 'Docker', icon: 'Container' },
-  daytona: { label: 'Daytona', icon: 'Cloud' },
+  local: { label: "Local", icon: "Laptop" },
+  docker: { label: "Docker", icon: "Container" },
+  daytona: { label: "Daytona", icon: "Cloud" },
 };
 
 /**
@@ -42,11 +42,11 @@ export const PROVIDER_META = {
  * property resolves there exactly like a colour, per theme, for free.
  */
 export const COMPUTER_STATUS_META = {
-  running: { label: 'Running', color: 'var(--success)', icon: 'Play' },
-  paused: { label: 'Paused', color: 'var(--warning)', icon: 'Pause' },
-  stopped: { label: 'Stopped', color: 'var(--muted-foreground)', icon: 'Square' },
-  provisioning: { label: 'Provisioning', color: 'var(--info)', icon: 'Loader' },
+  running: { label: "Running", color: "var(--success)", icon: "Play" },
+  paused: { label: "Paused", color: "var(--warning)", icon: "Pause" },
+  stopped: { label: "Stopped", color: "var(--muted-foreground)", icon: "Square" },
+  provisioning: { label: "Provisioning", color: "var(--info)", icon: "Loader" },
   // Two states the fixtures never had, because nothing could go wrong in them.
-  error: { label: 'Failed', color: 'var(--destructive)', icon: 'TriangleAlert' },
-  missing: { label: 'Gone', color: 'var(--destructive)', icon: 'CircleX' },
+  error: { label: "Failed", color: "var(--destructive)", icon: "TriangleAlert" },
+  missing: { label: "Gone", color: "var(--destructive)", icon: "CircleX" },
 };

@@ -49,7 +49,12 @@ function matchesStatus(routine, status) {
 
 function StatCell({ label, value, hint, children, className }) {
   return (
-    <div className={cn("flex min-w-0 flex-1 flex-col gap-1 rounded-xl fill-whisper px-3.5 py-3", className)}>
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 flex-col gap-1 rounded-xl fill-whisper px-3.5 py-3",
+        className
+      )}
+    >
       <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
       {value != null ? (
         <span className="truncate text-[13.5px] font-medium text-foreground">{value}</span>
@@ -78,7 +83,10 @@ export function RoutinesView() {
   const [creating, setCreating] = React.useState(false);
 
   const agentOptions = React.useMemo(
-    () => [{ value: "all", label: "All agents" }, ...agents.map((b) => ({ value: b.id, label: b.name }))],
+    () => [
+      { value: "all", label: "All agents" },
+      ...agents.map((b) => ({ value: b.id, label: b.name })),
+    ],
     [agents]
   );
 
@@ -216,7 +224,9 @@ export function RoutinesView() {
           <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             <StatCell
               label="Next run"
-              value={stats.upcoming ? relativeTime(stats.upcoming.schedule.nextRunAt) : "Nothing queued"}
+              value={
+                stats.upcoming ? relativeTime(stats.upcoming.schedule.nextRunAt) : "Nothing queued"
+              }
               hint={stats.upcoming ? stats.upcoming.name : "No enabled routine has a next run"}
             />
             <StatCell label="Success rate">
@@ -226,7 +236,13 @@ export function RoutinesView() {
                 <Meter
                   value={stats.successRate}
                   max={100}
-                  tone={stats.successRate >= 90 ? "success" : stats.successRate >= 70 ? "warning" : "danger"}
+                  tone={
+                    stats.successRate >= 90
+                      ? "success"
+                      : stats.successRate >= 70
+                        ? "warning"
+                        : "danger"
+                  }
                   label={`last ${stats.sampleSize} runs`}
                   className="mt-0.5"
                 />

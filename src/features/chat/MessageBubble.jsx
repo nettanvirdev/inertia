@@ -1,12 +1,5 @@
 import * as React from "react";
-import {
-  Copy,
-  RotateCcw,
-  Square,
-  AudioLines,
-  ThumbsDown,
-  ThumbsUp,
-} from "@/components/icons";
+import { Copy, RotateCcw, Square, AudioLines, ThumbsDown, ThumbsUp } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/data";
 import { appearanceOf } from "@/lib/appearance";
@@ -118,12 +111,7 @@ function MessageActions({ onCopy, onRetry, align = "start", speak = null }) {
 function Timestamp({ at, show, align = "start" }) {
   if (!show || !at) return null;
   return (
-    <p
-      className={cn(
-        "mt-1 text-[11px] text-muted-foreground",
-        align === "end" && "text-right"
-      )}
-    >
+    <p className={cn("mt-1 text-[11px] text-muted-foreground", align === "end" && "text-right")}>
       {relativeTime(at)}
     </p>
   );
@@ -291,7 +279,9 @@ function MessageBubbleInner({
     >
       <div className="mb-1.5 flex items-center gap-2">
         {agent && showAvatars ? <AgentAvatar agent={agent} size="xs" /> : null}
-        <span className="text-[13px] font-medium text-foreground">{agent?.name ?? "Assistant"}</span>
+        <span className="text-[13px] font-medium text-foreground">
+          {agent?.name ?? "Assistant"}
+        </span>
         {isLast && streaming ? (
           <span className="text-[11px] text-muted-foreground">typing…</span>
         ) : null}

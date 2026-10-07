@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PREF, readPref, usePersistentState, writePref } from "@/lib/persist";
 import { useWorkspacePersistence } from "@/lib/workspace-store";
 import { useChatRuntime } from "@/lib/chat-runtime";
@@ -318,7 +326,8 @@ export function AppProvider({ children }) {
   }, [hydrated, threads, activeThreadId, setActiveThreadId]);
 
   useEffect(() => {
-    if (agents.length && !agents.some((a) => a.id === activeAgentId)) setActiveAgentId(agents[0].id);
+    if (agents.length && !agents.some((a) => a.id === activeAgentId))
+      setActiveAgentId(agents[0].id);
   }, [agents, activeAgentId]);
 
   useEffect(() => {
@@ -363,39 +372,47 @@ export function AppProvider({ children }) {
    *
    * `except` is the one being opened, when that is itself temporary.
    */
-  const discardTemporary = useCallback((except = null) => {
-    setThreads((prev) => {
-      const going = prev.filter((t) => t.temporary && t.id !== except);
-      if (!going.length) return prev;
-      for (const t of going) {
-        turns.current.get(t.id)?.stop();
-        turns.current.delete(t.id);
-        agentTools.forget(t.id)?.catch?.(() => {});
-        forgetConversation(t.id)?.catch?.(() => {});
-        forgetMessages(t.id);
-      }
-      const gone = new Set(going.map((t) => t.id));
-      const next = prev.filter((t) => !gone.has(t.id));
-      setActiveThreadId((cur) => (gone.has(cur) ? next.find((t) => !t.draft)?.id ?? null : cur));
-      return next;
-    });
-  }, [forgetMessages, setActiveThreadId]);
+  const discardTemporary = useCallback(
+    (except = null) => {
+      setThreads((prev) => {
+        const going = prev.filter((t) => t.temporary && t.id !== except);
+        if (!going.length) return prev;
+        for (const t of going) {
+          turns.current.get(t.id)?.stop();
+          turns.current.delete(t.id);
+          agentTools.forget(t.id)?.catch?.(() => {});
+          forgetConversation(t.id)?.catch?.(() => {});
+          forgetMessages(t.id);
+        }
+        const gone = new Set(going.map((t) => t.id));
+        const next = prev.filter((t) => !gone.has(t.id));
+        setActiveThreadId((cur) =>
+          gone.has(cur) ? (next.find((t) => !t.draft)?.id ?? null) : cur
+        );
+        return next;
+      });
+    },
+    [forgetMessages, setActiveThreadId]
+  );
 
-  const openThread = useCallback((threadId) => {
-    setActiveThreadId(threadId);
-    setView("chat");
-    discardTemporary(threadId);
-    setThreads((prev) => {
-      // Leaving a draft behind abandons it. An empty conversation the user
-      // opened and walked away from is not a conversation, and keeping it
-      // would fill the rail with rows nobody wrote anything in. Its message
-      // list goes with it, or the mirror writes an empty file for it.
-      for (const t of prev) if (t.draft && t.id !== threadId) forgetMessages(t.id);
-      return prev
-        .filter((t) => !t.draft || t.id === threadId)
-        .map((t) => (t.id === threadId ? { ...t, unread: 0 } : t));
-    });
-  }, [forgetMessages, discardTemporary]);
+  const openThread = useCallback(
+    (threadId) => {
+      setActiveThreadId(threadId);
+      setView("chat");
+      discardTemporary(threadId);
+      setThreads((prev) => {
+        // Leaving a draft behind abandons it. An empty conversation the user
+        // opened and walked away from is not a conversation, and keeping it
+        // would fill the rail with rows nobody wrote anything in. Its message
+        // list goes with it, or the mirror writes an empty file for it.
+        for (const t of prev) if (t.draft && t.id !== threadId) forgetMessages(t.id);
+        return prev
+          .filter((t) => !t.draft || t.id === threadId)
+          .map((t) => (t.id === threadId ? { ...t, unread: 0 } : t));
+      });
+    },
+    [forgetMessages, discardTemporary]
+  );
 
   // Going to another screen is leaving, too.
   useEffect(() => {
@@ -657,21 +674,29 @@ export function AppProvider({ children }) {
         // rather than about one message, and the header draws it from there.
         // The agent entered or left a worktree. The conversation follows it, so
         // the next turn starts where this one ended and the chip says so.
-        if (event.type === "tool-end" && event.ok !== false && event.metadata && "worktree" in event.metadata) {
+        if (
+          event.type === "tool-end" &&
+          event.ok !== false &&
+          event.metadata &&
+          "worktree" in event.metadata
+        ) {
           const worktree = event.metadata.worktree ?? null;
           setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, worktree } : t)));
         }
         if (event.type === "usage" && event.context?.window) {
           gauge = { used: event.context.used ?? 0, window: event.context.window, at: Date.now() };
           const settled = gauge;
-          setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, context: settled } : t)));
+          setThreads((prev) =>
+            prev.map((t) => (t.id === threadId ? { ...t, context: settled } : t))
+          );
         }
         // Only this turn's own handle. The next agent in a group may already
         // hold the thread's slot, and deleting that one made the reload path
         // attach a second listener to it - every chunk of its reply twice.
         if (event.type === "done" || event.type === "error") {
           const held = turns.current.get(threadId);
-          if (held && (!held.messageId || held.messageId === messageId)) turns.current.delete(threadId);
+          if (held && (!held.messageId || held.messageId === messageId))
+            turns.current.delete(threadId);
         }
         if (event.type === "done") {
           recordActivity(agentId, {
@@ -689,7 +714,8 @@ export function AppProvider({ children }) {
            * and its turn is the one that would be cut off at the knees.
            */
           if (autoCompactOn && gauge?.window && gauge.used / gauge.window >= AUTO_COMPACT_AT) {
-            if (!turns.current.has(threadId)) compactLater.current?.(threadId, "", { automatic: true });
+            if (!turns.current.has(threadId))
+              compactLater.current?.(threadId, "", { automatic: true });
           }
         }
         // What failed reaches the activity feed, which is the audit trail the
@@ -706,7 +732,10 @@ export function AppProvider({ children }) {
             category: denied ? "permission" : "failure",
             severity: denied ? "danger" : "warning",
             title: denied ? `${event.name} was refused` : `${event.name} failed`,
-            detail: String(event.output ?? "").split("\n").find((line) => line.trim()) ?? "",
+            detail:
+              String(event.output ?? "")
+                .split("\n")
+                .find((line) => line.trim()) ?? "",
             target: threadId,
             tool: event.name,
           });
@@ -794,7 +823,8 @@ export function AppProvider({ children }) {
         }
 
         const terminal = event.type === "done" || event.type === "error";
-        const grouped = terminal && latestThreads.current.find((t) => t.id === threadId)?.mode === "group";
+        const grouped =
+          terminal && latestThreads.current.find((t) => t.id === threadId)?.mode === "group";
 
         setMessages((prev) => {
           const list = prev[threadId];
@@ -806,7 +836,9 @@ export function AppProvider({ children }) {
             // agents is cut where the script starts, and a reply that is just
             // "pass" is the agent declining its turn.
             if (grouped) {
-              const others = latestAgents.current.filter((one) => one.id !== agentId).map((one) => one.name);
+              const others = latestAgents.current
+                .filter((one) => one.id !== agentId)
+                .map((one) => one.name);
               after = { ...after, parts: cutScriptParts(after.parts, others) };
             }
             return {
@@ -968,7 +1000,8 @@ export function AppProvider({ children }) {
       // is answered by whoever answered it, or by whoever the thread belongs to.
       const wanted =
         target.role === "user"
-          ? (list.slice(from).find((m) => m.role === "agent" && m.agentId)?.agentId ?? thread.agentId)
+          ? (list.slice(from).find((m) => m.role === "agent" && m.agentId)?.agentId ??
+            thread.agentId)
           : (target.agentId ?? thread.agentId);
       const agent = agents.find((one) => one.id === wanted) ?? null;
       if (!agent) return false;
@@ -1275,9 +1308,7 @@ export function AppProvider({ children }) {
         // Resolved here because this is where the agent list is; the main
         // process is handed ids, not names.
         const group = mode === "group";
-        const mentioned = group
-          ? mentionedIds(text, mentionSpecs({ agents })).agent
-          : undefined;
+        const mentioned = group ? mentionedIds(text, mentionSpecs({ agents })).agent : undefined;
 
         const handle = runTurn({
           threadId,
@@ -1317,7 +1348,7 @@ export function AppProvider({ children }) {
             finish: event?.finish ?? undefined,
           })),
         onError: (error) =>
-          patchReply((m) => ({
+          patchReply(() => ({
             status: "error",
             // Partial text is kept. Half an answer plus the reason it stopped
             // is more use than a bubble that erases what did arrive.
@@ -1431,7 +1462,11 @@ export function AppProvider({ children }) {
             ...prev,
             [threadId]: current.map((m) =>
               m.id === pending?.id
-                ? { ...m, content: `The conversation could not be summarised. ${error?.message ?? ""}`.trim() }
+                ? {
+                    ...m,
+                    content:
+                      `The conversation could not be summarised. ${error?.message ?? ""}`.trim(),
+                  }
                 : m
             ),
           };
@@ -1507,7 +1542,9 @@ export function AppProvider({ children }) {
    */
   /** Leave a worktree from the chip: the folder stays, the conversation stops using it. */
   const setThreadWorktree = useCallback((threadId, next) => {
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, worktree: next ?? null } : t)));
+    setThreads((prev) =>
+      prev.map((t) => (t.id === threadId ? { ...t, worktree: next ?? null } : t))
+    );
   }, []);
 
   const setThreadApproval = useCallback((threadId, next) => {
@@ -1530,34 +1567,37 @@ export function AppProvider({ children }) {
     );
   }, []);
 
-  const deleteThread = useCallback((threadId) => {
-    // A conversation ending drops what was scoped to it: the permissions the
-    // user granted with "always", the task list, the record of which files were
-    // read. None of that should survive into a conversation that has nothing to
-    // do with it, least of all the permissions.
-    agentTools.forget(threadId)?.catch?.(() => {});
-    // And the runs it started, which are still in memory in the backend
-    // with nowhere left to be shown.
-    forgetConversation(threadId)?.catch?.(() => {});
+  const deleteThread = useCallback(
+    (threadId) => {
+      // A conversation ending drops what was scoped to it: the permissions the
+      // user granted with "always", the task list, the record of which files were
+      // read. None of that should survive into a conversation that has nothing to
+      // do with it, least of all the permissions.
+      agentTools.forget(threadId)?.catch?.(() => {});
+      // And the runs it started, which are still in memory in the backend
+      // with nowhere left to be shown.
+      forgetConversation(threadId)?.catch?.(() => {});
 
-    setThreads((prev) => {
-      const next = prev.filter((t) => t.id !== threadId);
-      // Back to the empty screen, not into whatever conversation happens to be
-      // newest. Landing in an unrelated thread after a delete reads as though
-      // the wrong thing was deleted, and the next message goes somewhere the
-      // person did not choose.
-      setActiveThreadId((cur) => (cur === threadId ? null : cur));
-      return next;
-    });
-    setMessages((prev) => {
-      const next = { ...prev };
-      delete next[threadId];
-      return next;
-    });
-    // `setActiveThreadId` comes from `usePersistentState`, which hands back
-    // `useState`'s own setter - stable, but the linter cannot see through the
-    // custom hook to know that. Listed rather than silenced.
-  }, [setActiveThreadId]);
+      setThreads((prev) => {
+        const next = prev.filter((t) => t.id !== threadId);
+        // Back to the empty screen, not into whatever conversation happens to be
+        // newest. Landing in an unrelated thread after a delete reads as though
+        // the wrong thing was deleted, and the next message goes somewhere the
+        // person did not choose.
+        setActiveThreadId((cur) => (cur === threadId ? null : cur));
+        return next;
+      });
+      setMessages((prev) => {
+        const next = { ...prev };
+        delete next[threadId];
+        return next;
+      });
+      // `setActiveThreadId` comes from `usePersistentState`, which hands back
+      // `useState`'s own setter - stable, but the linter cannot see through the
+      // custom hook to know that. Listed rather than silenced.
+    },
+    [setActiveThreadId]
+  );
 
   /**
    * Take back the last thing that happened in a conversation.
@@ -1590,7 +1630,11 @@ export function AppProvider({ children }) {
     setThreads((prev) =>
       prev.map((t) =>
         t.id === threadId
-          ? { ...t, messageCount: Math.max(0, (t.messageCount ?? 1) - 1), updatedAt: new Date().toISOString() }
+          ? {
+              ...t,
+              messageCount: Math.max(0, (t.messageCount ?? 1) - 1),
+              updatedAt: new Date().toISOString(),
+            }
           : t
       )
     );
@@ -1847,7 +1891,12 @@ export function AppProvider({ children }) {
         ...draft,
         id,
         name: draft.name || "Untitled routine",
-        schedule: draft.schedule ?? { kind: "manual", expression: null, humanLabel: "Run manually", nextRunAt: null },
+        schedule: draft.schedule ?? {
+          kind: "manual",
+          expression: null,
+          humanLabel: "Run manually",
+          nextRunAt: null,
+        },
         enabled: draft.enabled ?? true,
         lastRun: null,
         runHistory: [],
@@ -1936,38 +1985,41 @@ export function AppProvider({ children }) {
     setAgents((prev) => prev.map((b) => (b.id === agentId ? { ...b, ...patch } : b)));
   }, []);
 
-  const createAgent = useCallback((draft = {}) => {
-    const id = uid("agent");
-    const name = draft.name || "Untitled agent";
-    const agent = {
-      status: "idle",
-      model: agents[0]?.model,
-      computerId: null,
-      description: "",
-      systemPrompt: "",
-      tags: [],
-      ...draft,
-      id,
-      name,
-      handle: draft.handle || "@" + name.toLowerCase().replace(/\s+/g, ""),
-      role: draft.role || "New teammate",
-      createdAt: new Date().toISOString(),
-      lastActiveAt: new Date().toISOString(),
-      stats: { messages: 0, routinesRun: 0, tokensUsed: 0 },
-      routineIds: [],
-      memoryCount: 0,
-    };
-    setAgents((prev) => [...prev, agent]);
-    // No seeded overrides. A new agent inherits the workspace ruleset, which is
-    // what "defaults" has to mean if changing them is ever to reach anyone.
-    setActiveAgentId(id);
-    return id;
-  }, [agents]);
+  const createAgent = useCallback(
+    (draft = {}) => {
+      const id = uid("agent");
+      const name = draft.name || "Untitled agent";
+      const agent = {
+        status: "idle",
+        model: agents[0]?.model,
+        computerId: null,
+        description: "",
+        systemPrompt: "",
+        tags: [],
+        ...draft,
+        id,
+        name,
+        handle: draft.handle || "@" + name.toLowerCase().replace(/\s+/g, ""),
+        role: draft.role || "New teammate",
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        stats: { messages: 0, routinesRun: 0, tokensUsed: 0 },
+        routineIds: [],
+        memoryCount: 0,
+      };
+      setAgents((prev) => [...prev, agent]);
+      // No seeded overrides. A new agent inherits the workspace ruleset, which is
+      // what "defaults" has to mean if changing them is ever to reach anyone.
+      setActiveAgentId(id);
+      return id;
+    },
+    [agents]
+  );
 
   const deleteAgent = useCallback((agentId) => {
     setAgents((prev) => {
       const next = prev.filter((b) => b.id !== agentId);
-      setActiveAgentId((cur) => (cur === agentId ? next[0]?.id ?? null : cur));
+      setActiveAgentId((cur) => (cur === agentId ? (next[0]?.id ?? null) : cur));
       return next;
     });
   }, []);
@@ -2127,7 +2179,7 @@ export function AppProvider({ children }) {
       await machines.remove(computerId);
       setComputers((prev) => {
         const next = prev.filter((c) => c.id !== computerId);
-        setActiveComputerId((cur) => (cur === computerId ? next[0]?.id ?? null : cur));
+        setActiveComputerId((cur) => (cur === computerId ? (next[0]?.id ?? null) : cur));
         return next;
       });
       logActivity({

@@ -53,8 +53,7 @@ export function asNumber(value, fallback = 0) {
  *  provider bug, and clamping is what stops it painting off the end of the bar. */
 export const asPercent = (value) => Math.min(100, Math.max(0, asNumber(value, 0)));
 
-export const asFlag = (value, fallback = false) =>
-  typeof value === "boolean" ? value : fallback;
+export const asFlag = (value, fallback = false) => (typeof value === "boolean" ? value : fallback);
 
 /** A list of ids or tags. Non-strings are dropped rather than stringified: a
  *  tag that reads "[object Object]" is not a tag the user meant to write. */
@@ -65,8 +64,7 @@ export function asStrings(value) {
 
 export const asObject = (value) => (isPlain(value) ? value : {});
 
-export const asOneOf = (value, allowed, fallback) =>
-  allowed.includes(value) ? value : fallback;
+export const asOneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
 /**
  * Keep the original object when the settled one says the same thing.

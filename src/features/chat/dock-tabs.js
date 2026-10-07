@@ -23,9 +23,7 @@ export function orderTabs(sections = [], order = []) {
   const wanted = Array.isArray(order) ? order : [];
   const known = new Set(wanted);
 
-  const placed = wanted
-    .map((id) => list.find((section) => section.id === id))
-    .filter(Boolean);
+  const placed = wanted.map((id) => list.find((section) => section.id === id)).filter(Boolean);
   const rest = list.filter((section) => !known.has(section.id));
   return [...placed, ...rest];
 }

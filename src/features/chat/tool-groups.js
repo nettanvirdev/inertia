@@ -76,7 +76,11 @@ export function groupParts(parts) {
     if (thinking.length === 1) {
       items.push({ kind: "one", key: thinking[0].key, part: thinking[0].part });
     } else {
-      items.push({ kind: "one", key: thinking[0].key, part: joinThoughts(thinking.map((one) => one.part)) });
+      items.push({
+        kind: "one",
+        key: thinking[0].key,
+        part: joinThoughts(thinking.map((one) => one.part)),
+      });
     }
     thinking = [];
   };

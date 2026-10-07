@@ -210,10 +210,7 @@ export function WorkspacePane() {
     loadTree();
   }, [loadTree, root]);
 
-  const folderRoots = React.useMemo(
-    () => buildFolderTree(tree?.directories ?? []),
-    [tree]
-  );
+  const folderRoots = React.useMemo(() => buildFolderTree(tree?.directories ?? []), [tree]);
 
   const [collapsed, setCollapsed] = React.useState(() => new Set());
 
@@ -246,7 +243,11 @@ export function WorkspacePane() {
     try {
       await client.reveal(relPath);
     } catch (failure) {
-      toast({ title: "Could not open that folder", description: failure.message, variant: "danger" });
+      toast({
+        title: "Could not open that folder",
+        description: failure.message,
+        variant: "danger",
+      });
     }
   }
 
@@ -265,7 +266,11 @@ export function WorkspacePane() {
       }
       setPending(report);
     } catch (failure) {
-      toast({ title: "Could not read that folder", description: failure.message, variant: "danger" });
+      toast({
+        title: "Could not read that folder",
+        description: failure.message,
+        variant: "danger",
+      });
     }
   }
 
@@ -305,8 +310,8 @@ export function WorkspacePane() {
         />
         {!native ? (
           <p className="mx-auto max-w-[46ch] text-center text-[0.6875rem] leading-relaxed text-muted-foreground">
-            This is a browser preview, so there is no folder to pick. Run the desktop app to set
-            one up.
+            This is a browser preview, so there is no folder to pick. Run the desktop app to set one
+            up.
           </p>
         ) : null}
 
@@ -332,7 +337,10 @@ export function WorkspacePane() {
       {broken ? (
         <SettingsSection flat>
           <SettingsCard className="flex items-start gap-2.5">
-            <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning-ink" aria-hidden="true" />
+            <TriangleAlert
+              className="mt-px size-3.5 shrink-0 text-warning-ink"
+              aria-hidden="true"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-xs text-foreground/90">
                 {status.ahead
@@ -360,7 +368,8 @@ export function WorkspacePane() {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="Location"
         description="One folder holds settings, agents, skills, plugins, conversations, history, memory and secrets."
       >
@@ -371,9 +380,7 @@ export function WorkspacePane() {
               {root}
             </p>
             <CopyButton value={root} label="Copy path" />
-            <Tooltip
-              content={native ? "Show in Explorer" : "Only available in the desktop app"}
-            >
+            <Tooltip content={native ? "Show in Explorer" : "Only available in the desktop app"}>
               <span>
                 <Button
                   variant="subtle"
@@ -401,13 +408,19 @@ export function WorkspacePane() {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection flat
+      <SettingsSection
+        flat
         title="What is in it"
         description="Every folder the workspace owns. Selecting one opens it in your file explorer."
       >
         <SettingsCard className="flex flex-col gap-0.5 p-1.5">
           {loadingTree ? (
-            <div role="status" aria-busy="true" aria-label="Reading the workspace" className="flex flex-col gap-2 p-1.5">
+            <div
+              role="status"
+              aria-busy="true"
+              aria-label="Reading the workspace"
+              className="flex flex-col gap-2 p-1.5"
+            >
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-7 w-full" />
               ))}
@@ -467,7 +480,9 @@ export function WorkspacePane() {
       <ConfirmDialog
         open={Boolean(pending)}
         onOpenChange={(open) => !open && setPending(null)}
-        title={pending?.action === "adopt" ? "Switch to this workspace?" : "Create a workspace here?"}
+        title={
+          pending?.action === "adopt" ? "Switch to this workspace?" : "Create a workspace here?"
+        }
         description={
           pending?.action === "adopt"
             ? `${pending?.path} already holds an Inertia workspace. Everything on screen is replaced by what that folder contains: its settings, agents, skills, plugins, threads and secrets. Your current folder at ${root} is left untouched, not deleted.`

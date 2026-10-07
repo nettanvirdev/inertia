@@ -34,7 +34,9 @@ export function IntegrationsView() {
   // query would reopen the page filtered with no obvious reason why. The
   // validator rejects the old category values, so an upgrading user who last
   // left this screen on "Storage" lands on Composio rather than on nothing.
-  const [tab, setTab] = usePersistentState(PREF.integrationsTab, "composio", (v) => KIND_IDS.has(v));
+  const [tab, setTab] = usePersistentState(PREF.integrationsTab, "composio", (v) =>
+    KIND_IDS.has(v)
+  );
   const [layout, setLayout] = usePersistentState(
     PREF.integrationsLayout,
     "rows",

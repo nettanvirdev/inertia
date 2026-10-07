@@ -65,9 +65,7 @@ function isBlank(line) {
 
 /** Anything that interrupts a lazy paragraph continuation. */
 function startsBlock(line) {
-  return (
-    FENCE.test(line) || HR.test(line) || ATX.test(line) || QUOTE.test(line) || ITEM.test(line)
-  );
+  return FENCE.test(line) || HR.test(line) || ATX.test(line) || QUOTE.test(line) || ITEM.test(line);
 }
 
 function splitRow(line) {
@@ -308,7 +306,8 @@ export function parseBlocks(source, options = {}) {
       // Header typed, alignment row still arriving. Only at the very end of
       // the stream, so a sentence containing a pipe mid-message is untouched.
       const next = lines[i + 1];
-      const isTail = i === lines.length - 1 || (i === lines.length - 2 && ALIGN_PREFIX.test(next ?? ""));
+      const isTail =
+        i === lines.length - 1 || (i === lines.length - 2 && ALIGN_PREFIX.test(next ?? ""));
       // Table-shaped means fenced by pipes, or already followed by the start
       // of an alignment row. A sentence that merely contains a pipe is prose.
       const leads = line.trim().startsWith("|");

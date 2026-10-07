@@ -117,11 +117,7 @@ export const GLYPHS_STATUS = {
   ],
   // Curls are 270° of an r 2.3 circle; the middle gust is left plain so the
   // three lines never crowd below the 2.5px gap.
-  Wind: [
-    "M3.4 7h14a2.3 2.3 0 1 1-2.3-2.3",
-    "M3.4 12h14.6",
-    "M3.4 17h15.4a2.3 2.3 0 1 0-2.3 2.3",
-  ],
+  Wind: ["M3.4 7h14a2.3 2.3 0 1 1-2.3-2.3", "M3.4 12h14.6", "M3.4 17h15.4a2.3 2.3 0 1 0-2.3 2.3"],
   // Every one of the bolt's six vertices is an arc - the two apexes at r 0.9,
   // the four shoulders at r 1.15.
   Zap: [

@@ -105,10 +105,7 @@ function Footnotes({ notes }) {
 }
 
 export function Markdown({ children, className, streaming = false }) {
-  const parsed = React.useMemo(
-    () => parseBlocks(children, { streaming }),
-    [children, streaming]
-  );
+  const parsed = React.useMemo(() => parseBlocks(children, { streaming }), [children, streaming]);
   const notes = React.useMemo(() => parsed.filter((block) => block.type === "footnote"), [parsed]);
   const numbers = React.useMemo(
     () => new Map(notes.map((note, index) => [note.id, index + 1])),

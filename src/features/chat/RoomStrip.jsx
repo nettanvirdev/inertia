@@ -25,7 +25,10 @@ export function RoomStrip({ room, agents = [], speaking }) {
 
   return (
     <Tooltip content={`Also here: ${names}`}>
-      <div className="hidden shrink-0 items-center md:flex" aria-label={`Also in this conversation: ${names}`}>
+      <div
+        className="hidden shrink-0 items-center md:flex"
+        aria-label={`Also in this conversation: ${names}`}
+      >
         <AvatarGroup size="xs" max={4}>
           {others.map((one) => (
             <AgentAvatar key={one.id} agent={one} size="xs" />

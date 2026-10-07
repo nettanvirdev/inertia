@@ -77,7 +77,11 @@ export function scriptStart(text, names = []) {
 /** `text` up to the first line written for somebody else. */
 export function cutScript(text, names = []) {
   const at = scriptStart(text, names);
-  return at === -1 ? String(text ?? "") : String(text ?? "").slice(0, at).trimEnd();
+  return at === -1
+    ? String(text ?? "")
+    : String(text ?? "")
+        .slice(0, at)
+        .trimEnd();
 }
 
 /**

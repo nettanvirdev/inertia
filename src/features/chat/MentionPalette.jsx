@@ -198,9 +198,7 @@ function Row({ spec, agent, active, onPick, onHover }) {
         <>
           <span className="shrink-0 font-mono text-[12px]">
             {spec.raw}
-            {spec.argHint ? (
-              <span className="text-muted-foreground"> {spec.argHint}</span>
-            ) : null}
+            {spec.argHint ? <span className="text-muted-foreground"> {spec.argHint}</span> : null}
           </span>
           <span className="min-w-0 flex-1 truncate text-right text-[11px] text-muted-foreground">
             {spec.hint}

@@ -48,15 +48,16 @@ function resolve(url) {
   if (resolved.has(url)) return resolved.get(url);
 
   const bridge = window.composioAPI?.logo;
-  const work = typeof bridge === "function"
-    ? bridge(url)
-        .then((reply) => (reply?.ok ? (reply.data ?? "") : ""))
-        .catch(() => "")
-        .then((value) => {
-          settled.set(url, value);
-          return value;
-        })
-    : Promise.resolve("");
+  const work =
+    typeof bridge === "function"
+      ? bridge(url)
+          .then((reply) => (reply?.ok ? (reply.data ?? "") : ""))
+          .catch(() => "")
+          .then((value) => {
+            settled.set(url, value);
+            return value;
+          })
+      : Promise.resolve("");
 
   resolved.set(url, work);
   return work;
@@ -86,7 +87,11 @@ export const AppLogo = React.memo(function AppLogo({ src, name, className }) {
     };
   }, [src, immediate]);
 
-  const letter = String(name ?? "").trim().charAt(0).toUpperCase() || "?";
+  const letter =
+    String(name ?? "")
+      .trim()
+      .charAt(0)
+      .toUpperCase() || "?";
 
   if (!data) {
     return (

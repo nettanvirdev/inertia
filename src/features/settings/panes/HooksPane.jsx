@@ -71,12 +71,19 @@ function sourceOf(handler) {
 }
 
 function HandlerRow({ handler }) {
-  const what = handler.type === "prompt" ? handler.prompt : handler.args ? `${handler.command} ${handler.args.join(" ")}` : handler.command;
+  const what =
+    handler.type === "prompt"
+      ? handler.prompt
+      : handler.args
+        ? `${handler.command} ${handler.args.join(" ")}`
+        : handler.command;
   return (
     <SettingsRow
       label={
         <span className="flex min-w-0 items-center gap-2">
-          <span className={cn("truncate", !handler.enabled && "text-muted-foreground line-through")}>
+          <span
+            className={cn("truncate", !handler.enabled && "text-muted-foreground line-through")}
+          >
             {handler.name ?? (handler.type === "prompt" ? "Prompt" : "Command")}
           </span>
           {handler.matcher ? (
@@ -134,7 +141,9 @@ function RunRow({ run }) {
           <Badge variant={STATUS_TONE[run.status] ?? "neutral"} size="sm" dot>
             {label}
           </Badge>
-          <span className="text-[11px] text-muted-foreground">{relativeTime(new Date(run.at).toISOString())}</span>
+          <span className="text-[11px] text-muted-foreground">
+            {relativeTime(new Date(run.at).toISOString())}
+          </span>
         </span>
       }
     />
@@ -177,7 +186,11 @@ export function HooksPane() {
       setLoaded(list);
       setRuns(Array.isArray(recent) ? recent : []);
     } catch (error) {
-      toast({ variant: "danger", title: "Could not read hooks", description: error?.message ?? String(error) });
+      toast({
+        variant: "danger",
+        title: "Could not read hooks",
+        description: error?.message ?? String(error),
+      });
     }
   }, [available, toast]);
 
@@ -211,7 +224,11 @@ export function HooksPane() {
       await hooksBridge.setEnabled(next);
       await reload();
     } catch (error) {
-      toast({ variant: "danger", title: "Could not change that", description: error?.message ?? String(error) });
+      toast({
+        variant: "danger",
+        title: "Could not change that",
+        description: error?.message ?? String(error),
+      });
     } finally {
       setBusy(false);
     }
@@ -224,18 +241,30 @@ export function HooksPane() {
       toast({ title: "Example written", description: result?.path ?? "hooks/hooks.json" });
       await reload();
     } catch (error) {
-      toast({ variant: "danger", title: "Could not write the example", description: error?.message ?? String(error) });
+      toast({
+        variant: "danger",
+        title: "Could not write the example",
+        description: error?.message ?? String(error),
+      });
     } finally {
       setBusy(false);
     }
   };
 
-  const reveal = () => hooksBridge.reveal().catch((error) => toast({ variant: "danger", title: "Could not open it", description: error?.message ?? String(error) }));
+  const reveal = () =>
+    hooksBridge.reveal().catch((error) =>
+      toast({
+        variant: "danger",
+        title: "Could not open it",
+        description: error?.message ?? String(error),
+      })
+    );
 
   if (!available) {
     return (
       <div className="w-full">
-        <SettingsSection flat
+        <SettingsSection
+          flat
           title="Hooks"
           description="Programs of your own that run before and after an agent acts, and when it wants to stop."
         >
@@ -264,7 +293,12 @@ export function HooksPane() {
           }
           htmlFor="hooks-enabled"
           control={
-            <Switch id="hooks-enabled" checked={enabled} disabled={busy || !workspace?.present} onCheckedChange={toggle} />
+            <Switch
+              id="hooks-enabled"
+              checked={enabled}
+              disabled={busy || !workspace?.present}
+              onCheckedChange={toggle}
+            />
           }
         />
         <SettingsRow
@@ -287,7 +321,11 @@ export function HooksPane() {
       </SettingsSection>
 
       {loaded?.warnings?.length ? (
-        <SettingsSection flat title="Problems" description="Fix these and the next turn picks the change up.">
+        <SettingsSection
+          flat
+          title="Problems"
+          description="Fix these and the next turn picks the change up."
+        >
           <SettingsCard className="flex flex-col gap-1">
             {loaded.warnings.map((warning, index) => (
               <p key={index} className="text-xs text-warning-ink">
@@ -318,9 +356,12 @@ export function HooksPane() {
           <div className="flex items-start gap-3 px-4 py-4">
             <Workflow className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <div className="text-xs leading-relaxed text-muted-foreground">
-              <p>Nothing is loaded. A hooks file lists events, and under each event the programs to run:</p>
+              <p>
+                Nothing is loaded. A hooks file lists events, and under each event the programs to
+                run:
+              </p>
               <pre className="mt-2 overflow-x-auto rounded-lg fill-whisper p-3 font-mono text-[11px] leading-relaxed text-foreground">
-{`{
+                {`{
   "PreToolUse": [
     { "matcher": "shell",
       "hooks": [{ "type": "command", "command": "node hooks/check.js" }] }
@@ -332,8 +373,8 @@ export function HooksPane() {
 }`}
               </pre>
               <p className="mt-2">
-                A command gets the event as JSON on stdin; exit 2 refuses it. A prompt asks the model.
-                The full contract is in docs/hooks.md.
+                A command gets the event as JSON on stdin; exit 2 refuses it. A prompt asks the
+                model. The full contract is in docs/hooks.md.
               </p>
             </div>
           </div>
@@ -350,7 +391,9 @@ export function HooksPane() {
         {runs.length ? (
           runs.slice(0, 30).map((run, index) => <RunRow key={`${run.at}-${index}`} run={run} />)
         ) : (
-          <div className="px-4 py-4 text-xs text-muted-foreground">Nothing has run since the app started.</div>
+          <div className="px-4 py-4 text-xs text-muted-foreground">
+            Nothing has run since the app started.
+          </div>
         )}
       </SettingsSection>
     </div>

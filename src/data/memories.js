@@ -6,18 +6,18 @@
  */
 
 export const MEMORY_KIND_META = {
-  fact: { label: 'Fact', icon: 'Lightbulb' },
-  preference: { label: 'Preference', icon: 'Heart' },
-  contact: { label: 'Contact', icon: 'UserRound' },
-  project: { label: 'Project', icon: 'FolderKanban' },
-  'credential-note': { label: 'Credential note', icon: 'KeyRound' },
-  handover: { label: 'Where we left off', icon: 'Brain' },
+  fact: { label: "Fact", icon: "Lightbulb" },
+  preference: { label: "Preference", icon: "Heart" },
+  contact: { label: "Contact", icon: "UserRound" },
+  project: { label: "Project", icon: "FolderKanban" },
+  "credential-note": { label: "Credential note", icon: "KeyRound" },
+  handover: { label: "Where we left off", icon: "Brain" },
 };
 
 export const MEMORY_SOURCE_META = {
-  learned: { label: 'Learned', icon: 'Brain' },
-  pinned: { label: 'Pinned by user', icon: 'Pin' },
-  imported: { label: 'Imported', icon: 'Download' },
+  learned: { label: "Learned", icon: "Brain" },
+  pinned: { label: "Pinned by user", icon: "Pin" },
+  imported: { label: "Imported", icon: "Download" },
 };
 
 /** Below this, the UI shows a "low confidence" treatment. */

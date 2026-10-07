@@ -19,7 +19,7 @@ const SIZES = {
 
 const Input = React.forwardRef(function Input(
   { className, size = "md", leadingIcon, trailingSlot, disabled, ...props },
-  ref,
+  ref
 ) {
   return (
     <div
@@ -34,14 +34,11 @@ const Input = React.forwardRef(function Input(
         size === "xs" ? "[&_svg]:size-3.5" : "[&_svg]:size-4",
         disabled && "pointer-events-none opacity-50",
         SIZES[size] ?? SIZES.md,
-        className,
+        className
       )}
     >
       {leadingIcon ? (
-        <span
-          aria-hidden="true"
-          className="flex shrink-0 items-center text-muted-foreground"
-        >
+        <span aria-hidden="true" className="flex shrink-0 items-center text-muted-foreground">
           {leadingIcon}
         </span>
       ) : null}
@@ -51,20 +48,18 @@ const Input = React.forwardRef(function Input(
         className={cn(
           "h-full w-full min-w-0 flex-1 bg-transparent outline-none",
           "placeholder:text-input-placeholder",
-          "selection:bg-foreground selection:text-background",
+          "selection:bg-foreground selection:text-background"
         )}
         {...props}
       />
-      {trailingSlot ? (
-        <span className="flex shrink-0 items-center">{trailingSlot}</span>
-      ) : null}
+      {trailingSlot ? <span className="flex shrink-0 items-center">{trailingSlot}</span> : null}
     </div>
   );
 });
 
 const SearchInput = React.forwardRef(function SearchInput(
   { className, size = "md", value, onClear, placeholder = "Search", ...props },
-  ref,
+  ref
 ) {
   const hasValue = value != null && String(value).length > 0;
 
@@ -89,7 +84,7 @@ const SearchInput = React.forwardRef(function SearchInput(
               "flex size-5 items-center justify-center rounded-full text-muted-foreground",
               "outline-none transition-colors duration-150 ease-out",
               "hover:fill-close hover:text-foreground",
-              "focus-visible:fill-close focus-visible:text-foreground",
+              "focus-visible:fill-close focus-visible:text-foreground"
             )}
           >
             <X className="size-3" />

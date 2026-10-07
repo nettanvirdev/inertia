@@ -52,7 +52,10 @@ export function ComputerDialog({ computer, thread, mode, open, onOpenChange }) {
           <span className="inline-flex h-5 items-center gap-1.5 rounded-full fill-secondary px-2 text-[10.5px] text-muted-foreground">
             <span
               aria-hidden="true"
-              className={cn("size-1.5 rounded-full", computer.status === "running" && "animate-soft-pulse")}
+              className={cn(
+                "size-1.5 rounded-full",
+                computer.status === "running" && "animate-soft-pulse"
+              )}
               style={{ backgroundColor: status.color }}
             />
             {status.label}

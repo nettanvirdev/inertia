@@ -32,14 +32,10 @@ export function SettingsSection({
         // colour of a caption - so a pane read as one undifferentiated column
         // with faint captions floating in it. At 13px semibold in the
         // foreground it is the thing you scan down the page to find.
-        <h3 className="text-[0.8125rem] font-semibold text-foreground">
-          {title}
-        </h3>
+        <h3 className="text-[0.8125rem] font-semibold text-foreground">{title}</h3>
       ) : null}
       {description ? (
-        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
       {/* contentClassName merges last so a pane can swap the group for a
           multi-column flow without hand-rolling the section markup */}
@@ -51,7 +47,7 @@ export function SettingsSection({
             ? "flex flex-col gap-2.5"
             : "divide-border-subtle card-surface divide-y overflow-hidden rounded-2xl",
           (title || description) && "mt-2.5",
-          contentClassName,
+          contentClassName
         )}
       >
         {children}
@@ -89,7 +85,7 @@ export function SettingsRow({
         // short of it - which is the difference between a list and a stack of
         // things that happen to be near each other.
         "flex flex-col gap-1.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8",
-        className,
+        className
       )}
       {...props}
     >
@@ -99,16 +95,14 @@ export function SettingsRow({
             htmlFor={htmlFor}
             className={cn(
               "block text-[0.8125rem] text-foreground",
-              htmlFor && "cursor-pointer select-none",
+              htmlFor && "cursor-pointer select-none"
             )}
           >
             {label}
           </Label>
         ) : null}
         {description ? (
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {(control ?? children) ? (
@@ -137,14 +131,7 @@ export function SettingsCard({ children, className, ...props }) {
 }
 
 /** A field: label above, full-width control below. Used where a row would crowd. */
-export function SettingsField({
-  label,
-  description,
-  htmlFor,
-  children,
-  className,
-  ...props
-}) {
+export function SettingsField({ label, description, htmlFor, children, className, ...props }) {
   return (
     <div className={cn("min-w-0", className)} {...props}>
       {label ? (
@@ -154,9 +141,7 @@ export function SettingsField({
       ) : null}
       <div className="mt-1">{children}</div>
       {description ? (
-        <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
     </div>
   );

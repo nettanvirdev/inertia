@@ -112,7 +112,11 @@ export function NewMemoryDialog({ open, onOpenChange, agentId, onCreated }) {
                     size="xs"
                     ariaLabel="Agent"
                     value={agent}
-                    options={agents.map((b) => ({ value: b.id, label: b.name, description: b.role }))}
+                    options={agents.map((b) => ({
+                      value: b.id,
+                      label: b.name,
+                      description: b.role,
+                    }))}
                     onChange={setAgent}
                   />
                 </Field>
@@ -200,7 +204,12 @@ export function NewMemoryDialog({ open, onOpenChange, agentId, onCreated }) {
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="secondary" size="pill" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+        <Button
+          variant="secondary"
+          size="pill"
+          className="w-full sm:w-auto"
+          onClick={() => onOpenChange(false)}
+        >
           Cancel
         </Button>
         <Button

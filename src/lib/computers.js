@@ -117,11 +117,9 @@ export function runCommand(computerId, request, { onOutput } = {}) {
     else if (event.runId === runId) onOutput?.(event);
   });
 
-  const promise = computers
-    .exec(computerId, request)
-    .finally(() => {
-      off?.();
-    });
+  const promise = computers.exec(computerId, request).finally(() => {
+    off?.();
+  });
 
   return {
     promise,
@@ -148,7 +146,9 @@ export function joinPath(base, name) {
 }
 
 export function parentPath(path) {
-  const parts = String(path ?? "/").split("/").filter(Boolean);
+  const parts = String(path ?? "/")
+    .split("/")
+    .filter(Boolean);
   parts.pop();
   return `/${parts.join("/")}`;
 }

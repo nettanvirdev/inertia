@@ -114,7 +114,17 @@ export const CONTRACT = {
 
   mcpAPI: {
     status: "live",
-    methods: ["list", "add", "update", "remove", "connect", "disconnect", "test", "status", "tools"],
+    methods: [
+      "list",
+      "add",
+      "update",
+      "remove",
+      "connect",
+      "disconnect",
+      "test",
+      "status",
+      "tools",
+    ],
   },
 
   openapiAPI: {
@@ -171,7 +181,19 @@ export const CONTRACT = {
   // to fail to load and so no piped fallback to draw instead.
   terminalAPI: {
     status: "live",
-    methods: ["capability", "open", "write", "resize", "run", "interrupt", "read", "setCwd", "close", "list", "onEvent"],
+    methods: [
+      "capability",
+      "open",
+      "write",
+      "resize",
+      "run",
+      "interrupt",
+      "read",
+      "setCwd",
+      "close",
+      "list",
+      "onEvent",
+    ],
   },
 
   // The browser pane: a native child webview layered over this window and
@@ -182,13 +204,60 @@ export const CONTRACT = {
   // which is the same thing the computers bridge is still missing.
   previewAPI: {
     status: "partial",
-    methods: ["open", "navigate", "history", "place", "state", "list", "screenshot", "consoleLog", "networkLog", "devTools", "close", "cookieSources", "importCookies", "onEvent"],
+    methods: [
+      "open",
+      "navigate",
+      "history",
+      "place",
+      "state",
+      "list",
+      "screenshot",
+      "consoleLog",
+      "networkLog",
+      "devTools",
+      "close",
+      "cookieSources",
+      "importCookies",
+      "onEvent",
+    ],
     unimplemented: ["screenshot"],
   },
 
   computerAPI: {
     status: "partial",
-    methods: ["providers", "settings", "saveSettings", "image", "catalogue", "buildImage", "list", "refresh", "create", "start", "stop", "pause", "resume", "remove", "exec", "cancel", "listDir", "readFile", "readFileBytes", "downloadFile", "writeFile", "snapshot", "snapshots", "restore", "screen", "screenshot", "drive", "assign", "cookieSources", "importCookies", "onEvent"],
+    methods: [
+      "providers",
+      "settings",
+      "saveSettings",
+      "image",
+      "catalogue",
+      "buildImage",
+      "list",
+      "refresh",
+      "create",
+      "start",
+      "stop",
+      "pause",
+      "resume",
+      "remove",
+      "exec",
+      "cancel",
+      "listDir",
+      "readFile",
+      "readFileBytes",
+      "downloadFile",
+      "writeFile",
+      "snapshot",
+      "snapshots",
+      "restore",
+      "screen",
+      "screenshot",
+      "drive",
+      "assign",
+      "cookieSources",
+      "importCookies",
+      "onEvent",
+    ],
     // Only the cookie import is left: it needs a SQLite reader and the platform
     // keychain to decrypt what it reads, neither of which this build has. The
     // machine, the image build, the screen and driving it are all live.
@@ -200,7 +269,19 @@ export const CONTRACT = {
   // and say so rather than pretending to have happened.
   crewAPI: {
     status: "partial",
-    methods: ["snapshot", "cancel", "pause", "resume", "restart", "interrupt", "followUp", "timeline", "watch", "forget", "onEvent"],
+    methods: [
+      "snapshot",
+      "cancel",
+      "pause",
+      "resume",
+      "restart",
+      "interrupt",
+      "followUp",
+      "timeline",
+      "watch",
+      "forget",
+      "onEvent",
+    ],
     unimplemented: ["pause", "resume", "restart"],
   },
 
@@ -208,7 +289,10 @@ export const CONTRACT = {
   // a `prompt` handler still answers "no model available", because putting the
   // turn's own provider back into a hook is a re-entrancy question worth
   // answering on purpose rather than in passing.
-  hooksAPI: { status: "partial", methods: ["list", "recent", "writeExample", "setEnabled", "reveal", "onRun"] },
+  hooksAPI: {
+    status: "partial",
+    methods: ["list", "recent", "writeExample", "setEnabled", "reveal", "onRun"],
+  },
 
   // What an agent knows before the conversation starts. The Memory screen
   // itself goes through the `memory` collection on the workspace bridge, which

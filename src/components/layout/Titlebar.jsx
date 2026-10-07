@@ -14,7 +14,12 @@ import { cn } from "@/lib/utils";
  * strip starts with New chat on the left and the agent name on the right - the
  * two of them finally on one line.
  */
-export function Titlebar({ leading = null, windowState = "normal", onWindowStateChange, children }) {
+export function Titlebar({
+  leading = null,
+  windowState = "normal",
+  onWindowStateChange,
+  children,
+}) {
   useEffect(() => {
     const unsubscribe = window.electronAPI?.onWindowState?.((state) =>
       onWindowStateChange?.(state)

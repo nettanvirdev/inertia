@@ -73,7 +73,7 @@ export function useArtifactActions() {
         });
       }
     },
-    [client, toast],
+    [client, toast]
   );
 
   /**
@@ -121,7 +121,7 @@ export function useArtifactActions() {
         return null;
       }
     },
-    [client, native, toast],
+    [client, native, toast]
   );
 
   const copyText = React.useCallback(
@@ -136,7 +136,7 @@ export function useArtifactActions() {
         });
       }
     },
-    [toast],
+    [toast]
   );
 
   return { openPath, saveCopy, copyText };
@@ -151,7 +151,8 @@ export function useArtifactActions() {
  */
 function downloadInBrowser(artifact) {
   const href =
-    artifact.dataUrl ?? URL.createObjectURL(new Blob([artifact.text ?? ""], { type: "text/plain" }));
+    artifact.dataUrl ??
+    URL.createObjectURL(new Blob([artifact.text ?? ""], { type: "text/plain" }));
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = artifact.name || "artifact";
@@ -182,9 +183,7 @@ export function ArtifactDialog({ artifact, facts = [], trailing = null, onOpenCh
           <DialogTitle>{artifact.name}</DialogTitle>
           <DialogDescription>
             {artifact.summary ??
-              (carriesBytes
-                ? "Attached in this conversation."
-                : `Written to ${artifact.path}.`)}
+              (carriesBytes ? "Attached in this conversation." : `Written to ${artifact.path}.`)}
           </DialogDescription>
           <DialogBody>
             <ArtifactPreview artifact={artifact} className="max-h-[22rem] min-h-[9rem]" />

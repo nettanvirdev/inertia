@@ -28,7 +28,7 @@ export const TITLE_INSTRUCTION = [
   `Between ${MIN_WORDS} and ${MAX_WORDS} words. No quotes, no full stop, no`,
   'prefix like "Title:", no explanation.',
   "",
-  "Name the subject, not the act of asking. \"Neon account signup\", not",
+  'Name the subject, not the act of asking. "Neon account signup", not',
   '"User asks for help". Sentence case, and keep names, products and file names',
   "as they are written.",
   "",
@@ -74,7 +74,11 @@ export function cleanTitle(raw) {
     .trim();
 
   // The first non-empty line: an answer that explains itself does it underneath.
-  text = text.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? "";
+  text =
+    text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(Boolean) ?? "";
 
   text = text
     .replace(/^(?:title|name|conversation)\s*[:-]\s*/i, "")
@@ -90,7 +94,10 @@ export function cleanTitle(raw) {
   const words = text.split(" ").slice(0, MAX_WORDS);
   let title = words.join(" ");
   if (title.length > MAX_CHARS) {
-    title = title.slice(0, MAX_CHARS).replace(/\s+\S*$/, "").trim();
+    title = title
+      .slice(0, MAX_CHARS)
+      .replace(/\s+\S*$/, "")
+      .trim();
   }
   return title || null;
 }
@@ -109,6 +116,8 @@ export function titleSource(messages, { recent = 4 } = {}) {
   const first = list.find((m) => m.role === "user") ?? list[0];
   const tail = list.slice(-recent).filter((m) => m !== first);
   return [first, ...tail]
-    .map((m) => `${m.role === "user" ? "Person" : "Agent"}: ${String(m.content).trim().slice(0, 600)}`)
+    .map(
+      (m) => `${m.role === "user" ? "Person" : "Agent"}: ${String(m.content).trim().slice(0, 600)}`
+    )
     .join("\n\n");
 }

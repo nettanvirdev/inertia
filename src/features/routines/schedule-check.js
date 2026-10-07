@@ -134,8 +134,18 @@ export function nextRunLabel(iso) {
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const pad = (v) => String(v).padStart(2, "0");
@@ -154,7 +164,9 @@ const pad = (v) => String(v).padStart(2, "0");
  * was being told the wrong hour for no reason.
  */
 export function cronToHuman(expression) {
-  const parts = String(expression ?? "").trim().split(/\s+/);
+  const parts = String(expression ?? "")
+    .trim()
+    .split(/\s+/);
   if (parts.length !== 5) return null;
   const [min, hour, dom, mon, dow] = parts;
   const isNum = (v) => /^\d+$/.test(v);
@@ -176,7 +188,10 @@ export function cronToHuman(expression) {
   const months =
     mon === "*"
       ? ""
-      : `, in ${mon.split(",").map((m) => MONTHS[Number(m) - 1] ?? m).join(", ")}`;
+      : `, in ${mon
+          .split(",")
+          .map((m) => MONTHS[Number(m) - 1] ?? m)
+          .join(", ")}`;
 
   return `Runs ${days} ${time}${months}.`;
 }

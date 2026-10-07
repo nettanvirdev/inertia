@@ -65,7 +65,10 @@ export function applyEvent(message, event) {
     case "delta": {
       const last = parts[parts.length - 1];
       if (last?.type === "text") {
-        return { ...message, parts: [...parts.slice(0, -1), { ...last, text: last.text + event.text }] };
+        return {
+          ...message,
+          parts: [...parts.slice(0, -1), { ...last, text: last.text + event.text }],
+        };
       }
       return { ...message, parts: [...parts, { type: "text", text: event.text }] };
     }
@@ -78,11 +81,17 @@ export function applyEvent(message, event) {
       const live = message.parts ?? [];
       const last = live[live.length - 1];
       if (last?.type === "reasoning" && !last.endedAt) {
-        return { ...message, parts: [...live.slice(0, -1), { ...last, text: last.text + event.text }] };
+        return {
+          ...message,
+          parts: [...live.slice(0, -1), { ...last, text: last.text + event.text }],
+        };
       }
       return {
         ...message,
-        parts: [...parts, { type: "reasoning", text: event.text, startedAt: event.at ?? Date.now() }],
+        parts: [
+          ...parts,
+          { type: "reasoning", text: event.text, startedAt: event.at ?? Date.now() },
+        ],
       };
     }
 
@@ -100,7 +109,14 @@ export function applyEvent(message, event) {
       // and a second card for it would show the tool running twice.
       const held = parts.findIndex((part) => part.type === "tool" && part.callId === event.callId);
       if (held !== -1) {
-        return { ...message, parts: [...parts.slice(0, held), { ...parts[held], ...card, state: parts[held].state }, ...parts.slice(held + 1)] };
+        return {
+          ...message,
+          parts: [
+            ...parts.slice(0, held),
+            { ...parts[held], ...card, state: parts[held].state },
+            ...parts.slice(held + 1),
+          ],
+        };
       }
       return { ...message, parts: [...parts, card] };
     }
@@ -112,7 +128,11 @@ export function applyEvent(message, event) {
       const part = parts[index];
       const next =
         event.type === "tool-update"
-          ? { ...part, metadata: { ...part.metadata, ...event.metadata }, title: event.title ?? part.title }
+          ? {
+              ...part,
+              metadata: { ...part.metadata, ...event.metadata },
+              title: event.title ?? part.title,
+            }
           : {
               ...part,
               state: event.ok ? "done" : "failed",
@@ -264,7 +284,6 @@ export function textOf(message) {
     .map((part) => part.text)
     .join("");
 }
-
 
 /**
  * What a reply's status becomes once its turn has ended.

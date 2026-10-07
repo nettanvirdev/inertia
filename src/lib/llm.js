@@ -58,7 +58,9 @@ function previewClient() {
       return { providers: [], defaultModel: "" };
     },
     async listModels(provider) {
-      return unavailable(`Fetching models from ${normalizeBaseUrl(provider?.baseUrl) || "a provider"}`);
+      return unavailable(
+        `Fetching models from ${normalizeBaseUrl(provider?.baseUrl) || "a provider"}`
+      );
     },
     async testProvider() {
       return unavailable("Testing a connection");
@@ -113,7 +115,17 @@ export function isLlmAvailable() {
  * did not ask for. Returns a `cancel` that is safe to call at any point,
  * including before the stream id has come back.
  */
-export function runChat({ providerId, model, messages, temperature, maxTokens, onDelta, onReasoning, onDone, onError }) {
+export function runChat({
+  providerId,
+  model,
+  messages,
+  temperature,
+  maxTokens,
+  onDelta,
+  onReasoning,
+  onDone,
+  onError,
+}) {
   const api = llmClientFor();
   let streamId = null;
   let cancelled = false;

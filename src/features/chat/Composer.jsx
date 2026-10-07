@@ -25,12 +25,7 @@ import { useApp } from "@/lib/store";
 import { Collapse } from "@/components/ui/collapse";
 import { IconButton } from "@/components/ui/icon-button";
 import { Select } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/toast";
 import { computers as machines } from "@/lib/computers";
 import { useWorkspace } from "@/lib/workspace";
@@ -112,7 +107,7 @@ const PILL = cn(
   // muted grey was too faint to check anything by, in either theme.
   "fill-control text-foreground-secondary transition-colors duration-150 ease-out",
   "hover:fill-control-hover data-[state=open]:fill-control-hover",
-  "focus-visible:fill-control-hover",
+  "focus-visible:fill-control-hover"
 );
 
 /**
@@ -139,17 +134,10 @@ const MENU_FOLDERS = 3;
 const ICON_PILL = cn(
   "fill-control text-foreground-secondary",
   "hover:fill-control-hover hover:text-foreground",
-  "data-[state=open]:fill-control-hover! data-[state=open]:text-foreground",
+  "data-[state=open]:fill-control-hover! data-[state=open]:text-foreground"
 );
 
-export function Composer({
-  threadId,
-  agentId,
-  onSend,
-  placeholder,
-  streaming = false,
-  className,
-}) {
+export function Composer({ threadId, agentId, onSend, placeholder, streaming = false, className }) {
   const {
     agents,
     computers,
@@ -186,7 +174,6 @@ export function Composer({
   // The draft is stored per thread and survives navigation, a thread switch and
   // a relaunch. It used to be plain component state, so all three lost it.
   const [draft, setDraft, clearDraft] = useDraft(threadId);
-
 
   /**
    * The mode lives on the thread, not here.
@@ -318,9 +305,7 @@ export function Composer({
   // picker still has to show something, or the composer has a hole in it and
   // no explanation of why.
   const live = chatModels.length > 0;
-  const fallback = live
-    ? defaultModelRef || chatModels[0]?.ref
-    : user.preferences.defaultModelId;
+  const fallback = live ? defaultModelRef || chatModels[0]?.ref : user.preferences.defaultModelId;
   const [modelId, setModelId] = React.useState(agent?.model ?? fallback);
 
   React.useEffect(() => {
@@ -330,8 +315,7 @@ export function Composer({
     const known = live
       ? chatModels.some((m) => m.ref === modelId)
       : MODELS.some((m) => m.id === modelId);
-    if (!known)
-      setModelId(agent?.model && live === false ? agent.model : fallback);
+    if (!known) setModelId(agent?.model && live === false ? agent.model : fallback);
   }, [live, chatModels, modelId, fallback, agent?.model]);
 
   const computer = computers.find((c) => c.id === agent?.computerId);
@@ -355,9 +339,7 @@ export function Composer({
       if (!list.length) return;
       setReading(true);
       try {
-        const read = await Promise.all(
-          list.map((file) => readAttachment(file)),
-        );
+        const read = await Promise.all(list.map((file) => readAttachment(file)));
         const kept = read.filter((one) => one.ok).map((one) => one.attachment);
         for (const failure of read.filter((one) => !one.ok)) {
           toast({
@@ -371,7 +353,7 @@ export function Composer({
         setReading(false);
       }
     },
-    [toast],
+    [toast]
   );
 
   /**
@@ -459,7 +441,7 @@ export function Composer({
         description: next ?? undefined,
       });
     },
-    [agent, saveAgent, rememberFolder, toast],
+    [agent, saveAgent, rememberFolder, toast]
   );
 
   const chooseWorkingFolder = React.useCallback(async () => {
@@ -490,14 +472,7 @@ export function Composer({
         description: error?.message ?? String(error),
       });
     }
-  }, [
-    chooseFolder,
-    nativeWorkspace,
-    agent?.name,
-    folder.path,
-    setWorkingFolder,
-    toast,
-  ]);
+  }, [chooseFolder, nativeWorkspace, agent?.name, folder.path, setWorkingFolder, toast]);
 
   const empty = !draft.trim() && !attachments.length;
 
@@ -613,9 +588,7 @@ export function Composer({
     }
     if (e.key !== "Enter") return;
     const sendOnEnter = user.preferences.sendOnEnter !== false;
-    const wantsSend = sendOnEnter
-      ? !e.shiftKey
-      : e.shiftKey || e.metaKey || e.ctrlKey;
+    const wantsSend = sendOnEnter ? !e.shiftKey : e.shiftKey || e.metaKey || e.ctrlKey;
     if (!wantsSend) return;
     e.preventDefault();
     send();
@@ -690,7 +663,7 @@ export function Composer({
           // both words rather than a texture someone has to have been taught.
           // The whole composer lights up for a drag rather than a separate drop
           // zone appearing: the target is the thing you were already aiming at.
-          dragging && "bg-input-hover",
+          dragging && "bg-input-hover"
         )}
         onDragOver={(e) => {
           if (!e.dataTransfer?.types?.includes("Files")) return;
@@ -730,10 +703,7 @@ export function Composer({
             last, and every chip fades in on its own: a chip is only ever
             added while the person is looking, so there is no first render for
             it to be quiet on. */}
-        <Collapse
-          open={attachments.length > 0}
-          innerClassName="flex flex-wrap gap-1.5 px-3 pt-2.5"
-        >
+        <Collapse open={attachments.length > 0} innerClassName="flex flex-wrap gap-1.5 px-3 pt-2.5">
           {attachments.map((one) => (
             <span
               key={one.id}
@@ -748,20 +718,12 @@ export function Composer({
               ) : (
                 <Paperclip className="size-3.5 shrink-0" aria-hidden="true" />
               )}
-              <span className="min-w-0 truncate text-foreground">
-                {one.name}
-              </span>
-              <span className="shrink-0 tabular-nums">
-                {formatBytes(one.size)}
-              </span>
+              <span className="min-w-0 truncate text-foreground">{one.name}</span>
+              <span className="shrink-0 tabular-nums">{formatBytes(one.size)}</span>
               <button
                 type="button"
                 aria-label={`Remove ${one.name}`}
-                onClick={() =>
-                  setAttachments((prev) =>
-                    prev.filter((x) => x.id !== one.id),
-                  )
-                }
+                onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== one.id))}
                 className="-mr-1 shrink-0 rounded-full p-0.5 text-muted-foreground/70 outline-none hover:text-foreground focus-visible:fill-control-hover"
               >
                 <X className="size-3" aria-hidden="true" />
@@ -822,11 +784,7 @@ export function Composer({
               // one that adds a file to the message was the only thing here
               // you had to find by pointing at it.
               trigger={
-                <IconButton
-                  size="md"
-                  label="Add to this message"
-                  className={ICON_PILL}
-                >
+                <IconButton size="md" label="Add to this message" className={ICON_PILL}>
                   <Plus />
                 </IconButton>
               }
@@ -868,30 +826,19 @@ export function Composer({
 
             {/* the one divider the composer keeps: without it the + and the mode
                 pill read as an undifferentiated run of round targets */}
-            <span
-              aria-hidden="true"
-              className="mx-0.5 h-4 w-px shrink-0 bg-border/60"
-            />
+            <span aria-hidden="true" className="mx-0.5 h-4 w-px shrink-0 bg-border/60" />
 
             <DropdownMenu
               side="top"
               align="start"
               trigger={({ ref, props }) => (
-                <button
-                  ref={ref}
-                  type="button"
-                  {...props}
-                  className={PILL}
-                >
+                <button ref={ref} type="button" {...props} className={PILL}>
                   <span className="font-medium">
                     {temporary
                       ? TEMPORARY.label
                       : (MODES.find((m) => m.value === mode)?.label ?? "Chat")}
                   </span>
-                  <ChevronDown
-                    className="size-3.5 shrink-0 opacity-70"
-                    aria-hidden="true"
-                  />
+                  <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
                 </button>
               )}
             >
@@ -941,7 +888,7 @@ export function Composer({
                     // class merger cannot see, so it has to be overruled in CSS
                     // rather than removed from the string.
                     approval === "auto" &&
-                      "bg-warning/15! text-warning-ink hover:bg-warning/25! data-[state=open]:bg-warning/25!",
+                      "bg-warning/15! text-warning-ink hover:bg-warning/25! data-[state=open]:bg-warning/25!"
                   )}
                 >
                   {approval === "auto" ? (
@@ -962,10 +909,7 @@ export function Composer({
                   <span className="font-medium">
                     {APPROVALS.find((a) => a.id === approval)?.label ?? "Ask"}
                   </span>
-                  <ChevronDown
-                    className="size-3.5 shrink-0 opacity-70"
-                    aria-hidden="true"
-                  />
+                  <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
                 </button>
               )}
             >
@@ -1019,14 +963,20 @@ export function Composer({
                       <GitBranch
                         key="branch"
                         onAnimationEnd={folderGlyph.onAnimationEnd}
-                        className={cn("size-3.5 shrink-0", folderGlyph.swapping && "animate-pop-in")}
+                        className={cn(
+                          "size-3.5 shrink-0",
+                          folderGlyph.swapping && "animate-pop-in"
+                        )}
                         aria-hidden="true"
                       />
                     ) : (
                       <FolderOpen
                         key="folder"
                         onAnimationEnd={folderGlyph.onAnimationEnd}
-                        className={cn("size-3.5 shrink-0", folderGlyph.swapping && "animate-pop-in")}
+                        className={cn(
+                          "size-3.5 shrink-0",
+                          folderGlyph.swapping && "animate-pop-in"
+                        )}
                         aria-hidden="true"
                       />
                     )}
@@ -1063,10 +1013,7 @@ export function Composer({
                   Choose a folder…
                 </MenuItem>
                 {agent.cwd ? (
-                  <MenuItem
-                    icon={FolderTree}
-                    onSelect={() => setWorkingFolder(null)}
-                  >
+                  <MenuItem icon={FolderTree} onSelect={() => setWorkingFolder(null)}>
                     Use the workspace default
                   </MenuItem>
                 ) : null}
@@ -1088,8 +1035,7 @@ export function Composer({
                   // A toggle, not a picker: pressed has to read as held down
                   // rather than as merely hovered, so it keeps the secondary
                   // fill and the full-strength ink.
-                  chatPanelOpen &&
-                    "fill-secondary text-foreground hover:fill-secondary-hover",
+                  chatPanelOpen && "fill-secondary text-foreground hover:fill-secondary-hover"
                 )}
               >
                 <Monitor className="size-3.5 shrink-0" aria-hidden="true" />
@@ -1113,9 +1059,7 @@ export function Composer({
                     : "Dictate"
               }
               disabled={dictation.state === "thinking"}
-              className={cn(
-                dictation.state === "listening" && "text-destructive-ink",
-              )}
+              className={cn(dictation.state === "listening" && "text-destructive-ink")}
               onClick={() => {
                 if (!voiceReady) {
                   toast({
@@ -1164,7 +1108,7 @@ export function Composer({
                   "transition-colors duration-150 ease-out hover:fill-control-hover",
                   "focus-visible:fill-control-hover",
                   // Only ever appears in answer to typing, so it is always new.
-                  "animate-fade-in",
+                  "animate-fade-in"
                 )}
               >
                 <SendArrow className="size-3.5" />
@@ -1173,9 +1117,7 @@ export function Composer({
             ) : null}
             <button
               type="button"
-              onClick={
-                streaming ? () => threadId && stopMessage(threadId) : send
-              }
+              onClick={streaming ? () => threadId && stopMessage(threadId) : send}
               disabled={!streaming && empty}
               aria-label={streaming ? "Stop generating" : "Send message"}
               className={cn(
@@ -1189,7 +1131,7 @@ export function Composer({
                 empty && !streaming
                   ? "fill-secondary text-icon-muted focus-visible:fill-control-hover"
                   : "bg-foreground text-background hover:opacity-90 focus-visible:opacity-90",
-                "disabled:pointer-events-none",
+                "disabled:pointer-events-none"
               )}
             >
               {streaming ? (
@@ -1219,16 +1161,21 @@ export function Composer({
           <span
             key="steering"
             onAnimationEnd={footnote.onAnimationEnd}
-            className={cn("text-[10px] text-muted-foreground", footnote.swapping && "animate-fade-in")}
+            className={cn(
+              "text-[10px] text-muted-foreground",
+              footnote.swapping && "animate-fade-in"
+            )}
           >
-            {agent?.name ?? "The agent"} is working - this reaches it at the
-            next step.
+            {agent?.name ?? "The agent"} is working - this reaches it at the next step.
           </span>
         ) : ghost ? (
           <span
             key="ghost"
             onAnimationEnd={footnote.onAnimationEnd}
-            className={cn("text-[10px] text-muted-foreground", footnote.swapping && "animate-fade-in")}
+            className={cn(
+              "text-[10px] text-muted-foreground",
+              footnote.swapping && "animate-fade-in"
+            )}
           >
             Temporary chat - this won&rsquo;t be saved.
           </span>

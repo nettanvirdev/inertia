@@ -35,10 +35,14 @@ export const terminal = {
    * simply closing.
    */
   write: (id, data) => {
-    api()?.write?.(id, data)?.catch?.(() => {});
+    api()
+      ?.write?.(id, data)
+      ?.catch?.(() => {});
   },
   resize: (id, cols, rows) => {
-    api()?.resize?.(id, cols, rows)?.catch?.(() => {});
+    api()
+      ?.resize?.(id, cols, rows)
+      ?.catch?.(() => {});
   },
   run: (id, command) => call("run", id, command),
   interrupt: (id) => call("interrupt", id),

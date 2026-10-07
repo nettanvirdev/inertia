@@ -7,14 +7,13 @@ import {
   byUpdatedDesc,
   fingerprint,
   syncCollection,
-  syncDocument, reconcileMessages, mergeRows, settleAgents } from "./workspace-sync.js";
+  syncDocument,
+  reconcileMessages,
+  mergeRows,
+  settleAgents,
+} from "./workspace-sync.js";
 import { asRuleMap, asRules } from "@shared/permission";
-import {
-  settleMemories,
-  settleRoutines,
-  settleThreads,
-  settleUser,
-} from "./settle.js";
+import { settleMemories, settleRoutines, settleThreads, settleUser } from "./settle.js";
 
 /** Long enough to swallow a burst of keystrokes, short enough to feel durable. */
 const WRITE_DELAY = 400;
@@ -257,9 +256,7 @@ export function useWorkspacePersistence(state, { onArrival } = {}) {
         const settings = (await client.readDocument("settings.app", {})) ?? {};
 
         if (settings.seeded) {
-          const rows = await Promise.all(
-            SOURCES.map((source) => client.list(source.collection))
-          );
+          const rows = await Promise.all(SOURCES.map((source) => client.list(source.collection)));
           const docs = await Promise.all(
             DOCUMENTS.map((doc) => client.readDocument(doc.document, {}))
           );
@@ -443,8 +440,7 @@ export function useWorkspacePersistence(state, { onArrival } = {}) {
       const before = written.current.collections[name] ?? new Map();
       const after = new Map(rows.map((row) => [row.id, fingerprint(row)]));
       const changed =
-        before.size !== after.size ||
-        [...after].some(([id, mark]) => before.get(id) !== mark);
+        before.size !== after.size || [...after].some(([id, mark]) => before.get(id) !== mark);
       if (!changed) return;
 
       const appeared = rows.filter((row) => !before.has(row.id));

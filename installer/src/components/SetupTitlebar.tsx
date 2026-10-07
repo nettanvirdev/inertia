@@ -66,7 +66,7 @@ export function SetupTitlebar({ busy, title = "Setup" }: { busy: boolean; title?
             "outline-none transition-colors duration-150 ease-out",
             busy
               ? "opacity-35"
-              : "hover:bg-destructive hover:text-destructive-foreground focus-visible:bg-destructive focus-visible:text-destructive-foreground",
+              : "hover:bg-destructive hover:text-destructive-foreground focus-visible:bg-destructive focus-visible:text-destructive-foreground"
           )}
         >
           <X className="size-3.5" />
