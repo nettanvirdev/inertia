@@ -85,17 +85,17 @@ schemars = { version = "1", features = ["preserve_order"] }
 parking_lot = "0.12"
 # API keys wrapped so they cannot be printed by an accidental `{:?}`.
 secrecy = { version = "0.10", features = ["serde"] }
-sha2 = "0.10"
-sha1 = "0.10"
+sha2 = "0.11"
+sha1 = "0.11"
 # Reading a browser's cookie store: SQLite for the file, and the three
 # primitives Chromium seals values with (AES-GCM on Windows, AES-CBC under a
 # PBKDF2-SHA1 key elsewhere).
-rusqlite = { version = "0.32", features = ["bundled"] }
-aes = "0.8"
-aes-gcm = "0.10"
-cbc = "0.1"
-hmac = "0.12"
-pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+aes = "0.9"
+aes-gcm = "0.11"
+cbc = "0.2"
+hmac = "0.13"
+pbkdf2 = { version = "0.13", default-features = false, features = ["hmac"] }
 base64 = "0.23"
 
 # ── integrations ────────────────────────────────────────────────────────────
