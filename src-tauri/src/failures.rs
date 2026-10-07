@@ -37,7 +37,8 @@ use std::path::{Path, PathBuf};
 use async_trait::async_trait;
 use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, ToolSource};
 use inertia_core::Result;
-use inertia_store::{Layout, Settings};
+use inertia_store::secrets::{self, REDACTED};
+use inertia_store::Layout;
 use serde_json::{json, Value};
 
 /// Days of files kept. Older ones are deleted the first time this process
@@ -137,8 +138,6 @@ const SECRET_KEYS: &[&str] = &[
     "token",
 ];
 
-const REDACTED: &str = "[REDACTED]";
-
 fn is_token_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '_' || c == '-'
 }
@@ -156,12 +155,7 @@ fn at_boundary(bytes: &[u8], at: usize) -> bool {
 /// mean a stored API key would have to be both unrecognisable by shape and
 /// unknown to the app to reach a file an agent will read back into a prompt.
 pub fn redact(text: &str, exact: &[String]) -> String {
-    let mut out = text.to_string();
-    for value in exact {
-        if value.len() >= 6 && out.contains(value.as_str()) {
-            out = out.replace(value.as_str(), REDACTED);
-        }
-    }
+    let mut out = secrets::scrub(text, exact);
     out = redact_prefixed(&out);
     out = redact_bearer(&out);
     redact_pairs(&out)
@@ -292,22 +286,6 @@ fn redact_pairs(text: &str) -> String {
 
 fn is_value_end(c: char) -> bool {
     c.is_whitespace() || "\"',;}&".contains(c)
-}
-
-/// The credential values this workspace knows about, so they can be taken out
-/// by value as well as by shape.
-///
-/// Read on the error path rather than cached, because the record is written
-/// once and a key added since the app started is exactly the one most likely to
-/// be in the command that just failed.
-fn known_secrets(layout: &Layout) -> Vec<String> {
-    Settings::new(layout.clone())
-        .secrets()
-        .entries
-        .into_values()
-        .map(|entry| entry.value)
-        .filter(|value| value.len() >= 6)
-        .collect()
 }
 
 /* -- shaping ------------------------------------------------------------- */
@@ -606,7 +584,11 @@ pub fn record(layout: &Layout, entry: Value) -> Option<Value> {
         return None;
     }
 
-    let record = shape(&entry, &known_secrets(layout), next_counter());
+    // The credential values this workspace knows about, so they come out by
+    // value as well as by shape. Read on the error path rather than cached: a
+    // key added since the app started is exactly the one most likely to be in
+    // the command that just failed.
+    let record = shape(&entry, &secrets::values(layout), next_counter());
 
     let dir = directory(layout);
     if std::fs::create_dir_all(&dir).is_ok() {

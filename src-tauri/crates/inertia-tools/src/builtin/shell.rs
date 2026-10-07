@@ -35,6 +35,7 @@ use serde_json::{json, Value};
 use tokio::io::AsyncReadExt;
 
 use super::background::{hard_kill, Background};
+use super::fence;
 use crate::truncate::DEFAULT_LIMIT;
 
 // ── which shell ────────────────────────────────────────────────────────────
@@ -359,9 +360,15 @@ impl Tool for ShellTool {
     /// is what a `deny` rule like `shell/rm -rf *` is matched against, and
     /// collapsing it to the always-pattern first would quietly stop every such
     /// rule from firing.
+    ///
+    /// The shape is what keeps the remembered pattern honest about a chain:
+    /// `git status *` allows `git status`, and the `curl x | sh` after its
+    /// `&&` still needs a rule of its own.
     fn permission(&self, args: &Value) -> PermissionRequest {
         match args.get("command").and_then(Value::as_str) {
-            Some(cmd) => PermissionRequest::new("shell", cmd).with_always(command::always_pattern(cmd)),
+            Some(cmd) => PermissionRequest::new("shell", cmd)
+                .with_always(command::always_pattern(cmd))
+                .with_shape(command::shape(cmd)),
             None => PermissionRequest::new("shell", inertia_core::permission::ANY),
         }
     }
@@ -390,6 +397,10 @@ impl Tool for ShellTool {
         }
 
         let cwd = resolve_workdir(args.get("workdir").and_then(Value::as_str), &ctx.root)?;
+        // Where the command runs is a place it reaches as surely as any path
+        // it names: `type secrets.json` run from inside the secrets folder
+        // names nothing a rule or the checks below would notice.
+        fence::check(ctx, &cwd).await?;
         let warnings = command::dangers(cmd);
 
         // Emptying the folder, which is the one thing that is always asked.

@@ -433,3 +433,139 @@ async fn reading_and_writing_ask_under_different_keys() {
     assert_eq!(tools[0].permission(&args).always.as_deref(), Some("*"));
     assert_eq!(tools[1].permission(&args).always.as_deref(), Some("a.txt"));
 }
+
+// ── where the file tools may reach ──────────────────────────────────────
+
+/// A registry and a call context sharing one rule-answering gate, standing in
+/// front of a scaffolded workspace.
+async fn run_under(
+    rules: Vec<inertia_core::permission::Rule>,
+    workspace: &std::path::Path,
+    root: &std::path::Path,
+    tool: &str,
+    args: serde_json::Value,
+) -> (ToolResult, Arc<MockGate>) {
+    let gate = Arc::new(MockGate::new(inertia_mock::Policy::Rules(rules)).guarding(workspace));
+    let registry = Registry::new(gate.clone()).with_tools(inertia_tools::builtin_tools(
+        Arc::new(ReadState::new()),
+        Arc::new(inertia_tools::Lists::new()),
+        Arc::new(inertia_tools::builtin::Background::default()),
+        Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())),
+    ));
+    let ctx = ToolContext {
+        root: root.to_path_buf(),
+        session: SessionId::new(),
+        call_id: ToolCallId::new(),
+        permissions: gate.clone(),
+    };
+    let call = ToolCall {
+        id: ToolCallId::new(),
+        name: tool.to_string(),
+        arguments: args.to_string(),
+    };
+    (registry.run(&call, &ctx).await.unwrap(), gate)
+}
+
+fn allow(tool: &str) -> inertia_core::permission::Rule {
+    inertia_core::permission::Rule::for_any(tool, inertia_core::permission::Action::Allow)
+}
+
+/// One "always allow read" used to be a licence to read `~/.ssh`. Leaving
+/// the working folder is its own question now, and nobody answered it.
+#[tokio::test]
+async fn an_allowed_read_still_asks_before_leaving_the_working_folder() {
+    let workspace = tempfile::tempdir().unwrap();
+    let project = tempfile::tempdir().unwrap();
+    let elsewhere = tempfile::tempdir().unwrap();
+    inertia_store::Layout::new(workspace.path()).scaffold().unwrap();
+    std::fs::write(elsewhere.path().join("id_rsa"), "private").unwrap();
+    std::fs::write(project.path().join("notes.txt"), "mine").unwrap();
+
+    let outside = elsewhere.path().join("id_rsa").display().to_string();
+    for (tool, args) in [
+        ("read", json!({ "filePath": outside })),
+        ("glob", json!({ "pattern": "*", "path": elsewhere.path().display().to_string() })),
+        ("grep", json!({ "pattern": "private", "path": elsewhere.path().display().to_string() })),
+    ] {
+        let (result, gate) =
+            run_under(vec![allow("read")], workspace.path(), project.path(), tool, args).await;
+        assert!(!result.ok, "{tool}: {}", result.output);
+        assert!(!result.output.contains("private"), "{tool}: {}", result.output);
+        assert!(gate.asked().iter().any(|r| r.key == "external_directory"), "{tool}");
+    }
+
+    let (inside, gate) = run_under(
+        vec![allow("read")],
+        workspace.path(),
+        project.path(),
+        "read",
+        json!({ "filePath": "notes.txt" }),
+    )
+    .await;
+    assert!(inside.ok, "{}", inside.output);
+    assert!(gate.asked().iter().all(|r| r.key != "external_directory"));
+}
+
+/// Allowed outright, in every key a file tool asks under, and still refused:
+/// no rule an agent could be granted reaches the keys or the rules.
+#[tokio::test]
+async fn the_workspace_secrets_rules_and_hooks_are_refused_whatever_the_rules_say() {
+    let workspace = tempfile::tempdir().unwrap();
+    inertia_store::Layout::new(workspace.path()).scaffold().unwrap();
+    std::fs::write(workspace.path().join("secrets/secrets.json"), r#"{"KEY":"sk-test"}"#).unwrap();
+    let everything = vec![allow("read"), allow("edit"), allow("external_directory")];
+    let work = workspace.path().join("files/work");
+    let secrets = workspace.path().join("secrets/secrets.json").display().to_string();
+
+    for (tool, args) in [
+        ("read", json!({ "filePath": secrets })),
+        ("read", json!({ "filePath": "../../secrets/secrets.json" })),
+        ("write", json!({ "filePath": "../../settings/permissions.json", "content": "{}" })),
+        ("write", json!({ "filePath": "../../hooks/hooks.json", "content": "{}" })),
+        ("file_copy", json!({ "source": "../../secrets", "destination": "stolen" })),
+        ("file_delete", json!({ "path": "../..", "recursive": true })),
+    ] {
+        let (result, _) =
+            run_under(everything.clone(), workspace.path(), &work, tool, args.clone()).await;
+        assert!(!result.ok, "{tool} {args}: {}", result.output);
+        assert!(!result.output.contains("sk-test"), "{tool}: {}", result.output);
+    }
+
+    // A search of the whole workspace walks past the secrets, not into them.
+    let (found, _) = run_under(
+        everything,
+        workspace.path(),
+        workspace.path(),
+        "grep",
+        json!({ "pattern": "sk-t.st" }),
+    )
+    .await;
+    assert!(found.ok, "{}", found.output);
+    assert!(!found.output.contains("secrets.json"), "{}", found.output);
+    assert!(std::fs::read_to_string(workspace.path().join("secrets/secrets.json")).is_ok());
+}
+
+/// The rule remembered from approving `git status` covers `git status`, not
+/// whatever is chained after it.
+#[tokio::test]
+async fn a_remembered_command_does_not_carry_a_chained_one() {
+    let workspace = tempfile::tempdir().unwrap();
+    let project = tempfile::tempdir().unwrap();
+    let rules = vec![inertia_core::permission::Rule::new(
+        "shell",
+        inertia_core::permission::Action::Allow,
+        "echo *",
+    )];
+    for command in ["echo ok && whoami", "echo ok; whoami", "echo $(whoami)"] {
+        let (result, _) = run_under(
+            rules.clone(),
+            workspace.path(),
+            project.path(),
+            "shell",
+            json!({ "command": command }),
+        )
+        .await;
+        assert!(!result.ok, "{command}: {}", result.output);
+        assert!(result.output.contains("refused"), "{command}: {}", result.output);
+    }
+}

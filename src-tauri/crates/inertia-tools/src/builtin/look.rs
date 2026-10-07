@@ -25,6 +25,8 @@ use inertia_core::{Error, Result};
 use parking_lot::Mutex;
 use serde_json::{json, Value};
 
+use super::fence;
+
 /// Generated, vendored or built. Never what anyone meant by "what is in here".
 const SKIP: &[&str] = &[
     "node_modules",
@@ -144,6 +146,7 @@ impl Tool for LsTool {
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
         let dir = resolve(&ctx.root, args.get("path").and_then(Value::as_str));
+        fence::check(ctx, &dir).await?;
         let depth = args
             .get("depth")
             .and_then(Value::as_u64)

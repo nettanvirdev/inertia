@@ -5,7 +5,7 @@
 //! from `node_modules` or `target` is worse than no search at all, because it
 //! buries the real answer and costs a fortune in context.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -13,7 +13,10 @@ use globset::{Glob, GlobMatcher};
 use ignore::WalkBuilder;
 use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, ToolSource};
 use inertia_core::{Error, Result};
+use inertia_store::fsx::canonical;
 use serde_json::{json, Value};
+
+use super::fence::{self, Fence};
 
 /// Results beyond this are dropped, with the count reported so the model knows
 /// to narrow rather than assuming it saw everything.
@@ -21,14 +24,34 @@ const MAX_RESULTS: usize = 200;
 /// Files larger than this are not searched line by line.
 const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
-fn walker(root: &Path) -> WalkBuilder {
-    let mut builder = WalkBuilder::new(root);
+/// The walk under `base`, never entering the workspace's off-limits folders.
+///
+/// Pruned here rather than filtered from the results, so a search of the
+/// workspace folder itself does not so much as open the secrets to look for
+/// a match. Links are not followed, which is the walker's default and what
+/// keeps every entry's path the real one the fence compares against.
+fn walker(base: &Path, fence: Fence) -> WalkBuilder {
+    let mut builder = WalkBuilder::new(base);
     builder
         .hidden(true)
         .git_ignore(true)
         .git_global(true)
-        .parents(true);
+        .parents(true)
+        .filter_entry(move |entry| !fence.bars(entry.path()));
     builder
+}
+
+/// Where a search starts, and the folder its results are written relative to.
+///
+/// Both as the filesystem resolves them: the walk yields real paths, and the
+/// fence and the relative names are only right when everything compared is
+/// spelled the same way.
+async fn search_base(args: &Value, ctx: &ToolContext) -> Result<(PathBuf, PathBuf)> {
+    let base = match args.get("path").and_then(Value::as_str) {
+        Some(supplied) => fence::reach(ctx, supplied).await?,
+        None => ctx.root.clone(),
+    };
+    Ok((canonical(&base), canonical(&ctx.root)))
 }
 
 fn relative(root: &Path, path: &Path) -> String {
@@ -106,15 +129,11 @@ impl Tool for GlobTool {
             .map_err(|e| Error::InvalidInput(format!("`{pattern}` is not a valid glob: {e}")))?
             .compile_matcher();
 
-        let base = match args.get("path").and_then(Value::as_str) {
-            Some(relative) => ctx.root.join(relative),
-            None => ctx.root.clone(),
-        };
-
-        let root = ctx.root.clone();
+        let (base, root) = search_base(&args, ctx).await?;
+        let fence = Fence::of(ctx);
         let found = tokio::task::spawn_blocking(move || {
             let mut found: Vec<String> = Vec::new();
-            for entry in walker(&base).build().flatten() {
+            for entry in walker(&base, fence).build().flatten() {
                 if !entry.file_type().is_some_and(|t| t.is_file()) {
                     continue;
                 }
@@ -231,17 +250,13 @@ impl Tool for GrepTool {
             None => None,
         };
 
-        let base = match args.get("path").and_then(Value::as_str) {
-            Some(relative) => ctx.root.join(relative),
-            None => ctx.root.clone(),
-        };
-
-        let root = ctx.root.clone();
+        let (base, root) = search_base(&args, ctx).await?;
+        let fence = Fence::of(ctx);
         let (hits, files) = tokio::task::spawn_blocking(move || {
             let mut hits: Vec<String> = Vec::new();
             let mut files = 0usize;
 
-            for entry in walker(&base).build().flatten() {
+            for entry in walker(&base, fence).build().flatten() {
                 if !entry.file_type().is_some_and(|t| t.is_file()) {
                     continue;
                 }

@@ -557,6 +557,11 @@ impl Recorder {
             // A workspace that cannot be written to is not a reason to kill a
             // turn that is otherwise going fine. The window still has the live
             // stream.
+            // A tool's output is the agent's view of the machine, and a key it
+            // was handed comes back in it - `printenv`, a failing curl with the
+            // header echoed. Taken out here, the one place a trace reaches the
+            // disk; the live stream to the window and the model keeps it.
+            let value = inertia_store::secrets::scrubbed(&layout, value);
             if let Err(error) = inertia_store::collections::put(&layout, Collection::Turns, value) {
                 tracing::warn!(turn = turn_id, %error, "a turn record could not be written");
             }

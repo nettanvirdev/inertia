@@ -434,7 +434,7 @@ function Body({ call }) {
     );
   }
 
-  if (name === "read" || key === "glob" || key === "grep" || name === "ls") {
+  if (name === "read" || name === "glob" || name === "grep" || name === "ls") {
     const target = args.filePath ?? args.path ?? args.pattern ?? call.title;
     return (
       <div className="flex flex-col gap-2">

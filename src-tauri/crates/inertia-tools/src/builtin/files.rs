@@ -6,7 +6,7 @@
 //! cannot usefully read, writing atomically, and refusing to edit a file it
 //! has not looked at.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -14,6 +14,7 @@ use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, Tool
 use inertia_core::{Error, Result};
 use serde_json::{json, Value};
 
+use super::fence;
 use super::read_state::ReadState;
 use crate::replace::replace;
 
@@ -43,20 +44,6 @@ fn extension(path: &Path) -> String {
         .and_then(|e| e.to_str())
         .unwrap_or_default()
         .to_ascii_lowercase()
-}
-
-/// Resolves a caller-supplied path against the workspace.
-///
-/// Absolute paths are honoured - the agent legitimately works on projects
-/// outside the workspace folder - so this is resolution, not confinement. The
-/// permission layer is what decides whether a given path may be touched.
-fn resolve(root: &Path, supplied: &str) -> PathBuf {
-    let path = Path::new(supplied);
-    if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        root.join(path)
-    }
 }
 
 /// Whether bytes look like something other than text.
@@ -188,7 +175,7 @@ impl Tool for ReadTool {
             .get("filePath")
             .and_then(Value::as_str)
             .ok_or_else(|| Error::InvalidInput("filePath is required.".into()))?;
-        let path = resolve(&ctx.root, supplied);
+        let path = fence::reach(ctx, supplied).await?;
 
         let metadata = std::fs::metadata(&path).map_err(|_| not_found(&path))?;
 
@@ -455,7 +442,7 @@ impl Tool for WriteTool {
             .and_then(Value::as_str)
             .ok_or_else(|| Error::InvalidInput("content is required.".into()))?;
 
-        let path = resolve(&ctx.root, supplied);
+        let path = fence::reach(ctx, supplied).await?;
         let existed = path.exists();
 
         if let Some(parent) = path.parent() {
@@ -607,7 +594,7 @@ impl Tool for EditTool {
             .and_then(Value::as_bool)
             .unwrap_or(false);
 
-        let path = resolve(&ctx.root, supplied);
+        let path = fence::reach(ctx, supplied).await?;
 
         let metadata = std::fs::metadata(&path).map_err(|_| not_found(&path))?;
         if metadata.is_dir() {

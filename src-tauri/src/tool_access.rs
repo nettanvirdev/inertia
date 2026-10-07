@@ -49,11 +49,9 @@ const ON_DEMAND: &str = "on-demand";
 
 /// The tools that are never behind the gate.
 ///
-/// Twin of `ALWAYS_LOADED` in `src/shared/tool-access.js`; the two must say the
-/// same thing, because the renderer uses its copy to explain the setting. The
-/// test is not "is this important" but "is this used on nearly every turn": a
-/// family loaded on the first step of every turn costs a round trip for
-/// nothing.
+/// The test is not "is this important" but "is this used on nearly every
+/// turn": a family loaded on the first step of every turn costs a round trip
+/// for nothing.
 const ALWAYS_LOADED: &[&str] = &[
     "read",
     "write",

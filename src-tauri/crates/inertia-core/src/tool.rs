@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::id::{SessionId, ToolCallId};
 use crate::message::ToolCall;
-use crate::permission::Action;
+use crate::permission::{Action, Shape};
 use crate::provider::ToolSpec;
 
 /// Where a tool came from. Reported to the UI, which badges them differently,
@@ -67,6 +67,9 @@ pub struct PermissionRequest {
     /// that exact string forever - and `None` when the action is too varied to
     /// generalise safely.
     pub always: Option<String>,
+    /// What `target` is made of, when it is more than one action. Every part
+    /// of a chained shell line needs a rule of its own.
+    pub shape: Shape,
 }
 
 impl PermissionRequest {
@@ -75,11 +78,17 @@ impl PermissionRequest {
             key: key.into(),
             target: target.into(),
             always: None,
+            shape: Shape::Whole,
         }
     }
 
     pub fn with_always(mut self, always: impl Into<String>) -> Self {
         self.always = Some(always.into());
+        self
+    }
+
+    pub fn with_shape(mut self, shape: Shape) -> Self {
+        self.shape = shape;
         self
     }
 }
@@ -332,6 +341,16 @@ pub trait PermissionGate: Send + Sync {
     /// What the rules say, without asking anyone. Used to decide which tools
     /// to offer the model at all.
     async fn verdict(&self, key: &str, target: &str) -> Action;
+
+    /// The workspace folder behind these rules, if there is one.
+    ///
+    /// Part of that folder is the machinery that decides what an agent may do
+    /// - its secrets, its permission rules, its hooks - and the file tools ask
+    /// for it here to keep out of that machinery whatever the rules say. A
+    /// gate with no workspace behind it, as in a test, has nothing to guard.
+    fn workspace(&self) -> Option<PathBuf> {
+        None
+    }
 }
 
 #[cfg(test)]

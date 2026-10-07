@@ -551,7 +551,7 @@ pub fn ws_file_read(
     rel_path: String,
 ) -> Result<Option<String>, String> {
     let layout = layout(&app, &state)?;
-    let target = fsx::resolve_inside(layout.root(), rel_path).map_err(err)?;
+    let target = ordinary_file(&layout, rel_path)?;
     Ok(fsx::read_text(&target))
 }
 
@@ -563,7 +563,7 @@ pub fn ws_file_write(
     contents: Option<String>,
 ) -> Result<String, String> {
     let layout = layout(&app, &state)?;
-    let target = fsx::resolve_inside(layout.root(), &rel_path).map_err(err)?;
+    let target = ordinary_file(&layout, &rel_path)?;
     fsx::write_text(&target, &contents.unwrap_or_default()).map_err(err)?;
     Ok(rel_path)
 }
@@ -583,7 +583,7 @@ pub fn ws_file_read_bytes(
 ) -> Result<Option<String>, String> {
     use base64::Engine;
     let layout = layout(&app, &state)?;
-    let target = fsx::resolve_inside(layout.root(), rel_path).map_err(err)?;
+    let target = ordinary_file(&layout, rel_path)?;
     Ok(std::fs::read(target)
         .ok()
         .map(|bytes| base64::engine::general_purpose::STANDARD.encode(bytes)))
@@ -598,7 +598,7 @@ pub fn ws_file_write_bytes(
 ) -> Result<String, String> {
     use base64::Engine;
     let layout = layout(&app, &state)?;
-    let target = fsx::resolve_inside(layout.root(), &rel_path).map_err(err)?;
+    let target = ordinary_file(&layout, &rel_path)?;
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(base64_data.unwrap_or_default())
         .map_err(|_| "That attachment is not valid base64.".to_string())?;
@@ -635,12 +635,15 @@ pub fn ws_file_read_image(
     };
 
     let candidate = PathBuf::from(&file_path);
+    let layout = layout(&app, &state);
     let target = if candidate.is_absolute() {
         candidate
     } else {
-        let layout = layout(&app, &state)?;
-        fsx::resolve_inside(layout.root(), &file_path).map_err(err)?
+        fsx::resolve_inside(layout.clone()?.root(), &file_path).map_err(err)?
     };
+    if layout.is_ok_and(|layout| layout.holds_secrets(&target)) {
+        return Err(SECRETS_REFUSED.to_string());
+    }
 
     let Ok(meta) = std::fs::metadata(&target) else {
         return Ok(None);
@@ -666,7 +669,7 @@ pub fn ws_file_remove(
     rel_path: String,
 ) -> Result<String, String> {
     let layout = layout(&app, &state)?;
-    let target = fsx::resolve_inside(layout.root(), &rel_path).map_err(err)?;
+    let target = ordinary_file(&layout, &rel_path)?;
     if target.is_dir() {
         fsx::remove_dir_all(&target).map_err(err)?;
     } else {
@@ -732,6 +735,7 @@ pub fn ws_put(
         state.memory()?.remember(&record, false)?
     } else {
         let layout = layout(&app, &state)?;
+        let record = written_down(&layout, collection, record);
         collections::put(&layout, collection, record).map_err(err)?
     };
     announce(
@@ -754,6 +758,7 @@ pub fn ws_patch(
         state.memory()?.update(&id, changes)?
     } else {
         let layout = layout(&app, &state)?;
+        let changes = written_down(&layout, collection, changes);
         collections::patch(&layout, collection, &id, changes).map_err(err)?
     };
     announce(&app, json!({ "collection": name, "id": id, "op": "patch" }));
@@ -833,10 +838,48 @@ pub fn ws_rename(
     Ok(saved)
 }
 
+/// A record on its way to disk, with the workspace's stored secrets taken out
+/// when it is a transcript or a turn trace.
+///
+/// Those two hold what the agent saw, and a key the agent was handed comes
+/// back in a tool's output. The window keeps showing it - this is only the
+/// copy that is written down - and every other collection is the person's
+/// own configuration, written exactly as given.
+fn written_down(layout: &Layout, collection: Collection, record: Value) -> Value {
+    match collection {
+        Collection::Messages | Collection::Turns => secrets::scrubbed(layout, record),
+        _ => record,
+    }
+}
+
 /* -- documents ----------------------------------------------------------- */
 
+/// A document the window may read and write whole.
+///
+/// Not the secrets. They cross the bridge one at a time through the secret
+/// commands below, which a screen calls for the one value it needs; a generic
+/// read of the whole file would hand every key to whatever asked for any.
 fn document(key: &str) -> Result<Document, String> {
-    Document::from_key(key).ok_or_else(|| format!("Unknown document: {key}"))
+    match Document::from_key(key) {
+        Some(Document::Secrets) => Err(SECRETS_REFUSED.to_string()),
+        Some(document) => Ok(document),
+        None => Err(format!("Unknown document: {key}")),
+    }
+}
+
+const SECRETS_REFUSED: &str = "Secrets are read and written through the secret commands, not as a file.";
+
+/// A path inside the workspace that is not in its secrets folder.
+///
+/// The file commands are for the folder's ordinary files - an export, an
+/// avatar, a skill's scripts - and the same reasoning as [`document`] keeps
+/// them away from the one folder whose contents are keys.
+fn ordinary_file(layout: &Layout, relative: impl AsRef<Path>) -> Result<PathBuf, String> {
+    let target = fsx::resolve_inside(layout.root(), relative).map_err(err)?;
+    if layout.holds_secrets(&target) {
+        return Err(SECRETS_REFUSED.to_string());
+    }
+    Ok(target)
 }
 
 #[tauri::command]
@@ -915,4 +958,33 @@ pub fn ws_secret_remove(
     let done = secrets::remove(&layout, &name).map_err(err)?;
     announce(&app, json!({ "document": "secrets", "op": "set" }));
     Ok(done)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn workspace() -> (tempfile::TempDir, Layout) {
+        let dir = tempfile::tempdir().expect("a temp dir");
+        let layout = Layout::new(dir.path());
+        layout.scaffold().expect("a workspace");
+        (dir, layout)
+    }
+
+    #[test]
+    fn the_secrets_are_not_a_document_the_window_can_read_whole() {
+        assert_eq!(document("secrets"), Err(SECRETS_REFUSED.to_string()));
+        assert_eq!(document("settings.app"), Ok(Document::App));
+        assert!(document("nonsense").is_err());
+    }
+
+    #[test]
+    fn the_file_commands_stay_out_of_the_secrets_folder() {
+        let (_dir, layout) = workspace();
+        for path in ["secrets/secrets.json", "secrets", "files/../secrets/other.json"] {
+            assert_eq!(ordinary_file(&layout, path), Err(SECRETS_REFUSED.to_string()), "{path}");
+        }
+        assert!(ordinary_file(&layout, "settings/avatar.png").is_ok());
+        assert!(ordinary_file(&layout, "secrets-export.csv").is_ok());
+    }
 }

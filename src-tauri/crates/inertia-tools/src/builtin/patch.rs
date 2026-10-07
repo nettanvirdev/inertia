@@ -30,6 +30,7 @@ use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, Tool
 use inertia_core::{Error, Result};
 use serde_json::{json, Value};
 
+use super::fence;
 use super::read_state::ReadState;
 use crate::replace::replace;
 
@@ -538,19 +539,6 @@ Rules:
 - Deleting a file is not supported. Use the shell for that.
 - Every file you change must have been read in this conversation first, exactly as with `edit`, and must not have changed on disk since.";
 
-/// Same rule as `read`, `write` and `edit`: absolute paths are honoured, the
-/// permission layer decides whether they may be touched. Kept identical to the
-/// resolution in `files.rs` so a path `read` recorded is the path `patch`
-/// looks up.
-fn resolve(root: &Path, supplied: &str) -> PathBuf {
-    let path = Path::new(supplied);
-    if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        root.join(path)
-    }
-}
-
 fn modified_time(path: &Path) -> std::time::SystemTime {
     std::fs::metadata(path)
         .and_then(|m| m.modified())
@@ -701,7 +689,9 @@ impl Tool for PatchTool {
         let mut failures: Vec<String> = Vec::new();
 
         for file in &files {
-            let abs = resolve(&ctx.root, &file.path);
+            // The same resolution `read`, `write` and `edit` use, so a path
+            // `read` recorded is the path looked up here.
+            let abs = fence::reach(ctx, &file.path).await?;
             let shown = abs.display().to_string();
 
             // The permission descriptor above asked once about the patch as a

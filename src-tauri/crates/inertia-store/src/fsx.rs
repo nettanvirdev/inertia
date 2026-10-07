@@ -98,7 +98,86 @@ pub fn resolve_inside(root: &Path, relative: impl AsRef<Path>) -> Result<PathBuf
         return Err(StoreError::Escapes(relative.display().to_string()));
     }
 
+    // The lexical walk above cannot see a link. A symlink or junction inside
+    // the workspace passes every component check and then reads or writes
+    // wherever it points, so the answer is checked again as the filesystem
+    // resolves it.
+    if !is_within(&canonical(root), &canonical(&resolved)) {
+        return Err(StoreError::Escapes(relative.display().to_string()));
+    }
+
     Ok(resolved)
+}
+
+/// The path as the filesystem resolves it: links followed, `..` folded, the
+/// real case of every existing component.
+///
+/// A path that does not exist yet - a file about to be written - resolves
+/// through its deepest ancestor that does, with the rest appended as given, so
+/// a new file under a link lands where the link really points. Windows'
+/// `\\?\` prefix is dropped, so the answer compares with paths written the
+/// ordinary way. A path with no existing ancestor at all comes back unchanged.
+pub fn canonical(path: &Path) -> PathBuf {
+    let parts: Vec<Component> = path.components().collect();
+    for keep in (1..=parts.len()).rev() {
+        let head: PathBuf = parts[..keep].iter().collect();
+        let Ok(real) = std::fs::canonicalize(&head) else {
+            continue;
+        };
+        let mut out = without_verbatim(real);
+        // Nothing past `head` exists, so nothing past it can be a link, and
+        // folding these lexically is exactly what the filesystem will do.
+        for part in &parts[keep..] {
+            match part {
+                Component::ParentDir => {
+                    out.pop();
+                }
+                Component::CurDir => {}
+                other => out.push(other.as_os_str()),
+            }
+        }
+        return out;
+    }
+    path.to_path_buf()
+}
+
+/// `\\?\C:\x` as `C:\x`, and `\\?\UNC\host\share` as `\\host\share`.
+fn without_verbatim(path: PathBuf) -> PathBuf {
+    if !cfg!(windows) {
+        return path;
+    }
+    let Some(text) = path.to_str() else {
+        return path;
+    };
+    if let Some(share) = text.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{share}"));
+    }
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
+        _ => path,
+    }
+}
+
+/// Is `candidate` the same as `base`, or somewhere beneath it?
+///
+/// Compared as text rather than with `Path::starts_with`, because Windows
+/// filesystems are case-insensitive and accept either slash: comparing
+/// case-sensitively there would report `D:\OSS` as outside `D:\oss`. Purely
+/// lexical - pass both through [`canonical`] first when a link could matter.
+pub fn is_within(base: &Path, candidate: &Path) -> bool {
+    let sep = if cfg!(windows) { '\\' } else { '/' };
+    let fold = |p: &Path| {
+        let s = p.to_string_lossy();
+        let s = if cfg!(windows) {
+            s.replace('/', "\\").to_lowercase()
+        } else {
+            s.to_string()
+        };
+        s.trim_end_matches(sep).to_string()
+    };
+    let a = fold(base);
+    let b = fold(candidate);
+    a == b || b.starts_with(&format!("{a}{sep}"))
 }
 
 /// Whether a failure is the kind another process causes by holding a handle.
@@ -435,6 +514,50 @@ mod tests {
             resolve_inside(root, "./settings/./app.json").unwrap(),
             Path::new("/ws/settings/app.json")
         );
+    }
+
+    /// Links a directory, or says the platform would not let it - creating a
+    /// symlink on Windows needs developer mode, and a test that cannot set up
+    /// its link has nothing to say about following one.
+    fn link_dir(target: &Path, link: &Path) -> bool {
+        #[cfg(windows)]
+        let made = std::os::windows::fs::symlink_dir(target, link);
+        #[cfg(not(windows))]
+        let made = std::os::unix::fs::symlink(target, link);
+        made.is_ok()
+    }
+
+    /// Every component of `files/escape/secret.txt` is a plain name, so the
+    /// lexical walk passes it; only following the link shows where it goes.
+    #[test]
+    fn a_link_out_of_the_workspace_is_refused() {
+        let workspace = temp();
+        let outside = temp();
+        std::fs::create_dir_all(workspace.path().join("files")).unwrap();
+        if !link_dir(outside.path(), &workspace.path().join("files/escape")) {
+            return;
+        }
+        assert!(resolve_inside(workspace.path(), "files/escape/secret.txt").is_err());
+        assert!(resolve_inside(workspace.path(), "files/escape").is_err());
+        assert!(resolve_inside(workspace.path(), "files/plain.txt").is_ok());
+    }
+
+    #[test]
+    fn a_path_that_does_not_exist_yet_resolves_through_its_existing_ancestor() {
+        let dir = temp();
+        let real = canonical(dir.path());
+        assert_eq!(canonical(&dir.path().join("a/b/../c.txt")), real.join("a").join("c.txt"));
+        assert!(!real.to_string_lossy().starts_with(r"\\?\"));
+    }
+
+    #[test]
+    fn containment_ignores_case_and_slashes_where_the_filesystem_does() {
+        assert!(is_within(Path::new("/ws"), Path::new("/ws")));
+        assert!(is_within(Path::new("/ws"), Path::new("/ws/secrets/a.json")));
+        assert!(!is_within(Path::new("/ws"), Path::new("/wsx/a.json")));
+        if cfg!(windows) {
+            assert!(is_within(Path::new(r"D:\OSS"), Path::new("d:/oss/a.txt")));
+        }
     }
 
     // ── writing ─────────────────────────────────────────────────────────

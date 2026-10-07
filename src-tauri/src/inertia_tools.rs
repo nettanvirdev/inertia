@@ -1263,6 +1263,104 @@ fn validate(kind: Kind, record: &Value) -> Option<String> {
     }
 }
 
+/// The fields of an MCP server that decide what program runs, or where its
+/// requests and their headers go.
+const MCP_LAUNCH: &[&str] = &["type", "command", "args", "cwd", "env", "url", "headers"];
+
+/// What saving this server would start, as the person approving it must read
+/// it: every environment variable, the program, every argument and the folder
+/// - or the address, and the headers sent to it.
+fn launch_line(server: &Map<String, Value>) -> String {
+    let record = Value::Object(server.clone());
+    let as_text = |value: &Value| value.as_str().map_or_else(|| value.to_string(), str::to_string);
+    let pairs = |key: &str, joiner: &str| -> Vec<String> {
+        object(record.get(key).unwrap_or(&Value::Null))
+            .iter()
+            .map(|(name, value)| format!("{name}{joiner}{}", as_text(value)))
+            .collect()
+    };
+
+    let url = text(&record, "url");
+    if text(&record, "type") == "http" || (text(&record, "command").is_empty() && !url.is_empty()) {
+        let headers = pairs("headers", ": ");
+        return if headers.is_empty() {
+            url
+        } else {
+            format!("{url} with headers {}", headers.join(", "))
+        };
+    }
+
+    let mut line = pairs("env", "=");
+    line.push(text(&record, "command"));
+    match record.get("args") {
+        Some(Value::Array(items)) => line.extend(items.iter().map(|item| quoted(&as_text(item)))),
+        Some(Value::String(rest)) => line.push(rest.clone()),
+        _ => {}
+    }
+    let mut shown = line.join(" ");
+    let cwd = text(&record, "cwd");
+    if !cwd.is_empty() {
+        shown.push_str(&format!(" (in {cwd})"));
+    }
+    shown
+}
+
+/// An argument as it would have to be typed: quoted when it holds a space, a
+/// quote or nothing at all, so two arguments never read as one.
+fn quoted(arg: &str) -> String {
+    if arg.is_empty() || arg.chars().any(|c| c.is_whitespace() || c == '"') {
+        format!("\"{}\"", arg.replace('"', "\\\""))
+    } else {
+        arg.to_string()
+    }
+}
+
+/// Refuses an agent's attempt to let a routine run without asking.
+///
+/// `edits` and `auto` let an unattended run make calls nobody approves, and
+/// the agent asking for that is the one whose calls would go unchecked. An
+/// agent may hold a routine back, never let one go: only the person loosens a
+/// routine, on the Routines screen.
+fn held_back(incoming: &Map<String, Value>) -> Result<()> {
+    match incoming.get("approval") {
+        None => Ok(()),
+        Some(value) if value.as_str() == Some(crate::routines::DEFAULT_APPROVAL) => Ok(()),
+        Some(_) => Err(Error::Other(
+            "Only the person can let a routine run without asking. Leave approval out, or set \
+             it to ask; they can loosen it on the Routines screen."
+                .into(),
+        )),
+    }
+}
+
+/// What a routine does, as opposed to what it is called or when it runs.
+const ROUTINE_BEHAVIOUR: &[&str] = &["markdown", "agentId", "mode"];
+
+/// Puts a routine the person loosened back to asking, when an agent changes
+/// what it does.
+///
+/// The person who let a routine run unattended approved that playbook, run by
+/// that agent in that mode. One an agent rewrote is not something they have
+/// read, and it does not inherit their approval. Answers whether it had to.
+fn rein_in(
+    previous: Option<&Value>,
+    incoming: &Map<String, Value>,
+    merged: &mut Map<String, Value>,
+) -> bool {
+    let Some(previous) = previous else {
+        return false;
+    };
+    let loosened = matches!(text(previous, "approval").as_str(), "edits" | "auto");
+    let changed = ROUTINE_BEHAVIOUR
+        .iter()
+        .any(|key| incoming.get(*key).is_some_and(|value| previous.get(*key) != Some(value)));
+    if loosened && changed {
+        merged.insert("approval".into(), json!(crate::routines::DEFAULT_APPROVAL));
+        return true;
+    }
+    false
+}
+
 #[derive(Debug)]
 pub struct SaveTool(Setup);
 
@@ -1277,21 +1375,23 @@ const SAVE_DESCRIPTION: &str = concat!(
     "What each kind needs:\n",
     "- agent: name. Optionally role, description, systemPrompt, model (`provider/model`),\n",
     "  cwd, computerId, icon, avatarColor, tags. Use inertia_set_picture for a photo.\n",
-    "- routine: name, agentId, markdown (the playbook), schedule. Optionally mode and\n",
-    "  approval.\n",
+    "- routine: name, agentId, markdown (the playbook), schedule. Optionally mode.\n",
     "  schedule is {\"kind\":\"cron\",\"expression\":\"0 9 * * 1-5\"} - five fields, local time -\n",
     "  or {\"kind\":\"interval\",\"expression\":\"PT30M\"}, {\"kind\":\"once\",\"expression\":\"<ISO time>\"}\n",
     "  for a single run at a time, or {\"kind\":\"manual\"}. A routine runs\n",
     "  unattended, so write a playbook that decides rather than one that asks.\n",
-    "  mode is chat, plan or autonomous (default autonomous: every tool). approval is\n",
-    "  auto, edits or ask (default auto). Unattended, a call that would ask a person is\n",
-    "  refused instead, so auto is what lets a routine send the email or run the\n",
-    "  command; choose edits or ask only for a routine the person wants held back.\n",
+    "  mode is chat, plan or autonomous (default autonomous: every tool). A routine asks\n",
+    "  the way a conversation set to Ask does, and unattended a call that would ask a\n",
+    "  person is refused, so plan a playbook that works within the person's rules. Only\n",
+    "  the person can let a routine run without asking, on the Routines screen; approval\n",
+    "  can be left out or set to ask, nothing else. Changing the playbook, agent or mode\n",
+    "  of a routine they loosened puts it back to asking.\n",
     "- skill: name, description, instructions. The description is the only thing an agent\n",
     "  sees before loading it, so say what it covers AND when to use it.\n",
     "- memory: title, body.\n",
     "- mcp: name, type (stdio or http), then command+args, or url. Use {secret:NAME} in env\n",
-    "  or headers rather than a real key. It is started as soon as it is saved.\n",
+    "  or headers rather than a real key. It is started as soon as it is saved. Setting\n",
+    "  what it runs or where it connects asks the person every time.\n",
     "- api: name and url (an OpenAPI spec), or text. Reads are enabled, writes are not.\n",
     "\n",
     "Skills, agents and routines are files in the workspace folder. You can also read them\n",
@@ -1345,12 +1445,30 @@ impl Tool for SaveTool {
     }
 
     /// Writing is one permission; the model may not widen its own rules with it.
+    ///
+    /// Except for what an MCP server runs. Saving one starts a program with
+    /// the command, arguments and environment the model wrote, which is
+    /// running code on this machine by another name. So that asks under the
+    /// guarded key, shows the person the exact command line, and offers no
+    /// "always": the next program is a different decision.
     fn permission(&self, args: &Value) -> PermissionRequest {
         let kind = text(args, "kind");
         let id = match text(args, "id") {
             id if id.is_empty() => "new".to_string(),
             id => id,
         };
+        let fields = object(args.get("fields").unwrap_or(&Value::Null));
+        if Kind::parse(&kind) == Some(Kind::Mcp) && MCP_LAUNCH.iter().any(|key| fields.contains_key(*key)) {
+            let mut server = self
+                .0
+                .get(Kind::Mcp, &id)
+                .ok()
+                .flatten()
+                .map(|record| object(&record))
+                .unwrap_or_default();
+            server.extend(fields);
+            return PermissionRequest::new(GUARDED_KEY, format!("mcp:{id}: {}", launch_line(&server)));
+        }
         PermissionRequest::new(PERMISSION_KEY, format!("{kind}:{id}"))
             .with_always(format!("{kind}:*"))
     }
@@ -1397,6 +1515,10 @@ impl Tool for SaveTool {
                 unknown.join(", "),
                 kind.fields().join(", ")
             )));
+        }
+
+        if kind == Kind::Routine {
+            held_back(&incoming_map)?;
         }
 
         let id = match text(&args, "id") {
@@ -1515,6 +1637,7 @@ impl Tool for SaveTool {
         }
 
         let mut merged = object(previous.as_ref().unwrap_or(&Value::Null));
+        let reined_in = kind == Kind::Routine && rein_in(previous.as_ref(), &incoming_map, &mut merged);
         for (key, value) in incoming_map {
             merged.insert(key, value);
         }
@@ -1543,6 +1666,12 @@ impl Tool for SaveTool {
         );
         if previous.is_none() {
             output.push_str(&format!(" It is on screen now, in {}.", kind.where_()));
+        }
+        if reined_in {
+            output.push_str(
+                " What it does changed, so it asks again: the person can let it run without \
+                 asking on the Routines screen once they have read the new version.",
+            );
         }
 
         Ok(ToolOutcome {
@@ -2057,8 +2186,6 @@ impl Tool for ConnectAppTool {
 pub const TOOL_KEYS: &[&str] = &[
     "read",
     "edit",
-    "glob",
-    "grep",
     "shell",
     "computer",
     "browser",
@@ -2145,10 +2272,34 @@ impl Tool for SetRulesTool {
         ToolSource::Builtin
     }
 
+    /// The card carries every rule being written, not just whose: approving
+    /// "change the workspace rules" without seeing that one of them is
+    /// `shell * allow` is not a decision anyone made.
     fn permission(&self, args: &Value) -> PermissionRequest {
-        let target = match text(args, "agentId") {
+        let scope = match text(args, "agentId") {
             id if id.is_empty() => "rules:workspace".to_string(),
             id => format!("rules:{id}"),
+        };
+        let rules: Vec<String> = args
+            .get("rules")
+            .and_then(Value::as_array)
+            .map(|rules| {
+                rules
+                    .iter()
+                    .map(|rule| {
+                        let pattern = match text(rule, "pattern") {
+                            p if p.is_empty() => "*".to_string(),
+                            p => p,
+                        };
+                        format!("{} {pattern} {}", text(rule, "tool"), text(rule, "action"))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let target = if rules.is_empty() {
+            scope
+        } else {
+            format!("{scope}: {}", rules.join("; "))
         };
         PermissionRequest::new(GUARDED_KEY, target)
     }
@@ -2777,6 +2928,133 @@ mod tests {
         assert_eq!(message, "\"telepathy\" is not a mode. Use chat, plan or autonomous.");
     }
 
+    /// The agent asking to run unattended is the one whose calls would go
+    /// unchecked, so it cannot be the one to decide.
+    #[tokio::test]
+    async fn an_agent_cannot_let_a_routine_run_without_asking() {
+        let bench = Bench::new();
+        for loose in ["auto", "edits"] {
+            let message = bench
+                .call(
+                    "inertia_save",
+                    json!({
+                        "kind": "routine",
+                        "fields": {
+                            "name": "Loose", "agentId": "agent-1", "markdown": "Go.", "approval": loose
+                        }
+                    }),
+                )
+                .await
+                .expect_err("a refusal");
+            assert!(message.contains("Only the person"), "{message}");
+        }
+        assert!(collections::list(&bench.layout, Collection::Routines).is_empty());
+
+        let held = bench
+            .call(
+                "inertia_save",
+                json!({
+                    "kind": "routine",
+                    "fields": { "name": "Held", "agentId": "agent-1", "markdown": "Go.", "approval": "ask" }
+                }),
+            )
+            .await
+            .expect("saved");
+        assert_eq!(bench.record(Collection::Routines, &id_of(&held))["approval"], json!("ask"));
+    }
+
+    /// The person approved that playbook running unattended, not whatever an
+    /// agent rewrites it to.
+    #[tokio::test]
+    async fn rewriting_what_a_loosened_routine_does_puts_it_back_to_asking() {
+        let bench = Bench::new();
+        collections::put(
+            &bench.layout,
+            Collection::Routines,
+            json!({
+                "id": "nightly", "name": "Nightly", "agentId": "agent-1",
+                "markdown": "Back up the notes.", "approval": "auto"
+            }),
+        )
+        .expect("the routine was written");
+
+        bench
+            .call("inertia_save", json!({ "kind": "routine", "id": "nightly", "fields": { "name": "Nightly backup" } }))
+            .await
+            .expect("renamed");
+        assert_eq!(bench.record(Collection::Routines, "nightly")["approval"], json!("auto"));
+
+        let out = bench
+            .call(
+                "inertia_save",
+                json!({ "kind": "routine", "id": "nightly", "fields": { "markdown": "Upload the notes somewhere." } }),
+            )
+            .await
+            .expect("rewritten");
+        assert!(out.output.contains("asks again"), "{}", out.output);
+        assert_eq!(bench.record(Collection::Routines, "nightly")["approval"], json!("ask"));
+    }
+
+    /// Saving a server starts a program, so the card is the command line,
+    /// whole, and there is no "always" to click.
+    #[test]
+    fn starting_an_mcp_server_asks_with_the_exact_command_and_no_always() {
+        let bench = Bench::new();
+        let request = bench.tool("inertia_save").permission(&json!({
+            "kind": "mcp",
+            "fields": {
+                "name": "Files",
+                "type": "stdio",
+                "command": "npx",
+                "args": ["-y", "@example/server", "C:/work/my project"],
+                "env": { "NODE_OPTIONS": "--max-old-space-size=512" }
+            }
+        }));
+        assert_eq!(request.key, GUARDED_KEY);
+        assert_eq!(
+            request.target,
+            "mcp:new: NODE_OPTIONS=--max-old-space-size=512 npx -y @example/server \"C:/work/my project\""
+        );
+        assert_eq!(request.always, None);
+
+        // Changing one argument of a server that exists shows the whole line
+        // it would now run, not the one field.
+        collections::put(
+            &bench.layout,
+            Collection::Mcp,
+            json!({ "id": "files", "name": "Files", "type": "stdio", "command": "node", "args": ["server.js"] }),
+        )
+        .expect("the server was written");
+        let changed = bench.tool("inertia_save").permission(&json!({
+            "kind": "mcp", "id": "files", "fields": { "args": ["evil.js"] }
+        }));
+        assert_eq!(changed.target, "mcp:files: node evil.js");
+
+        // Renaming one starts nothing new, and asks the ordinary way.
+        let renamed = bench.tool("inertia_save").permission(&json!({
+            "kind": "mcp", "id": "files", "fields": { "name": "Project files" }
+        }));
+        assert_eq!(renamed.key, PERMISSION_KEY);
+        assert_eq!(renamed.always.as_deref(), Some("mcp:*"));
+    }
+
+    #[test]
+    fn a_remote_mcp_server_is_shown_by_where_it_sends_its_headers() {
+        let bench = Bench::new();
+        let request = bench.tool("inertia_save").permission(&json!({
+            "kind": "mcp",
+            "fields": {
+                "name": "Remote", "type": "http", "url": "https://mcp.example.com",
+                "headers": { "Authorization": "{secret:EXAMPLE_TOKEN}" }
+            }
+        }));
+        assert_eq!(request.key, GUARDED_KEY);
+        assert_eq!(
+            request.target,
+            "mcp:new: https://mcp.example.com with headers Authorization: {secret:EXAMPLE_TOKEN}"
+        );
+    }
+
     /* -- skills ---------------------------------------------------------- */
 
     #[tokio::test]
@@ -2875,6 +3153,12 @@ mod tests {
         let rules = bench.tool("inertia_set_rules").permission(&json!({}));
         assert_eq!(rules.key, "inertia_guarded");
         assert_eq!(rules.target, "rules:workspace");
+        let widening = bench.tool("inertia_set_rules").permission(&json!({
+            "agentId": "agent-1",
+            "rules": [{ "tool": "shell", "action": "allow" }, { "tool": "read", "pattern": "*.env", "action": "deny" }]
+        }));
+        assert_eq!(widening.target, "rules:agent-1: shell * allow; read *.env deny");
+        assert_eq!(widening.always, None);
 
         for id in ["inertia_list", "inertia_get", "inertia_set_picture", "inertia_connect_app"] {
             assert_eq!(bench.tool(id).permission(&args).key, "inertia", "{id}");

@@ -141,6 +141,69 @@ pub fn remove(layout: &Layout, name: &str) -> Result<Value> {
     Ok(json!({ "name": name, "removed": true }))
 }
 
+/// What a secret's value is replaced with wherever it would have been written.
+pub const REDACTED: &str = "[REDACTED]";
+
+/// Shorter than this and a value is too likely to occur by chance - a PIN, a
+/// word - for replacing it everywhere to be anything but damage.
+const MIN_SCRUBBED: usize = 6;
+
+/// Every stored value worth looking for, longest first so a secret that
+/// contains another is taken out whole.
+///
+/// For the places that write what an agent saw to disk - its turn traces, its
+/// transcripts, the failure log. A key the agent was handed in an environment
+/// variable comes back in a command's output, and the output is kept; this is
+/// what keeps the key in the one file meant to hold it.
+pub fn values(layout: &Layout) -> Vec<String> {
+    let mut found: Vec<String> = read_all(layout)
+        .values()
+        .filter_map(|entry| entry.get("value").and_then(Value::as_str))
+        .filter(|value| value.len() >= MIN_SCRUBBED)
+        .map(str::to_string)
+        .collect();
+    found.sort_by_key(|value| std::cmp::Reverse(value.len()));
+    found
+}
+
+/// `text`, with every one of `values` replaced by [`REDACTED`].
+pub fn scrub(text: &str, values: &[String]) -> String {
+    let mut out = text.to_string();
+    for value in values {
+        if value.len() >= MIN_SCRUBBED && out.contains(value.as_str()) {
+            out = out.replace(value.as_str(), REDACTED);
+        }
+    }
+    out
+}
+
+/// [`scrub`] through every string in a record, keys left alone.
+///
+/// String by string rather than over the serialised text, because a value
+/// with a quote or a backslash in it is spelled differently once encoded and
+/// would be missed.
+pub fn scrub_value(value: &mut Value, values: &[String]) {
+    if values.is_empty() {
+        return;
+    }
+    match value {
+        Value::String(text) => {
+            if values.iter().any(|secret| text.contains(secret.as_str())) {
+                *text = scrub(text, values);
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(|item| scrub_value(item, values)),
+        Value::Object(map) => map.values_mut().for_each(|item| scrub_value(item, values)),
+        _ => {}
+    }
+}
+
+/// A record about to be written, with this workspace's secrets taken out.
+pub fn scrubbed(layout: &Layout, mut record: Value) -> Value {
+    scrub_value(&mut record, &values(layout));
+    record
+}
+
 /// Resolves `{secret:NAME}` anywhere in a config value, so a stored MCP header
 /// or OpenAPI auth field can name a secret instead of carrying one.
 ///
@@ -235,6 +298,33 @@ mod tests {
         assert_eq!(rows[0]["name"], "GITHUB_TOKEN");
         assert_eq!(rows[0]["hint"], "ghp…jkl");
         assert!(!serde_json::to_string(&rows).unwrap().contains("abcdefghijkl"));
+    }
+
+    #[test]
+    fn a_stored_value_is_taken_out_of_a_record_wherever_it_appears() {
+        let (_dir, layout) = workspace();
+        set(&layout, "API_KEY", "key-with\"quote-123", "").unwrap();
+        set(&layout, "PIN", "1234", "").unwrap();
+        let record = json!({
+            "id": "turn-1",
+            "events": [{ "output": "printenv: API_KEY=key-with\"quote-123 PIN=1234" }],
+            "count": 3,
+        });
+        let clean = scrubbed(&layout, record);
+        let text = serde_json::to_string(&clean).unwrap();
+        assert!(!text.contains("quote-123"), "{text}");
+        assert!(text.contains("API_KEY=[REDACTED]"), "{text}");
+        // Too short to look for without wrecking ordinary text.
+        assert!(text.contains("PIN=1234"), "{text}");
+        assert_eq!(clean["count"], json!(3));
+    }
+
+    #[test]
+    fn a_secret_inside_a_longer_one_does_not_leave_the_longer_one_half_shown() {
+        let (_dir, layout) = workspace();
+        set(&layout, "SHORT", "abcdef", "").unwrap();
+        set(&layout, "LONG", "abcdef-ghijkl", "").unwrap();
+        assert_eq!(scrub("x abcdef-ghijkl y", &values(&layout)), "x [REDACTED] y");
     }
 
     #[test]

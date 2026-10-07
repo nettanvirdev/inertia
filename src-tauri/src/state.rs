@@ -691,6 +691,7 @@ pub fn gate_for(
     Arc::new(UiPermissionGate::new(
         app.clone(),
         workspace.settings.clone(),
+        workspace.layout.clone(),
         session,
         agent,
     ))

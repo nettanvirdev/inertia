@@ -22,7 +22,6 @@
 
 export const GROUPS = [
   { id: "files", label: "Files", description: "Reading and changing files on this machine." },
-  { id: "search", label: "Search", description: "Finding files and text without opening them." },
   { id: "system", label: "System", description: "Running commands and reaching outside the project." },
   { id: "agents", label: "Agents and skills", description: "Delegating work and loading instructions." },
   { id: "plugins", label: "Connected tools", description: "MCP servers, APIs and Composio apps." },
@@ -37,16 +36,20 @@ export const GROUPS = [
 export const TOOLS = [
   {
     key: "read",
-    label: "Read files",
-    description: "Open a file or list a directory and see the contents.",
+    label: "Read and search files",
+    description:
+      "Open a file or list a directory and see the contents, find files by name, and " +
+      "search inside them.",
     group: "files",
     icon: "FileText",
     danger: "low",
     fallback: "allow",
     // `present` rides here rather than under a key of its own: it opens
     // nothing the reader could not open themselves and changes nothing, so
-    // asking about it would be a card with no decision in it.
-    tools: ["read", "ls", "lsp", "present"],
+    // asking about it would be a card with no decision in it. `glob` and `grep`
+    // ask under this key too - finding a file is looking at it - and a switch
+    // of their own here would be one the tools never consult.
+    tools: ["read", "ls", "lsp", "present", "glob", "grep"],
   },
   {
     key: "edit",
@@ -59,26 +62,6 @@ export const TOOLS = [
     danger: "high",
     fallback: "ask",
     tools: ["write", "edit", "patch", "file_copy", "file_move", "file_folder", "file_delete"],
-  },
-  {
-    key: "glob",
-    label: "Find files by name",
-    description: "Match file paths against a pattern.",
-    group: "search",
-    icon: "Search",
-    danger: "low",
-    fallback: "allow",
-    tools: ["glob"],
-  },
-  {
-    key: "grep",
-    label: "Search file contents",
-    description: "Search inside files for a pattern.",
-    group: "search",
-    icon: "Search",
-    danger: "low",
-    fallback: "allow",
-    tools: ["grep"],
   },
   {
     key: "shell",
@@ -156,7 +139,6 @@ export const TOOLS = [
       "browser_navigate",
       "browser_read_page",
       "browser_read_text",
-      "browser_screenshot",
       "browser_click",
       "browser_type",
       "browser_press",
@@ -237,16 +219,19 @@ export const TOOLS = [
     key: "memory",
     label: "Remember and recall",
     description:
-      "Read what it already knows from earlier conversations, and write down something " +
-      "worth keeping. Deleting a memory asks under Remove from Inertia.",
+      "Read what it already knows from earlier conversations, write down something worth " +
+      "keeping, and forget something it was told.",
     group: "agents",
     icon: "Brain",
     danger: "low",
     fallback: "allow",
-    tools: ["memory_recall", "memory_save"],
+    tools: ["memory_recall", "memory_save", "memory_forget"],
+    // The targets are what the tools ask about: `recall`, `remember <title>`
+    // and `forget <id>`.
     suggestions: [
       { pattern: "recall", action: "allow", label: "Reading what it knows" },
-      { pattern: "save", action: "allow", label: "Writing something down" },
+      { pattern: "remember *", action: "allow", label: "Writing something down" },
+      { pattern: "forget *", action: "ask", label: "Forgetting something" },
     ],
   },
   {
@@ -328,13 +313,14 @@ export const TOOLS = [
     key: "inertia_guarded",
     label: "Remove from Inertia, or change its rules",
     description:
-      "Delete an agent, routine, skill, server, import, memory or connected app - one at a " +
-      "time, never a sweep - or rewrite permission rules. Asks every time by default.",
+      "Delete an agent, routine, skill, server, import or connected app - one at a time, " +
+      "never a sweep - rewrite permission rules, or change the program an MCP server runs " +
+      "or the address it connects to. Asks every time by default.",
     group: "agents",
     icon: "Trash2",
     danger: "high",
     fallback: "ask",
-    tools: ["inertia_remove", "inertia_set_rules", "memory_forget"],
+    tools: ["inertia_remove", "inertia_set_rules"],
   },
   {
     key: "mcp",

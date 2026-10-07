@@ -34,7 +34,7 @@ pub use id::{MessageId, SessionId, ToolCallId, TurnId};
 pub use message::{
     AssistantEntry, Entry, ImageUrl, Part, ThinkingBlock, ToolCall, ToolEntry, UserEntry,
 };
-pub use permission::{Action, Rule, Verdict};
+pub use permission::{Action, Rule, Shape, Verdict};
 pub use provider::{
     ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, ToolSpec, Usage,
 };

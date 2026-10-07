@@ -13,18 +13,20 @@ import { isMode } from "./modes.js";
  * command, could not send the email, and reported that it would have liked
  * permission. A scheduled job that needs a person is not a scheduled job.
  *
- * So a routine carries the same two dials a conversation does, with different
- * defaults. Mode defaults to Autonomous, because a routine is work approved
- * when it was written. Approval defaults to Never ask, because there is
- * nobody to ask, and a routine the person wanted held back can say so: set it
- * to `ask` and anything a rule would stop for is refused, as before, or to
- * `edits`, and only file changes in the working folder go through. The deny
- * rules hold whatever the dial says, and emptying a folder always asks, which
- * unattended means always refuses - the dial loosens, it never overrides.
+ * So a routine carries the same two dials a conversation does. Mode defaults
+ * to Autonomous, because a routine is work approved when it was written.
+ * Approval defaults to Ask: unattended, anything a rule would stop for is
+ * refused, so a routine does what the person's rules already allow and says
+ * what it could not. Letting one run without asking is a decision about that
+ * playbook, made here by the person - an agent that writes or rewrites a
+ * routine cannot make it for them, and one that rewrites a loosened routine's
+ * playbook puts it back to Ask. The deny rules hold whatever the dial says,
+ * and emptying a folder always asks, which unattended means always refuses -
+ * the dial loosens, it never overrides.
  */
 
 export const ROUTINE_DEFAULT_MODE = "autonomous";
-export const ROUTINE_DEFAULT_APPROVAL = "auto";
+export const ROUTINE_DEFAULT_APPROVAL = "ask";
 
 /** The mode a routine's turn runs in: its own if it names a real one. */
 export function routineMode(routine) {

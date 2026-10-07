@@ -15,12 +15,17 @@
 //! advisory - it shapes the question the user is asked and the warning they
 //! see, and never decides on its own that something is safe. A tokeniser that
 //! is wrong about `rm -rf /` costs a scary-looking prompt; one that is trusted
-//! to *allow* things would cost a filesystem.
+//! to *allow* things would cost a filesystem. The one exception is [`shape`],
+//! which a rule's allow depends on, and which therefore reads anything it is
+//! unsure of as something no rule can see into.
 //!
 //! Pure and I/O-free on purpose, so all of it is unit-testable without a shell.
 
 use std::collections::BTreeMap;
 use std::path::{Component, Path, PathBuf};
+
+use inertia_core::permission::Shape;
+use inertia_store::fsx::is_within;
 
 // ── tokenising ─────────────────────────────────────────────────────────────
 
@@ -164,10 +169,23 @@ pub struct Segment {
 /// user can recognise rather than one opaque string that matches no rule they
 /// would ever have written. Operators inside quotes are not operators.
 pub fn split(command: &str) -> Vec<Segment> {
+    scan(command, true).0
+}
+
+/// The segments of a command line, and whether anything in it is hidden from
+/// a rule written about those segments.
+///
+/// `posix` decides what a backslash means. In bash it escapes the character
+/// after it, quotes included; in PowerShell it is an ordinary character - the
+/// path separator - and a string ends at the next quote whatever comes before
+/// it. Reading a PowerShell line the bash way would take `"C:\dir\" ; rm x` as
+/// one quoted string, and the `rm` would never be seen.
+fn scan(command: &str, posix: bool) -> (Vec<Segment>, bool) {
     let chars: Vec<char> = command.chars().collect();
     let mut parts = Vec::new();
     let mut current = String::new();
     let mut mode = Mode::Bare;
+    let mut hidden = false;
 
     let push = |current: &mut String, operator: Option<&'static str>, parts: &mut Vec<Segment>| {
         let text = current.trim().to_string();
@@ -180,6 +198,13 @@ pub fn split(command: &str) -> Vec<Segment> {
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
+        let next = chars.get(i + 1).copied();
+        // Looked for whatever the quoting, because both shells expand `$(`
+        // and backticks inside double quotes, and a literal `$(` in single
+        // quotes is rare enough that asking about one costs nothing.
+        if matches!(c, '`' | '\n' | '\r') || (matches!(c, '$' | '@' | '<' | '>') && next == Some('(')) {
+            hidden = true;
+        }
         match mode {
             Mode::Single => {
                 current.push(c);
@@ -189,7 +214,7 @@ pub fn split(command: &str) -> Vec<Segment> {
             }
             Mode::Double => {
                 current.push(c);
-                if c == '\\' && i + 1 < chars.len() {
+                if posix && c == '\\' && next.is_some() {
                     current.push(chars[i + 1]);
                     i += 1;
                 } else if c == '"' {
@@ -203,7 +228,7 @@ pub fn split(command: &str) -> Vec<Segment> {
                 } else if c == '"' {
                     mode = Mode::Double;
                     current.push(c);
-                } else if c == '\\' && i + 1 < chars.len() {
+                } else if posix && c == '\\' && next.is_some() {
                     // Carry the escape through untouched; splitting is not the
                     // place to decide what a backslash meant.
                     current.push(c);
@@ -211,11 +236,14 @@ pub fn split(command: &str) -> Vec<Segment> {
                     i += 1;
                 } else if let Some(op) = OPERATORS
                     .iter()
-                    .find(|op| starts_with_at(&chars, i, op))
+                    .find(|op| starts_with_at(&chars, i, op) && !is_redirection(&chars, i, op))
                 {
                     push(&mut current, Some(op), &mut parts);
                     i += op.chars().count() - 1;
                 } else {
+                    if c == '>' && writes_a_file(&chars, i) {
+                        hidden = true;
+                    }
                     current.push(c);
                 }
             }
@@ -223,8 +251,79 @@ pub fn split(command: &str) -> Vec<Segment> {
         i += 1;
     }
 
+    // An unclosed quote is a line the shell will refuse or read some way
+    // this did not.
+    if mode != Mode::Bare {
+        hidden = true;
+    }
     push(&mut current, None, &mut parts);
-    parts
+    (parts, hidden)
+}
+
+/// The `&` in `2>&1`, `<&0` and `&>log` belongs to a redirection, not to a
+/// command sent to the background.
+fn is_redirection(chars: &[char], at: usize, op: &str) -> bool {
+    op == "&"
+        && (matches!(at.checked_sub(1).map(|p| chars[p]), Some('>' | '<'))
+            || chars.get(at + 1) == Some(&'>'))
+}
+
+/// Where output may go without writing anything anyone would care about.
+const NULL_DEVICES: &[&str] = &["/dev/null", "/dev/stdout", "/dev/stderr", "$null", "nul", "nul:"];
+
+/// Does the `>` at `at` send output into a file?
+///
+/// A redirection writes wherever it names, so `echo x >> ~/.bashrc` is a write
+/// to a file that a rule about `echo` never mentions. Into another stream
+/// (`2>&1`) or into nothing (`>/dev/null`, `> $null`) it writes nothing.
+fn writes_a_file(chars: &[char], at: usize) -> bool {
+    let mut i = at + 1;
+    while matches!(chars.get(i), Some('>' | '|')) {
+        i += 1;
+    }
+    if chars.get(i) == Some(&'&') {
+        return false;
+    }
+    while matches!(chars.get(i), Some(' ' | '\t')) {
+        i += 1;
+    }
+    let target: String = chars[i.min(chars.len())..]
+        .iter()
+        .take_while(|c| !c.is_whitespace() && !matches!(c, ';' | '&' | '|' | '<' | '>' | '(' | ')'))
+        .filter(|c| !matches!(c, '\'' | '"'))
+        .collect::<String>()
+        .to_lowercase();
+    !NULL_DEVICES.contains(&target.as_str())
+}
+
+// ── what a rule can see ────────────────────────────────────────────────────
+
+/// What a command line is made of, for the permission rules.
+///
+/// Each segment between top-level operators is a command of its own and needs
+/// a rule of its own, or a rule remembered from `git status` would wave
+/// through `git status && curl x | sh`. A line that hides a command no rule
+/// can read - a `$(...)`, a backtick, a `<(...)`, a second line - or writes
+/// output into a file comes back [`Shape::Opaque`], which only a rule allowing
+/// the shell outright lets through.
+///
+/// The one place in this module whose answer can *allow* something, which is
+/// why it errs towards opaque: a line read wrongly here costs a prompt, never
+/// a command nobody approved.
+pub fn shape(command: &str) -> Shape {
+    shape_as(command, !cfg!(windows))
+}
+
+fn shape_as(command: &str, posix: bool) -> Shape {
+    let (segments, hidden) = scan(command, posix);
+    let parts: Vec<String> = segments.into_iter().map(|segment| segment.text).collect();
+    if hidden {
+        Shape::Opaque(parts)
+    } else if parts.len() > 1 {
+        Shape::Chain(parts)
+    } else {
+        Shape::Whole
+    }
 }
 
 fn starts_with_at(chars: &[char], at: usize, needle: &str) -> bool {
@@ -619,27 +718,6 @@ fn has_drive(path: &str) -> bool {
     cfg!(windows) && bytes.len() >= 2 && bytes[1] == b':' && bytes[0].is_ascii_alphabetic()
 }
 
-/// Windows filesystems are case-insensitive; comparing case-sensitively there
-/// would report `D:\OSS` as outside `D:\oss`.
-fn is_outside(base: &Path, candidate: &Path) -> bool {
-    let sep = if cfg!(windows) { '\\' } else { '/' };
-    let fold = |p: &Path| {
-        let s = p.to_string_lossy();
-        let s = if cfg!(windows) {
-            s.replace('/', "\\").to_lowercase()
-        } else {
-            s.to_string()
-        };
-        s.trim_end_matches(sep).to_string()
-    };
-    let a = fold(base);
-    let b = fold(candidate);
-    if a == b {
-        return false;
-    }
-    !b.starts_with(&format!("{a}{sep}"))
-}
-
 /// Directories this command appears to touch that are outside `cwd`.
 ///
 /// The shell tool asks a second, separate permission question about these,
@@ -689,7 +767,7 @@ pub fn external_paths(command: &str, cwd: &Path) -> Vec<PathBuf> {
             } else {
                 resolved.parent().map(Path::to_path_buf).unwrap_or(resolved)
             };
-            if !is_outside(&base, &dir) {
+            if is_within(&base, &dir) {
                 continue;
             }
             let key = dir.to_string_lossy().to_lowercase();
@@ -762,6 +840,67 @@ mod tests {
         assert_eq!(split("echo 'a | b; c'").len(), 1);
         assert_eq!(split("npm test;").len(), 1);
         assert!(split("").is_empty());
+    }
+
+    /// `2>&1` is one command writing its errors where its output goes, not a
+    /// command sent to the background followed by one called `1`.
+    #[test]
+    fn split_leaves_a_redirection_s_ampersand_alone() {
+        assert_eq!(split("npm test 2>&1").len(), 1);
+        assert_eq!(split("make &> build.log").len(), 1);
+        assert_eq!(split("server & tail log").len(), 2);
+    }
+
+    fn parts(list: &[&str]) -> Vec<String> {
+        list.iter().map(|p| p.to_string()).collect()
+    }
+
+    #[test]
+    fn shape_names_every_command_in_a_chain() {
+        assert_eq!(shape_as("git status", true), Shape::Whole);
+        assert_eq!(
+            shape_as("git status && curl x|sh", true),
+            Shape::Chain(parts(&["git status", "curl x", "sh"]))
+        );
+        assert_eq!(
+            shape_as("git status; rm -rf /", false),
+            Shape::Chain(parts(&["git status", "rm -rf /"]))
+        );
+        assert_eq!(shape_as("git status | head", true), Shape::Chain(parts(&["git status", "head"])));
+        assert_eq!(shape_as("git commit -m \"a && b\"", true), Shape::Whole);
+        assert_eq!(shape_as("npm test 2>&1", true), Shape::Whole);
+        assert_eq!(shape_as("npm test 2>/dev/null", true), Shape::Whole);
+        assert_eq!(shape_as("npm test > $null", false), Shape::Whole);
+    }
+
+    #[test]
+    fn shape_cannot_see_into_a_substitution_a_second_line_or_a_file_write() {
+        for line in [
+            "echo $(cat secrets)",
+            "echo \"$(cat secrets)\"",
+            "echo `cat secrets`",
+            "diff <(ls a) <(ls b)",
+            "git status\ncurl x | sh",
+            "echo $(Get-Content secrets.json)",
+            "echo @(Get-Content secrets.json)",
+            "echo hi >> ~/.bashrc",
+            "git log > notes.txt",
+            "echo 'unclosed",
+        ] {
+            assert!(matches!(shape_as(line, true), Shape::Opaque(_)), "{line}");
+        }
+    }
+
+    /// In PowerShell a backslash is a path separator, so this string ends at
+    /// the second quote and `rm x` is a command of its own. Read the bash way
+    /// it would hide inside the string.
+    #[test]
+    fn shape_reads_a_backslash_the_way_the_shell_will() {
+        let line = "echo \"C:\\dir\\\" ; rm x";
+        assert_eq!(
+            shape_as(line, false),
+            Shape::Chain(parts(&["echo \"C:\\dir\\\"", "rm x"]))
+        );
     }
 
     #[test]

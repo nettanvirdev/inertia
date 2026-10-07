@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Check, Copy, Eye, Play, Rows3, Square } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import { copyText } from "@/lib/clipboard";
@@ -30,7 +31,7 @@ const SHELLS = /^(sh|bash|zsh|shell|console|shellsession|powershell|pwsh|ps1|bat
  * Whether a block in this language can be run on this machine.
  *
  * A shell fence always can. Anything else depends on what is installed, which
- * only the main process knows - Python on one machine and not the next - so it
+ * only the backend knows - Python on one machine and not the next - so it
  * is asked once per language and remembered. A button that would always fail
  * is worse than no button, which is why this is a question rather than a list.
  */
@@ -191,11 +192,12 @@ export function CodeBlock({ lang, code, closed = true }) {
   const label = lang || (languageOf(lang) ? languageOf(lang) : "text");
   const tag = String(lang ?? "").trim();
   // Hooks before any early return, and the runnable check is one: it asks the
-  // main process what this machine has.
+  // backend what this machine has.
   const [copied, setCopied] = React.useState(false);
   const [wrap, setWrap] = React.useState(false);
   const [rendered, setRendered] = React.useState(false);
   const [running, setRunning] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
   const [result, setResult] = React.useState(null);
   const timer = React.useRef(0);
   const folder = React.useContext(RunFolder);
@@ -218,6 +220,7 @@ export function CodeBlock({ lang, code, closed = true }) {
 
   const run = async () => {
     if (running) return;
+    setConfirming(false);
     setRunning(true);
     setResult(null);
     try {
@@ -239,8 +242,8 @@ export function CodeBlock({ lang, code, closed = true }) {
             <IconButton
               size="sm"
               label={running ? "Running" : "Run this here"}
-              active={running}
-              onClick={run}
+              active={running || confirming}
+              onClick={() => !running && setConfirming(true)}
             >
               {running ? <Square /> : <Play />}
             </IconButton>
@@ -270,6 +273,28 @@ export function CodeBlock({ lang, code, closed = true }) {
           </IconButton>
         </div>
       </div>
+      {/* A second step, because the code is the model's. One click on a
+          block in a reply ran whatever the reply said - and a reply can be
+          steered by anything the model read on the way to writing it. The
+          question names what it runs as and where, so the click that answers
+          it is a decision rather than a reflex. */}
+      {confirming ? (
+        <div
+          role="group"
+          aria-label="Confirm running this code"
+          className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-2"
+        >
+          <span className="min-w-0 flex-1 text-[12px] text-foreground">
+            Run this {label} code{folder ? ` in ${folder}` : " in the workspace's scratch folder"}?
+          </span>
+          <Button variant="primary" size="xs" onClick={run}>
+            Run
+          </Button>
+          <Button variant="ghost" size="xs" autoFocus onClick={() => setConfirming(false)}>
+            Cancel
+          </Button>
+        </div>
+      ) : null}
       {rendered ? <Markup code={code} /> : null}
       <pre
         hidden={rendered}

@@ -7,7 +7,9 @@
 //! only place that shows up.
 
 use async_trait::async_trait;
-use inertia_core::permission::{evaluate, Action, Rule};
+use std::path::PathBuf;
+
+use inertia_core::permission::{evaluate, evaluate_shaped, Action, Rule};
 use inertia_core::tool::{Decision, PermissionGate, PermissionRequest};
 use parking_lot::Mutex;
 
@@ -29,6 +31,7 @@ pub enum Policy {
 pub struct MockGate {
     policy: Mutex<Policy>,
     asked: Mutex<Vec<PermissionRequest>>,
+    workspace: Option<PathBuf>,
 }
 
 impl MockGate {
@@ -36,7 +39,15 @@ impl MockGate {
         Self {
             policy: Mutex::new(policy),
             asked: Mutex::new(Vec::new()),
+            workspace: None,
         }
+    }
+
+    /// Stands in front of a workspace, so the tools that keep out of its
+    /// secrets and rules have something to keep out of.
+    pub fn guarding(mut self, workspace: impl Into<PathBuf>) -> Self {
+        self.workspace = Some(workspace.into());
+        self
     }
 
     pub fn allow_all() -> Self {
@@ -68,7 +79,14 @@ impl PermissionGate for MockGate {
         Ok(match &mut *policy {
             Policy::AllowAll => Decision::Allow,
             Policy::DenyAll => Decision::Deny,
-            Policy::Rules(rules) => match evaluate(rules, &request.key, &request.target).action {
+            Policy::Rules(rules) => match evaluate_shaped(
+                rules,
+                &request.key,
+                &request.target,
+                &request.shape,
+            )
+            .action
+            {
                 Action::Allow => Decision::Allow,
                 // Nobody is there to ask, and an unanswered question is not a
                 // yes.
@@ -91,6 +109,10 @@ impl PermissionGate for MockGate {
             Policy::Rules(rules) => evaluate(rules, key, target).action,
             Policy::Scripted(_) => Action::Ask,
         }
+    }
+
+    fn workspace(&self) -> Option<PathBuf> {
+        self.workspace.clone()
     }
 }
 

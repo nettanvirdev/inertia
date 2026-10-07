@@ -144,14 +144,38 @@ impl Assembling {
     /// conversations API - and the read happens here, at the end, so a message
     /// written by something else while the turn was running is still there
     /// afterwards.
-    pub fn save(self, conversations: &inertia_store::conversations::Conversations, thread_id: &str) {
+    ///
+    /// The workspace's stored secrets are taken out of what is written, as
+    /// `ws_put` takes them out of a transcript the window saves: a key the
+    /// agent printed belongs in the secrets file, not in the conversation.
+    pub fn save(
+        self,
+        conversations: &inertia_store::conversations::Conversations,
+        layout: &inertia_store::Layout,
+        thread_id: &str,
+    ) {
         let mut messages = conversations.read_messages(thread_id, &[]);
         messages.push(self.user);
         messages.push(self.reply);
+        let messages = scrubbed(layout, messages);
         if let Err(error) = conversations.write_messages(thread_id, &messages) {
             tracing::error!(%error, thread = thread_id, "the conversation could not be saved");
         }
     }
+}
+
+/// The messages with the stored secrets taken out, through their JSON form so
+/// every text a message carries - its content, a tool's output - is reached.
+fn scrubbed(layout: &inertia_store::Layout, messages: Vec<Message>) -> Vec<Message> {
+    let values = inertia_store::secrets::values(layout);
+    if values.is_empty() {
+        return messages;
+    }
+    let Ok(mut record) = serde_json::to_value(&messages) else {
+        return messages;
+    };
+    inertia_store::secrets::scrub_value(&mut record, &values);
+    serde_json::from_value(record).unwrap_or(messages)
 }
 
 #[cfg(test)]
@@ -249,7 +273,8 @@ mod tests {
     fn what_was_said_is_on_disk_after_the_turn_and_what_was_there_stays() {
         let dir = tempfile::tempdir().unwrap();
         let layout = inertia_store::layout::Layout::new(dir.path());
-        let conversations = inertia_store::conversations::Conversations::new(layout);
+        let conversations = inertia_store::conversations::Conversations::new(layout.clone());
+        inertia_store::secrets::set(&layout, "BUILD_TOKEN", "tok-build-123456", "").unwrap();
 
         // Yesterday's run.
         let earlier = Message {
@@ -267,19 +292,21 @@ mod tests {
         let mut assembling =
             Assembling::new("anthropic/x", Some("atlas".into()), "check the build", "msg_new".into());
         assembling.observe(&AgentEvent::Delta { text: "It is green.".into() });
+        assembling.observe(&AgentEvent::Delta { text: " Used tok-build-123456.".into() });
         assembling.observe(&AgentEvent::Done {
             stopped: StopReason::Complete,
             history: Vec::new(),
             usage: None,
         });
-        assembling.save(&conversations, "routine-morning");
+        assembling.save(&conversations, &layout, "routine-morning");
 
         let stored = conversations.read_messages("routine-morning", &[]);
         assert_eq!(stored.len(), 3, "yesterday's reply is still there");
 
         let last = stored.iter().rev().find(|m| m.role != "user").unwrap();
         assert_eq!(last.id, "msg_new");
-        assert_eq!(last.content, "It is green.");
+        // What was said, minus the key it said.
+        assert_eq!(last.content, "It is green. Used [REDACTED].");
         assert_eq!(last.agent_id.as_deref(), Some("atlas"));
         assert!(last.error.is_none());
         assert!(!last.stopped);

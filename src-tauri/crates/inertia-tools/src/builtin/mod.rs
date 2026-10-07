@@ -6,6 +6,7 @@
 
 pub mod background;
 pub mod browser;
+pub mod fence;
 pub mod files;
 pub mod look;
 pub mod lsp;

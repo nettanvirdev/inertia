@@ -26,7 +26,7 @@
 //! `metadata.note`; the card and the side panel both draw from those two keys,
 //! so their shape is the contract here.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -34,24 +34,11 @@ use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, Tool
 use inertia_core::{Error, Result};
 use serde_json::{json, Value};
 
+use super::fence;
+
 /// More than this and it is a file listing again, which is the thing being
 /// fixed.
 const MAX_FILES: usize = 12;
-
-/// The same rule every file tool uses: relative to the turn's folder.
-fn resolve(root: &Path, supplied: &str) -> PathBuf {
-    let path = Path::new(supplied);
-    if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        root.join(path)
-    }
-}
-
-/// Is `target` the root itself or somewhere beneath it?
-fn is_inside(root: &Path, target: &Path) -> bool {
-    target.starts_with(root)
-}
 
 fn file_name(path: &Path) -> String {
     path.file_name()
@@ -159,34 +146,10 @@ impl Tool for PresentTool {
         let mut files: Vec<Value> = Vec::new();
         let mut missing: Vec<String> = Vec::new();
         for one in &asked {
-            let abs = resolve(&ctx.root, one);
-
             // The same boundary every other file tool honours. Presenting a
             // file is pointing at it, and pointing outside the working folder
-            // is still the user's decision to make. One question per
-            // directory, and the "always" pattern is the directory too:
-            // agreeing to a folder and then being asked again for the second
-            // file in it is how people learn to click through prompts.
-            if !is_inside(&ctx.root, &abs) {
-                let dir = abs
-                    .parent()
-                    .map(|dir| dir.display().to_string())
-                    .unwrap_or_else(|| abs.display().to_string());
-                // A trailing separator would make the pattern for a drive root
-                // read `D:\/*`, which is not a rule anyone would recognise in
-                // the settings list.
-                let pattern = format!("{}/*", dir.trim_end_matches(['\\', '/']));
-                let decision = ctx
-                    .permissions
-                    .ask(&PermissionRequest::new("external_directory", pattern.clone()).with_always(pattern))
-                    .await?;
-                if !decision.is_allowed() {
-                    return Err(Error::Denied(format!(
-                        "Showing {} was not allowed: it is outside the working folder.",
-                        abs.display()
-                    )));
-                }
-            }
+            // is still the user's decision to make.
+            let abs = fence::reach(ctx, one).await?;
 
             match std::fs::metadata(&abs) {
                 Ok(stat) if stat.is_dir() => {

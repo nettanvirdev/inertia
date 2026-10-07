@@ -102,6 +102,19 @@ pub const WORK_DIR: &str = "files/work";
 /// reads them as the source of truth for a record.
 pub const DISPOSABLE: &[&str] = &["cache", "logs", "backups"];
 
+/// What no agent tool may read or change, whatever the rules say.
+///
+/// Each of these decides what an agent is allowed to do, or holds what it
+/// must not see: the keys, the permission rules, and the hooks that run as
+/// programs around every call. An agent that could edit the rules could grant
+/// itself anything, and one that could write a hook could run anything, so a
+/// rule allowing it is not a rule anyone can be held to. They change through
+/// their own screens and their own commands.
+pub const OFF_LIMITS: &[&str] = &["secrets", "settings/permissions.json", "hooks"];
+
+/// Where the secrets live. Read and written only through `secrets.rs`.
+pub const SECRETS_DIR: &str = "secrets";
+
 /// A settings document, each its own file so a hand edit or a git conflict is
 /// scoped to one concern.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -334,6 +347,39 @@ impl Layout {
         self.root.join(WORK_DIR)
     }
 
+    /// The [`OFF_LIMITS`] places, as the filesystem resolves them, so a path
+    /// compared against them through a link is caught as surely as one that
+    /// names them directly.
+    pub fn off_limits(&self) -> Vec<PathBuf> {
+        let root = crate::fsx::canonical(&self.root);
+        OFF_LIMITS.iter().map(|place| root.join(place)).collect()
+    }
+
+    /// Is `path` inside the secrets folder, however it was spelled?
+    pub fn holds_secrets(&self, path: &Path) -> bool {
+        let root = crate::fsx::canonical(&self.root);
+        crate::fsx::is_within(&root.join(SECRETS_DIR), &crate::fsx::canonical(path))
+    }
+
+    /// Does `text` - a command line, an argument - name the secrets folder?
+    ///
+    /// A shell command cannot be fenced the way a file tool can, so this is
+    /// the weaker promise made about one: a line that names the folder is
+    /// never waved through by a rule. Matched as text, case and slashes
+    /// folded, by the folder's full path or by `secrets/secrets.json`, which
+    /// is how a relative path to the file has to end.
+    pub fn mentions_secrets(&self, text: &str) -> bool {
+        let fold = |s: &str| s.replace('\\', "/").to_lowercase();
+        let text = fold(text);
+        let dir = self.root.join(SECRETS_DIR);
+        let spellings = [
+            fold(&dir.to_string_lossy()),
+            fold(&crate::fsx::canonical(&dir).to_string_lossy()),
+            fold(Document::Secrets.path()),
+        ];
+        spellings.iter().any(|spelling| text.contains(spelling.as_str()))
+    }
+
     /// Creates every directory a workspace is expected to have.
     pub fn scaffold(&self) -> crate::fsx::Result<()> {
         for dir in DIRECTORIES {
@@ -402,6 +448,36 @@ mod tests {
                 "{declared} was not created"
             );
         }
+    }
+
+    #[test]
+    fn the_off_limits_places_are_the_secrets_the_rules_and_the_hooks() {
+        let dir = tempfile::tempdir().unwrap();
+        let layout = Layout::new(dir.path());
+        layout.scaffold().unwrap();
+        let root = crate::fsx::canonical(dir.path());
+        assert_eq!(
+            layout.off_limits(),
+            vec![root.join("secrets"), root.join("settings/permissions.json"), root.join("hooks")]
+        );
+    }
+
+    #[test]
+    fn the_secrets_folder_is_recognised_however_it_is_spelled() {
+        let dir = tempfile::tempdir().unwrap();
+        let layout = Layout::new(dir.path());
+        layout.scaffold().unwrap();
+
+        assert!(layout.holds_secrets(&layout.document(Document::Secrets)));
+        // `..` is folded before the question is asked.
+        assert!(layout.holds_secrets(&dir.path().join("files/work/../../secrets/x.json")));
+        assert!(!layout.holds_secrets(&layout.document(Document::Permissions)));
+        assert!(!layout.holds_secrets(&dir.path().join("secrets-notes.md")));
+
+        let named = format!("type {}", layout.document(Document::Secrets).display());
+        assert!(layout.mentions_secrets(&named));
+        assert!(layout.mentions_secrets("cat ../../SECRETS\\secrets.json"));
+        assert!(!layout.mentions_secrets("git status"));
     }
 
     #[test]

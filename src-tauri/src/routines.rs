@@ -641,10 +641,19 @@ pub struct Run {
     pub text: String,
     /// The mode the routine's turn holds. `autonomous` unless the record says.
     pub mode: String,
-    /// How much it asks. `auto` unless the record says, because unattended
-    /// "ask" means "refuse".
+    /// How much it asks. [`DEFAULT_APPROVAL`] unless the record says.
     pub approval: String,
 }
+
+/// How much a routine asks when its record does not say.
+///
+/// Unattended, "ask" means "refuse", so a routine on this default does what it
+/// can without a call a rule would stop for and reports what it could not.
+/// That is the safe way round: a routine an agent wrote, or one whose field
+/// was lost, cannot run commands nobody approved. Loosening one is the
+/// person's decision, made on the Routines screen, and `inertia_save` will not
+/// make it for them.
+pub const DEFAULT_APPROVAL: &str = "ask";
 
 /// A turn that started.
 #[derive(Debug, Clone)]
@@ -899,7 +908,7 @@ impl Scheduler {
             agent_id: text_of(routine, "agentId"),
             text: playbook(routine),
             mode: text_of(routine, "mode").unwrap_or_else(|| "autonomous".to_string()),
-            approval: text_of(routine, "approval").unwrap_or_else(|| "auto".to_string()),
+            approval: text_of(routine, "approval").unwrap_or_else(|| DEFAULT_APPROVAL.to_string()),
         };
 
         let (status, summary) = match self.runner.start(&request).await {
@@ -1132,7 +1141,7 @@ pub fn thread_id_for(routine_id: &str) -> String {
 /// there to answer it.
 pub fn playbook(routine: &Value) -> String {
     let name = text_of(routine, "name").unwrap_or_else(|| id_of(routine));
-    let approval = text_of(routine, "approval").unwrap_or_else(|| "auto".to_string());
+    let approval = text_of(routine, "approval").unwrap_or_else(|| DEFAULT_APPROVAL.to_string());
     let body = text_of(routine, "markdown")
         .or_else(|| text_of(routine, "description"))
         .unwrap_or_else(|| "(This routine has no playbook.)".to_string());
@@ -1658,7 +1667,7 @@ impl Tool for LaterTool {
                 // ask will refuse the same calls the chat would have asked
                 // about - which is what the person chose.
                 "mode": "autonomous",
-                "approval": self.approval.clone().unwrap_or_else(|| "auto".to_string()),
+                "approval": self.approval.clone().unwrap_or_else(|| DEFAULT_APPROVAL.to_string()),
                 "schedule": {
                     "kind": "once",
                     "expression": iso(at),
@@ -2141,6 +2150,9 @@ mod tests {
         assert_eq!(started[0].thread_id, "routine-morning");
         assert!(started[0].text.contains("Look at the inbox."));
         assert!(started[0].text.contains("unattended"));
+        // A record that names no approval runs held back, not waved through.
+        assert_eq!(started[0].approval, DEFAULT_APPROVAL);
+        assert!(started[0].text.contains("nobody can answer"));
 
         // The conversation exists and says whose it is.
         let thread = inertia_store::collections::get(

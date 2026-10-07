@@ -7,6 +7,7 @@ import { usePresence } from "@/hooks/use-presence";
 import { useToast } from "@/components/ui/toast";
 import { formatBytes } from "./attachments";
 import { CodeBlock } from "./markdown/CodeBlock.jsx";
+import { mayFetch, remoteHost } from "./remote-image.js";
 
 /**
  * A file in a message, looked at properly.
@@ -22,14 +23,12 @@ import { CodeBlock } from "./markdown/CodeBlock.jsx";
  * window's content policy will not load a `file://` image.
  */
 
-const REMOTE = /^(https?:)?\/\//i;
-
 /** The three places a picture in a message can come from. */
 function sourceKind(src) {
   const value = String(src ?? "");
   if (!value) return null;
   if (value.startsWith("data:") || value.startsWith("blob:")) return "inline";
-  if (REMOTE.test(value)) return "remote";
+  if (remoteHost(value)) return "remote";
   return "disk";
 }
 
@@ -49,11 +48,12 @@ export function pathOf(src) {
  *
  * Neither kind can be loaded by the window directly: the content policy allows
  * `self`, `data:` and `blob:` only, which is what stops any markup in any reply
- * from reaching any host on its own. So both go through the main process - the
- * workspace bridge for a file, an anonymous fetch for a URL - and come back as
- * bytes. A picture that cannot be read is `failed`, and every caller shows the
- * link instead, which is what the transcript did before it could show pictures
- * at all.
+ * from reaching any host on its own. So both go through the Rust backend - the
+ * workspace bridge for a file; for a URL, an anonymous fetch that refuses
+ * private and loopback addresses and only runs once the person has clicked to
+ * load the picture - and come back as bytes. A picture that cannot be read is
+ * `failed`, and every caller shows the link instead, which is what the
+ * transcript did before it could show pictures at all.
  */
 /**
  * What has already been fetched, so scrolling a transcript is not a fetch.
@@ -93,6 +93,8 @@ export function useMessageImage(src, enabled = true) {
       setState(known);
       return undefined;
     }
+    // A remote picture waits for the person to ask; see remote-image.js.
+    if (!mayFetch(key)) return undefined;
 
     let live = true;
     setState({ url: null, bytes: 0, failed: false });

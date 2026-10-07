@@ -11,10 +11,10 @@
  * is fine, but `git push` asks first, and `rm -rf` never" is three rules over
  * one tool, and it is the rule people actually want.
  *
- * This module is deliberately pure and dependency-free: the renderer imports it
- * to render and edit rules, and the main process will import it to enforce them.
- * A second implementation on the other side of the bridge would be a second set
- * of answers to a question that must only ever have one.
+ * This module is deliberately pure and dependency-free: the window imports it
+ * to render and edit rules, and the Rust backend enforces them with its twin in
+ * `inertia-core` (`permission.rs`). The two must give the same answer to every
+ * rule, because a question like this must only ever have one.
  */
 
 export const ACTIONS = ["allow", "ask", "deny"];
@@ -37,6 +37,9 @@ export function matches(pattern, value) {
   if (pattern === ANY) return true;
   const source = String(pattern ?? "");
   const target = String(value ?? "");
+  // `git status *` is "git status, with whatever arguments", and none is one
+  // of them - the same allowance the engine in permission.rs makes.
+  if (source.endsWith(" *") && matches(source.slice(0, -2), target)) return true;
   if (!source.includes("*") && !source.includes("?")) return source === target;
 
   const escaped = source.replace(/[.+^${}()|[\]\\]/g, "\\$&");
@@ -265,11 +268,6 @@ export function evaluate(rules, tool, target = ANY) {
     // configured" rather than implying someone chose to be asked.
     implicit: !best,
   };
-}
-
-/** The common case: is this outright forbidden. */
-export function isDenied(rules, tool, target) {
-  return evaluate(rules, tool, target).action === "deny";
 }
 
 /**

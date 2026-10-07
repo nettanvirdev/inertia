@@ -1333,7 +1333,7 @@ pub async fn agent_run(
             if !ended {
                 transcript.interrupted();
             }
-            transcript.save(&task_conversations, &task_thread);
+            transcript.save(&task_conversations, &task_layout, &task_thread);
         }
 
         crate::records::Recorder::global()
@@ -1608,6 +1608,17 @@ mod tests {
 
     fn types(events: &[Value]) -> Vec<&str> {
         events.iter().filter_map(|e| e["type"].as_str()).collect()
+    }
+
+    /// Opening one of these runs it, so it is shown in its folder instead.
+    #[test]
+    fn a_file_that_would_run_is_revealed_rather_than_opened() {
+        for name in ["setup.EXE", "build.cmd", "x.ps1", "run.sh", "Link.lnk", "a.AppImage", "s.url"] {
+            assert!(runs_when_opened(std::path::Path::new(name)), "{name}");
+        }
+        for name in ["report.pdf", "page.html", "notes", "photo.png", "data.json"] {
+            assert!(!runs_when_opened(std::path::Path::new(name)), "{name}");
+        }
     }
 
     /// The screenshot this reproduces: a Group conversation whose agent reads
@@ -1985,6 +1996,12 @@ pub fn permission_revoke(
 }
 
 /// Opens a file or folder the agent mentioned, in whatever the OS uses for it.
+///
+/// Except a file that opening would run. The path came from a model, the
+/// click that opens it is one the person made expecting to look at something,
+/// and "opening" a script, an installer or a shortcut executes it - so those
+/// are shown in their folder instead, where running one is a second,
+/// deliberate act.
 #[tauri::command]
 pub fn agent_open_path(app: AppHandle, target: String) -> Result<String, String> {
     use tauri_plugin_opener::OpenerExt;
@@ -1992,10 +2009,29 @@ pub fn agent_open_path(app: AppHandle, target: String) -> Result<String, String>
     if !path.exists() {
         return Err(format!("There is nothing at {target} any more."));
     }
-    app.opener()
-        .open_path(target.clone(), None::<&str>)
-        .map_err(|e| e.to_string())?;
+    let opener = app.opener();
+    if runs_when_opened(&path) {
+        opener.reveal_item_in_dir(&path).map_err(|e| e.to_string())?;
+    } else {
+        opener
+            .open_path(target.clone(), None::<&str>)
+            .map_err(|e| e.to_string())?;
+    }
     Ok(target)
+}
+
+/// Kinds of file the operating system runs, rather than shows, when asked to
+/// open one.
+const RUNS_WHEN_OPENED: &[&str] = &[
+    "exe", "com", "bat", "cmd", "ps1", "psm1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "msi",
+    "msp", "scr", "pif", "lnk", "url", "hta", "cpl", "jar", "reg", "sh", "app", "command",
+    "desktop", "appimage",
+];
+
+fn runs_when_opened(path: &std::path::Path) -> bool {
+    path.extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
+        .is_some_and(|ext| RUNS_WHEN_OPENED.contains(&ext.as_str()))
 }
 
 /// Drops cached tool lists, so the next turn rebuilds them.

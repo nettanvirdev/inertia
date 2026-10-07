@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import { MathSpan } from "./math/Math.jsx";
 import { FilePreview, SaveImageButton, pathOf, useMessageImage } from "../FilePreview.jsx";
+import { allowRemote, mayFetch, remoteHost } from "../remote-image.js";
+import { Button } from "@/components/ui/button";
 import { FootnoteNumbers } from "./footnotes.js";
 import { useArrival } from "../arrival.js";
 import { AgentAvatar } from "@/features/agents/AgentAvatar";
@@ -142,23 +144,49 @@ function ImageLink({ src, alt }) {
  * A picture in a message is shown, wherever it came from.
  *
  * The rule used to be that a remote image was a link, because loading one is a
- * request to a host the model named. It is still that request - but it is made
- * in the main process, anonymously, only when a message that shows a picture is
- * actually on screen, and the bytes come back as a data URL rather than the
- * window reaching out. What the reader gets is the picture they were promised,
- * at a size that leaves the message readable, and the full thing on a click.
+ * request to a host the model named. It is still that request, so a remote
+ * picture is drawn as the host it would come from until the reader clicks to
+ * load it; then it is fetched by the Rust backend, anonymously and only from
+ * the public internet - it refuses private and loopback addresses - and the
+ * bytes come back as a data URL rather than the window reaching out. A picture
+ * on this machine is simply shown. What the reader gets is the picture they
+ * were promised, at a size that leaves the message readable, and the full
+ * thing on a click.
  *
  * Anything that cannot be loaded falls back to the link it was: a broken
  * address in a reply reads as a broken link rather than as a hole.
  */
 function MessageImage({ src, alt, width }) {
-  const image = useMessageImage(src);
+  // A picture from the internet waits for a click. Loading it is a request to
+  // a host the model chose, and see remote-image.js for why that is the
+  // person's call rather than the transcript's.
+  const host = remoteHost(src);
+  const [asked, setAsked] = React.useState(() => mayFetch(src));
+  const image = useMessageImage(src, asked);
   const [open, setOpen] = React.useState(false);
   const name = alt || pathOf(src).split(/[\\/]/).pop() || "image";
   // A picture that was still being fetched when this mounted fades in over
   // the placeholder once it lands; one already in the cache is simply drawn,
   // because nothing was there for it to replace.
   const arrival = useArrival(null, { live: !image.url });
+
+  if (!asked && !image.url) {
+    return (
+      <Button
+        variant="secondary"
+        size="sm"
+        className="my-2 max-w-full"
+        title={src}
+        onClick={() => {
+          allowRemote(src);
+          setAsked(true);
+        }}
+      >
+        <ImageGlyph />
+        <span className="min-w-0 truncate">Load image from {host}</span>
+      </Button>
+    );
+  }
 
   if (!image.url) {
     return image.failed ? (
@@ -211,7 +239,7 @@ function MessageImage({ src, alt, width }) {
       <FilePreview
         file={
           open
-            ? { name, kind: "image", dataUrl: image.url, src, path: /^(https?:)?\/\//i.test(src) ? null : pathOf(src) }
+            ? { name, kind: "image", dataUrl: image.url, src, path: host ? null : pathOf(src) }
             : null
         }
         onClose={() => setOpen(false)}

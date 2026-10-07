@@ -18,7 +18,7 @@
 //! and a line; the agent still opens it. The tool's job is to say which line,
 //! exactly, in a language it actually understands.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -26,6 +26,8 @@ use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, Tool
 use inertia_core::{Error, Result};
 use inertia_lsp::{Answer, Lsp, Question};
 use serde_json::{json, Value};
+
+use super::fence;
 
 /// How many locations or symbols go back to the model.
 const MAX_ROWS: usize = 60;
@@ -51,15 +53,6 @@ Positions are 1-based, the way `read` numbers its lines: give the line and the
 character where the name starts. Read the file first, so you are pointing at
 something. If there is no language server for this file's language, you are told
 so plainly - fall back to `grep` then, rather than trying again.";
-
-fn resolve(root: &Path, supplied: &str) -> PathBuf {
-    let path = Path::new(supplied);
-    if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        root.join(path)
-    }
-}
 
 /// A path as the model should read it back: relative to where it is working,
 /// unless it is somewhere else entirely.
@@ -169,7 +162,7 @@ impl Tool for LspTool {
         };
         let supplied = text(&args, "filePath")
             .ok_or_else(|| Error::InvalidInput("filePath is required.".into()))?;
-        let file = resolve(&ctx.root, &supplied);
+        let file = fence::reach(ctx, &supplied).await?;
 
         let line = args.get("line").and_then(Value::as_u64).unwrap_or(0);
         let character = args.get("character").and_then(Value::as_u64).unwrap_or(1);
@@ -368,7 +361,7 @@ mod tests {
     /// often the 8.3 short form, and a root in one spelling never matches a
     /// path the server answered with in the other - which would fail this test
     /// about nothing.
-    fn root(dir: &tempfile::TempDir) -> PathBuf {
+    fn root(dir: &tempfile::TempDir) -> std::path::PathBuf {
         inertia_lsp::spelling(dir.path())
     }
 

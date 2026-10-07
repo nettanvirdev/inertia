@@ -184,20 +184,25 @@ export function PermissionPrompt({ question, onReply, className }) {
             out of the card. This one may be as tall as its pattern needs:
             the text wraps at any character, since a command has no natural
             break points, and the button takes the width of the row rather
-            than pushing past it. */}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => reply("always")}
-          className="h-auto min-h-[1.875rem] min-w-0 max-w-full shrink items-start whitespace-normal py-1 text-left"
-        >
-          <span className="shrink-0 py-0.5">Always allow</span>
-          {pattern ? (
+            than pushing past it.
+
+            No pattern, no button. Some calls are asked about every time on
+            purpose - starting a program an agent configured, touching the
+            secrets - and a button there would promise a rule that is never
+            written. */}
+        {pattern ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => reply("always")}
+            className="h-auto min-h-[1.875rem] min-w-0 max-w-full shrink items-start whitespace-normal py-1 text-left"
+          >
+            <span className="shrink-0 py-0.5">Always allow</span>
             <code className="min-w-0 max-w-full rounded-[6px] fill-secondary px-1.5 py-0.5 font-mono text-[11px] break-all text-foreground">
               {pattern}
             </code>
-          ) : null}
-        </Button>
+          </Button>
+        ) : null}
         <Button
           variant="danger"
           size="sm"

@@ -77,18 +77,44 @@ fn webview_name() -> &'static str {
 ///
 /// Fetched here because the window's content policy will not load a remote
 /// image, which is what stops a model from turning a picture in a reply into a
-/// request to a host it named. Everything that can go wrong - a bad URL, a
-/// non-image, something too big - answers `null`, and the transcript draws a
-/// broken-image state from that. It needs no reason, and inventing error
-/// shapes for each case would only give it more to ignore.
+/// request to a host it named. The transcript only asks for one when the
+/// person clicks to load it. Everything that can go wrong - a bad URL, a
+/// non-image, something too big, a host on this machine or its network -
+/// answers `null`, and the transcript draws a broken-image state from that. It
+/// needs no reason, and inventing error shapes for each case would only give
+/// it more to ignore.
+///
+/// Only the public internet. The URL is the model's, and without this a
+/// picture in a reply was a request from this machine to anything it can
+/// reach: the router's admin page, a dev server on localhost, a cloud
+/// metadata endpoint. Hosts are checked by the addresses they resolve to, at
+/// the moment of connecting, so a name that resolves somewhere private is
+/// caught however it is spelled; and every redirect is checked the same way,
+/// so a public URL cannot bounce the request inward.
 #[tauri::command]
 pub async fn app_fetch_image(url: String) -> Option<Value> {
-    if !url.starts_with("http://") && !url.starts_with("https://") {
+    let parsed = reqwest::Url::parse(&url).ok()?;
+    if !reaches_only_the_internet(&parsed) {
         return None;
     }
 
-    let client = reqwest::Client::builder().timeout(IMAGE_TIMEOUT).build().ok()?;
-    let response = client.get(&url).send().await.ok()?;
+    let client = reqwest::Client::builder()
+        .timeout(IMAGE_TIMEOUT)
+        .dns_resolver(std::sync::Arc::new(PublicOnly))
+        // A proxy resolves the host itself, out of reach of the check above.
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= MAX_REDIRECTS {
+                attempt.error("too many redirects")
+            } else if reaches_only_the_internet(attempt.url()) {
+                attempt.follow()
+            } else {
+                attempt.stop()
+            }
+        }))
+        .build()
+        .ok()?;
+    let response = client.get(parsed).send().await.ok()?;
     if !response.status().is_success() {
         return None;
     }
@@ -115,6 +141,102 @@ pub async fn app_fetch_image(url: String) -> Option<Value> {
         "url": format!("data:{mime};base64,{encoded}"),
         "bytes": bytes.len(),
     }))
+}
+
+/// More than this and it is not a picture, it is a maze.
+const MAX_REDIRECTS: usize = 5;
+
+/// Is this a URL a picture may be fetched from, as far as can be told before
+/// connecting? An address written into the URL is checked here; a name is
+/// checked by [`PublicOnly`] when it is resolved.
+fn reaches_only_the_internet(url: &reqwest::Url) -> bool {
+    if !matches!(url.scheme(), "http" | "https") {
+        return false;
+    }
+    // The URL parser has already turned `2130706433` and `0x7f.1` into the
+    // dotted address they spell, so what is left is an address or a name.
+    match url.host_str() {
+        Some(host) => host
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .parse::<std::net::IpAddr>()
+            .map_or(true, is_public),
+        None => false,
+    }
+}
+
+/// Resolves a host to its public addresses only, and fails a host that has
+/// none - so the connection is made to exactly the addresses that were checked.
+struct PublicOnly;
+
+impl reqwest::dns::Resolve for PublicOnly {
+    fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
+        Box::pin(async move {
+            let found: Vec<std::net::SocketAddr> = tokio::net::lookup_host((name.as_str(), 0))
+                .await?
+                .filter(|address| is_public(address.ip()))
+                .collect();
+            if found.is_empty() {
+                return Err(format!("{} is not on the public internet", name.as_str()).into());
+            }
+            let addrs: reqwest::dns::Addrs = Box::new(found.into_iter());
+            Ok(addrs)
+        })
+    }
+}
+
+/// Is this an address on the public internet?
+///
+/// Everything else is somewhere a request from this machine should not be
+/// sent on a model's say-so: this machine, its network, the carrier's shared
+/// space, link-local services such as cloud metadata, multicast and broadcast.
+/// An IPv6 address that carries an IPv4 one - mapped, compatible, NAT64, 6to4 -
+/// is judged by the address it carries.
+fn is_public(ip: std::net::IpAddr) -> bool {
+    use std::net::{IpAddr, Ipv4Addr};
+    match ip {
+        IpAddr::V4(v4) => {
+            let [a, b, c, _] = v4.octets();
+            !(v4.is_unspecified()
+                || a == 0
+                || v4.is_loopback()
+                || v4.is_private()
+                || v4.is_link_local()
+                || (a == 100 && (64..128).contains(&b))
+                || (a == 192 && b == 0 && c == 0)
+                || (a == 198 && (18..20).contains(&b))
+                || v4.is_documentation()
+                || v4.is_multicast()
+                || a >= 240)
+        }
+        IpAddr::V6(v6) => {
+            let segments = v6.segments();
+            let embedded = |high: u16, low: u16| {
+                Ipv4Addr::new((high >> 8) as u8, high as u8, (low >> 8) as u8, low as u8)
+            };
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return is_public(IpAddr::V4(v4));
+            }
+            // `::a.b.c.d`, the deprecated compatible form. `::` and `::1` are
+            // in it too, and are refused below by the same test.
+            if segments[..6].iter().all(|s| *s == 0) {
+                return is_public(IpAddr::V4(embedded(segments[6], segments[7])));
+            }
+            // NAT64, 64:ff9b::/96.
+            if segments[..6] == [0x64, 0xff9b, 0, 0, 0, 0] {
+                return is_public(IpAddr::V4(embedded(segments[6], segments[7])));
+            }
+            // 6to4, 2002::/16, carries its IPv4 address in the next 32 bits.
+            if segments[0] == 0x2002 {
+                return is_public(IpAddr::V4(embedded(segments[1], segments[2])));
+            }
+            !(v6.is_multicast()
+                || (segments[0] & 0xfe00) == 0xfc00
+                || (segments[0] & 0xffc0) == 0xfe80
+                || (segments[0] & 0xffc0) == 0xfec0
+                || (segments[0] == 0x2001 && segments[1] == 0x0db8))
+        }
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -311,7 +433,8 @@ fn usable_directory(candidate: Option<&str>, fallback: Option<PathBuf>) -> Optio
 /// What makes this safe is not a check on the command - there is no useful one -
 /// but who starts it: nothing here is ever called by a model. The agent's own
 /// commands go through the `shell` tool, with its permission card and its
-/// rules. This is a person clicking a button on a command they can see.
+/// rules. This is a person clicking a button on a command they can see, and
+/// then confirming it - the code is the model's, so one click is not enough.
 ///
 /// So the guarantees are about not surprising them: it runs in the folder the
 /// conversation is in, it stops at two minutes and says so rather than holding
@@ -473,6 +596,49 @@ pub fn app_clipboard_read(app: AppHandle) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_public_addresses_are_public() {
+        for private in [
+            "127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1",
+            "0.0.0.0", "255.255.255.255", "224.0.0.1", "::1", "::", "fe80::1", "fc00::1", "fd12::1",
+            "ff02::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1", "::127.0.0.1", "64:ff9b::a9fe:a9fe",
+            "2002:c0a8:0101::1",
+        ] {
+            assert!(!is_public(private.parse().unwrap()), "{private}");
+        }
+        for public in ["93.184.216.34", "1.1.1.1", "2606:4700::1111", "::ffff:93.184.216.34"] {
+            assert!(is_public(public.parse().unwrap()), "{public}");
+        }
+    }
+
+    #[test]
+    fn a_url_naming_a_private_address_is_refused_however_it_is_written() {
+        for url in [
+            "http://127.0.0.1/x.png",
+            "http://2130706433/x.png",
+            "http://0x7f.1/x.png",
+            "http://[::1]/x.png",
+            "http://[::ffff:169.254.169.254]/latest",
+            "file:///C:/work/project/x.png",
+            "ftp://example.com/x.png",
+        ] {
+            let parsed = reqwest::Url::parse(url).unwrap();
+            assert!(!reaches_only_the_internet(&parsed), "{url}");
+        }
+        let named = reqwest::Url::parse("https://example.com/x.png").unwrap();
+        assert!(reaches_only_the_internet(&named));
+    }
+
+    /// A name is judged by what it resolves to, so `localhost` never gets as
+    /// far as a connection.
+    #[tokio::test]
+    async fn a_name_that_resolves_to_this_machine_is_not_fetched() {
+        assert!(app_fetch_image("http://localhost:9/x.png".into()).await.is_none());
+        assert!(app_fetch_image("http://127.0.0.1:9/x.png".into()).await.is_none());
+        let resolved = reqwest::dns::Resolve::resolve(&PublicOnly, "localhost".parse().unwrap()).await;
+        assert!(resolved.is_err());
+    }
 
     #[test]
     fn a_data_url_splits_into_type_and_bytes() {

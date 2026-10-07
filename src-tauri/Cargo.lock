@@ -2544,6 +2544,7 @@ dependencies = [
  "inertia-core",
  "inertia-lsp",
  "inertia-mock",
+ "inertia-store",
  "parking_lot",
  "regex",
  "serde",

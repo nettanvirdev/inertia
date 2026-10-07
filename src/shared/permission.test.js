@@ -37,6 +37,11 @@ describe("matches", () => {
     expect(matches("git *", "npm install")).toBe(false);
   });
 
+  it("lets a trailing wildcard argument cover no arguments", () => {
+    expect(matches("git status *", "git status")).toBe(true);
+    expect(matches("git status *", "git statusx")).toBe(false);
+  });
+
   it("does not let a pattern smuggle in a regex", () => {
     expect(matches("git commit -m (fix)", "git commit -m (fix)")).toBe(true);
     expect(matches("a.c", "abc")).toBe(false);
@@ -111,9 +116,9 @@ describe("evaluate", () => {
  * MCP tools, which are the case the pattern side of a rule exists for.
  *
  * Their names are not knowable until a server is connected, so the rule has to
- * be writable about the server instead. The descriptor below is the one
- * `src/main/mcp/index.cjs` builds; a live server is not needed to prove that
- * what it produces is what a rule can be written against.
+ * be writable about the server instead. The descriptor below is the one the
+ * Electron build's MCP integration built; a live server is not needed to prove
+ * that what it produces is what a rule can be written against.
  */
 describe("MCP targets", () => {
   const descriptor = {

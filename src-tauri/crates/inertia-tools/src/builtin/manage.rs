@@ -39,6 +39,8 @@ use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, Tool
 use inertia_core::{Error, Result};
 use serde_json::{json, Value};
 
+use super::fence;
+
 /// A failure the model can act on. The registry turns it into an `ok: false`
 /// result carrying exactly this text, which is what Electron's `ToolError` did.
 fn refuse(message: impl Into<String>) -> Error {
@@ -134,15 +136,21 @@ struct Prepared {
 }
 
 /// Everything a copy and a move check before touching anything.
-fn prepare(args: &Value, ctx: &ToolContext, verb: &str) -> Result<Prepared> {
+async fn prepare(args: &Value, ctx: &ToolContext, verb: &str) -> Result<Prepared> {
     let source = resolve(&ctx.root, args, "source")?;
     let requested = resolve(&ctx.root, args, "destination")?;
+    // The source goes whole, so it may not carry an off-limits folder along
+    // inside it.
+    fence::check_tree(ctx, &source).await?;
 
     let Some(from) = stat_of(&source) else {
         return Err(refuse(format!("Nothing to {verb} at {}", source.display())));
     };
 
+    // Checked where it lands rather than where it was pointed: copying a
+    // folder called `hooks` into the workspace folder writes the hooks.
     let target = landing(&source, &requested);
+    fence::check(ctx, &target).await?;
     if source == target {
         return Err(refuse(format!(
             "The source and the destination are the same file: {}",
@@ -334,7 +342,7 @@ impl Tool for FileCopyTool {
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
-        let prepared = prepare(&args, ctx, "copy")?;
+        let prepared = prepare(&args, ctx, "copy").await?;
         copy_recursively(&prepared.source, &prepared.target).map_err(|e| {
             refuse(format!(
                 "Could not copy {} to {}: {e}",
@@ -380,7 +388,7 @@ impl Tool for FileMoveTool {
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
-        let prepared = prepare(&args, ctx, "move")?;
+        let prepared = prepare(&args, ctx, "move").await?;
         let describe = |e: std::io::Error| {
             refuse(format!(
                 "Could not move {} to {}: {e}",
@@ -447,6 +455,7 @@ impl Tool for FileFolderTool {
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
         let target = resolve(&ctx.root, &args, "path")?;
+        fence::check(ctx, &target).await?;
         let existing = stat_of(&target);
         if let Some(stat) = &existing {
             if !stat.is_dir() {
@@ -520,6 +529,7 @@ impl Tool for FileDeleteTool {
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
         let target = resolve(&ctx.root, &args, "path")?;
+        fence::check_tree(ctx, &target).await?;
         let Some(stat) = stat_of(&target) else {
             return Err(refuse(format!("Nothing to delete at {}", target.display())));
         };
