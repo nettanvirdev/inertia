@@ -303,7 +303,7 @@ describe("attaching files to a message", () => {
 /**
  * A turn that cannot hang.
  *
- * Both of these are recoveries from a main process that has stopped answering,
+ * Both of these are recoveries from a backend that has stopped answering,
  * which is not something the window can detect by watching - a turn that is
  * quiet because it is running a build looks exactly like one that is quiet
  * because nobody is ever going to speak again. Fake timers, because the real

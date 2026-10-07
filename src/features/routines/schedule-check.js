@@ -10,8 +10,8 @@ import { isSchedulerAvailable, routines as scheduler } from "@/lib/routines";
  * fired. Nothing ever said so afterwards, because a routine that never runs
  * produces no failures to look at.
  *
- * The parser that decides whether a schedule fires is in the main process, in
- * `routines/schedule.cjs`, and it is the only opinion that matters - a second
+ * The parser that decides whether a schedule fires is in the Rust backend, in
+ * `src-tauri/src/routines.rs`, and it is the only opinion that matters - a second
  * one written here would eventually disagree with it, and the one the user
  * could see would be the wrong one. So this asks that parser the same two
  * questions the scheduler asks: what does this mean, and when does it next come

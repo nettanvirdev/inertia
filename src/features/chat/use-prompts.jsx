@@ -79,7 +79,7 @@ export function usePrompts(threadId) {
 
   const replyPermission = React.useCallback(
     (id, answer, message) => {
-      // Removed optimistically. The main process has already been told, and a
+      // Removed optimistically. The backend has already been told, and a
       // card that lingers after the click reads as the click not working.
       dismiss(id);
       permission.reply(id, answer, message)?.catch(() => {});

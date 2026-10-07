@@ -72,66 +72,6 @@ function toObject(rows) {
   return out;
 }
 
-/**
- * Environment variables and request headers are the same shape, so they get the
- * same editor. Rows are kept as a list rather than derived from the object on
- * every keystroke: an object cannot hold a half-typed key, and a row whose key
- * is momentarily blank would otherwise vanish under the cursor.
- */
-export function KeyValueEditor({ value, onChange, keyPlaceholder = "KEY", valuePlaceholder = "value", addLabel = "Add row" }) {
-  const [rows, setRows] = React.useState(() => toRows(value));
-
-  const commit = (next) => {
-    setRows(next);
-    onChange?.(toObject(next));
-  };
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      {rows.map((row, index) => (
-        <div key={row.id} className="flex items-center gap-1.5">
-          <Input
-            size="sm"
-            className="flex-1 font-mono"
-            value={row.key}
-            placeholder={keyPlaceholder}
-            aria-label={`${keyPlaceholder} ${index + 1}`}
-            onChange={(e) =>
-              commit(rows.map((r) => (r.id === row.id ? { ...r, key: e.target.value } : r)))
-            }
-          />
-          <Input
-            size="sm"
-            className="flex-1 font-mono"
-            value={row.value}
-            placeholder={valuePlaceholder}
-            aria-label={`${valuePlaceholder} ${index + 1}`}
-            onChange={(e) =>
-              commit(rows.map((r) => (r.id === row.id ? { ...r, value: e.target.value } : r)))
-            }
-          />
-          <IconButton
-            size="lg"
-            label={`Remove row ${index + 1}`}
-            onClick={() => commit(rows.filter((r) => r.id !== row.id))}
-          >
-            <X />
-          </IconButton>
-        </div>
-      ))}
-      <Button
-        variant="subtle"
-        size="sm"
-        className="self-start"
-        onClick={() => commit([...rows, { id: nextRowId(), key: "", value: "" }])}
-      >
-        <Plus />
-        {addLabel}
-      </Button>
-    </div>
-  );
-}
-
 /* -- tags -------------------------------------------------------------- */
 
 /** Tags are typed as one comma separated line; the record stores an array. */

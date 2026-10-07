@@ -1,10 +1,10 @@
 import { normalizeBaseUrl } from "@shared/providers";
 
 /**
- * The renderer's view of the model bridge.
+ * The window's view of the model bridge.
  *
  * Same shape as the workspace client and for the same reason: one adapter
- * forwards to the preload bridge, and a stand-in keeps the UI usable in a plain
+ * forwards to the desktop bridge, and a stand-in keeps the UI usable in a plain
  * browser tab. Without the stand-in every screen that touches a provider would
  * be unreachable outside the packaged app, which is exactly the UI you most
  * want to iterate on.

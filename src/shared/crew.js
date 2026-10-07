@@ -17,11 +17,11 @@
  * answers, and `team` says what everyone is doing without waiting for anyone.
  * The parent keeps working in between, which is the whole point.
  *
- * This file is the part both processes need to agree on: who is allowed to
- * spawn what, and what a run's status means. The runtime lives in the main
- * process because that is where sessions run; the panel lives in the renderer
- * because that is where someone is watching. Neither may hold its own opinion
- * about whether a nested spawn is permitted.
+ * This file is the part both halves need to agree on: who is allowed to
+ * spawn what, and what a run's status means. The runtime lives in the Rust
+ * backend (`src-tauri/src/crew.rs`) because that is where sessions run; the
+ * panel lives in the window because that is where someone is watching.
+ * Neither may hold its own opinion about whether a nested spawn is permitted.
  */
 
 /**
@@ -139,15 +139,6 @@ export function spawnRefusal(
   }
   return null;
 }
-
-/**
- * The statuses a run can be in.
- *
- * Deliberately few. A status is what someone reading the panel needs in order
- * to know whether to wait, and finer grain than this belongs in `activity`,
- * which is free text and changes every few seconds.
- */
-export const STATUSES = ["queued", "running", "paused", "done", "failed", "cancelled", "interrupted"];
 
 /**
  * Settled, but with its conversation kept, so a new brief can pick it up.

@@ -25,7 +25,7 @@ import { ToolRow } from "./permissions/ToolRow";
 /**
  * The workspace ruleset: what every agent starts from.
  *
- * This screen edits the same array the main process enforces, which is the only
+ * This screen edits the same array the backend enforces, which is the only
  * version of it worth having - a permission a person sets here and a permission
  * a tool checks at call time have to be literally the same record, or the screen
  * is a decoration that lies.

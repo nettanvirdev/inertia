@@ -6,11 +6,12 @@
  *
  * `getBoundingClientRect()` returns a `DOMRect`. Its `x`, `y`, `width` and
  * `height` are accessors on the prototype, not own properties of the object -
- * and Electron's context bridge does not clone host objects. What arrived in
- * the main process was `{}`. Bounds of `{}` clamp to zero, a zero-sized view
- * is treated as one that is off screen, and the browser was therefore created,
- * navigated, and never once made visible. Every symptom pointed at loading:
- * the page was loading perfectly and being drawn nowhere.
+ * and the context bridge of the Electron build this began as does not clone
+ * host objects. What arrived on the other side was `{}`. Bounds of `{}` clamp
+ * to zero, a zero-sized view is treated as one that is off screen, and the
+ * browser was therefore created, navigated, and never once made visible. Every
+ * symptom pointed at loading: the page was loading perfectly and being drawn
+ * nowhere.
  *
  * The lesson generalises, which is why this is a named function rather than an
  * object literal at the call site: anything crossing the bridge has to be

@@ -105,8 +105,8 @@ function openAuthWindow(url) {
   }
 }
 
-/** A link out of the app. The main process owns this so the window itself never
- *  navigates away from the app it is. */
+/** A link out of the app. The backend opens it in the system browser so the
+ *  window itself never navigates away from the app it is. */
 function openExternal(url) {
   if (!url) return;
   if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
@@ -371,8 +371,8 @@ function ManageToolsDialog({ connection, open, onClose, onSaved }) {
   const [enabled, setEnabled] = React.useState(true);
   const [chosen, setChosen] = React.useState(() => new Set());
   const [saving, setSaving] = React.useState(false);
-  // Bumped to re-run the read below. The tool list is cached in main for the
-  // life of the process, which is right for a catalogue that changes when
+  // Bumped to re-run the read below. The tool list is cached in the backend
+  // for the life of the process, which is right for a catalogue that changes when
   // Composio ships and wrong on the afternoon somebody adds a tool to a toolkit
   // and cannot work out why Inertia will not offer it. Before this the only
   // remedy was to quit the app, and nothing on screen said so.

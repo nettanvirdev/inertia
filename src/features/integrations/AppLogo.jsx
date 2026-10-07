@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * The URL is never put in the `img` directly. This window's Content-Security
  * Policy is `img-src 'self' data: blob:` on purpose - it renders model-authored
  * markdown, and remote images are how a model would smuggle a conversation out
- * one pixel URL at a time. So the main process fetches the bytes and hands back
+ * one pixel URL at a time. So the Rust backend fetches the bytes and hands back
  * a data URI, and the widening never has to happen.
  *
  * The white plate is the one hardcoded colour in this screen and it is

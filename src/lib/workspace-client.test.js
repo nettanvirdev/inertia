@@ -4,10 +4,10 @@ import path from "node:path";
 import url from "node:url";
 
 /**
- * The bridge has to carry everything the preload offers.
+ * The client has to carry everything the bridge offers.
  *
- * `chooseFolder` was exposed by the preload, handled in main, called by the
- * composer - and simply not listed in `bridgeClient`. So it was `undefined` in
+ * `chooseFolder` was exposed by the bridge, handled by the backend, called by
+ * the composer - and simply not listed in `bridgeClient`. So it was `undefined` in
  * the real desktop app, the composer's `typeof chooseFolder !== "function"`
  * guard concluded it was not running in a desktop app, and picking a working
  * folder told the user to go and use the desktop app they were already using.
@@ -27,10 +27,9 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
  * literal's own top level only.
  *
  * The marker points at a line inside the literal and the opening brace is
- * found by walking back from it, because every one of these literals is
- * introduced differently - `exposeInMainWorld(name, {` in the preload and
- * `return {` in each adapter - and anchoring on the introduction meant
- * three special cases.
+ * found by walking back from it, because the literals are not all introduced
+ * the same way, and anchoring on the introduction meant a special case for
+ * each.
  *
  * Both spellings count, because both adapters use both: `name: value` in the
  * bridge, and `async name()` method shorthand in the browser stand-in.
@@ -75,8 +74,8 @@ function keysOfLiteral(source, marker) {
 }
 
 describe("the workspace bridge adapter", () => {
-  // The bridge module is this shell's preload: the one place that says what
-  // the window may call. The names have to match there and in both adapters,
+  // The bridge module is the one place that says what the window may call.
+  // The names have to match there and in both adapters,
   // and nothing at runtime notices a line missing from an object literal.
   const bridge = read("src/bridge/workspace.js");
   const client = read("src/lib/workspace-client.js");
@@ -92,7 +91,7 @@ describe("the workspace bridge adapter", () => {
     expect(standIn.size).toBeGreaterThan(15);
   });
 
-  it("forwards every key the preload exposes", () => {
+  it("forwards every key the bridge exposes", () => {
     const missing = [...exposed].filter((key) => !forwarded.has(key));
     expect(missing, `workspaceAPI keys the renderer cannot reach: ${missing.join(", ")}`).toEqual(
       []

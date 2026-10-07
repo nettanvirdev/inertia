@@ -155,8 +155,3 @@ export const MODELS = [
     recommended: false,
   },
 ];
-
-/** @returns {object|undefined} */
-export function getModelById(id) {
-  return MODELS.find((m) => m.id === id);
-}

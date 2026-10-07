@@ -5,15 +5,16 @@ import { voice } from "@/lib/voice";
  * Talking to the app.
  *
  * The microphone is captured with MediaRecorder and the recording is sent to
- * the main process in one piece when it stops. Deliberately not a streaming
+ * the backend in one piece when it stops. Deliberately not a streaming
  * websocket: a streaming transcript is worth its complexity when a person is
  * dictating a document, and this is a sentence or two into a composer, where
  * the whole utterance arrives about as fast as the first partial would have.
  *
  * The browser's own SpeechRecognition would be free and on-device, and it is
- * the right first choice on the web. It is not available here - Electron ships
- * Chromium without the speech service that backs it - so there is one path
- * rather than two, and it is the one that works.
+ * the right first choice on the web. It is not available here - the system
+ * webview this app runs in (WebView2, on Windows) ships without the speech
+ * service that backs it - so there is one path rather than two, and it is the
+ * one that works.
  *
  * Two ways to use it. `hold` records until told to stop, which is what a
  * press-and-hold button wants. `endpoint` watches the signal and stops on its

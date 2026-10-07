@@ -1,7 +1,7 @@
 /**
  * Closing a browser view a moment after the pane that showed it goes.
  *
- * A `WebContentsView` lives in the main process and outlives the component
+ * The page is a native webview the backend owns, and it outlives the component
  * that positions it, so a pane that unmounts has to close its views or it
  * leaves real browsers running with nothing left to stop them. That is why the
  * close was in the unmount, and it was right about the goal and wrong about

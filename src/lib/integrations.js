@@ -4,7 +4,7 @@ import { workspaceClient } from "./workspace-client";
  * The renderer's view of the three tool bridges: Composio, MCP and OpenAPI.
  *
  * Same shape as `lib/llm.js` and for the same reason. One adapter forwards to
- * the preload bridge and unwraps the `{ ok, data }` envelope into a value or a
+ * the desktop bridge and unwraps the `{ ok, data }` envelope into a value or a
  * thrown Error, so no screen repeats that; a stand-in keeps the screens
  * renderable in a plain browser tab, which is exactly where this UI gets
  * iterated on.
@@ -29,17 +29,17 @@ function api(name) {
 
 function unavailable(what) {
   throw new Error(
-    `${what} needs the desktop app. A browser tab has no main process to run the request in, and the credentials it needs are deliberately not reachable from the page.`
+    `${what} needs the desktop app. A browser tab has no backend to run the request in, and the credentials it needs are deliberately not reachable from the page.`
   );
 }
 
-/** True when all three bridges are present, which is only true inside Electron. */
+/** True when all three bridges are present, which is only true in the desktop app. */
 export function isDesktop() {
   return Boolean(api("composioAPI") && api("mcpAPI") && api("openapiAPI"));
 }
 
 /**
- * Drop the main process's cached tool lists.
+ * Drop the backend's cached tool lists.
  *
  * Called after a write that went around a bridge handler (see `mcp.update`),
  * because the handler that was skipped is also the thing that would have
@@ -69,14 +69,14 @@ const CATALOGUE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 /**
  * The catalogue, for the life of the window.
  *
- * It lives here rather than in the main process because the cost being paid was
+ * It lives here rather than in the backend because the cost being paid was
  * never the network - it was that the Integrations pane refetched on every
  * mount, and a pane remounts on every tab switch and every navigation. A cache
  * behind IPC still makes the first frame after a remount a spinner, because IPC
  * is a promise. A module-level one is already in hand when the component runs,
  * so a remount draws the list it drew before, with nothing in between.
  *
- * The main process keeps its own cache of tool schemas for a different reader
+ * The backend keeps its own cache of tool schemas for a different reader
  * on a different path; `refresh` drops that one too, through the handler.
  */
 let catalogue = null;
@@ -239,7 +239,7 @@ export const composio = {
    */
   async sync() {
     const bridge = api("composioAPI");
-    // Null, not an empty list: a preload without this channel has not told us
+    // Null, not an empty list: a bridge without this method has not told us
     // there are no connections, it has told us nothing, and a caller that
     // cannot tell those apart will render "no apps connected" over a list.
     if (!bridge?.sync) return null;
@@ -275,15 +275,15 @@ export const mcp = {
   /**
    * Change a stored server.
    *
-   * The `mcp:update` handler in the main process takes `(id, changes)`, but the
-   * preload bridge forwards a single argument, so a two-argument call arrives
-   * as an id with nothing to apply. Rather than silently no-op, the record is
-   * patched through the workspace bridge - which writes the same file the
-   * handler would have written - and the two things the handler does afterwards
-   * are done here: drop the live connection, because whatever is running is
-   * running on the old config, and drop the main process's tool cache.
-   *
-   * The arity check means this repairs itself the day the bridge is fixed.
+   * The bridge takes `(id, changes)` and the arity check sends the call
+   * straight to it. The fallback below is for a bridge that forwards a single
+   * argument - the Electron preload this was written against did, so a
+   * two-argument call arrived as an id with nothing to apply. Rather than
+   * silently no-op, the record is then patched through the workspace bridge -
+   * which writes the same file the handler would have written - and the two
+   * things the handler does afterwards are done here: drop the live
+   * connection, because whatever is running is running on the old config, and
+   * drop the backend's tool cache.
    */
   async update(id, changes) {
     const bridge = api("mcpAPI");

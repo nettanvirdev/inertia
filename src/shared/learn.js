@@ -2,10 +2,11 @@
  * Turning what just happened into something the next agent already knows.
  *
  * The app has two kinds of durable memory and they answer different questions.
- * A MEMORY is a fact - "the workspace is D:\\Inertia", "he prefers no
+ * A MEMORY is a fact - "the workspace is ~/Documents/Inertia", "he prefers no
  * attribution lines in commits" - noticed after a conversation goes quiet, by
- * `memory/capture.cjs`, without anybody asking. A SKILL is a procedure: how to
- * do a thing, with the commands, the order, and the traps. Nothing ever wrote
+ * the capture pass in the `inertia-memory` crate, without anybody asking. A
+ * SKILL is a procedure: how to do a thing, with the commands, the order, and
+ * the traps. Nothing ever wrote
  * one, because nothing ever asked - the tools to save one have been there all
  * along and an agent has no reason to reach for them mid-task.
  *

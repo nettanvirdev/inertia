@@ -189,7 +189,8 @@ export function appBridge() {
       })),
     canRun: (lang) => raw("app_can_run", { lang: String(lang ?? "") }).catch(() => false),
 
-    /** What to paste. Goes through the backend for the same reason Electron's did. */
+    /** What to paste. Goes through the backend because `navigator.clipboard` needs
+     *  a user gesture the paste handler does not always have. */
     readClipboard: () => raw("app_clipboard_read").catch(() => ""),
 
     /**

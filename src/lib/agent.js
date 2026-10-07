@@ -1,7 +1,7 @@
 /**
  * Watching a turn.
  *
- * The main process runs the agent loop; this is the window's view of it. A
+ * The Rust backend runs the agent loop; this is the window's view of it. A
  * turn is started, an id comes back, and everything that happens arrives on
  * one event stream tagged with that id.
  *
@@ -12,22 +12,6 @@
  * differently without the bridge growing a shape for each of them.
  */
 
-export const AGENT_EVENTS = [
-  "delta", // text, as it is written
-  "reasoning", // thinking, kept apart from prose
-  "step", // a round of tool calls is starting
-  "tool-start", // one call, with its arguments
-  "tool-update", // partial state while it runs: a command's output so far
-  "tool-end", // its result
-  "steer", // something the person said while the turn was still running
-  "usage", // one step's tokens, and the running total for the turn
-  "warning", // an integration failed to load; the turn continues
-  "hook", // one of the user's lifecycle hooks ran, and what it decided
-  "changes", // what the turn changed on disk, with the snapshot to go back to
-  "error",
-  "done",
-];
-
 import { stripSelfLabel } from "@/features/chat/self-label";
 import { foldAttachments } from "@/features/chat/attachments";
 import { summaryEntry } from "@shared/summary";
@@ -35,10 +19,10 @@ import { summaryEntry } from "@shared/summary";
 /**
  * The bridge, read when it is used rather than when this module was evaluated.
  *
- * The preload script and the bundle are two scripts in one page, and a module
- * that snapshots the global at import time is one load-order change away from
- * an app that quietly has no tools and no way to say so. Reading it per call
- * costs a property lookup.
+ * The bridge is put on `window` by an import at the top of `main.jsx`, and a
+ * module that snapshots the global at import time is one load-order change away
+ * from an app that quietly has no tools and no way to say so. Reading it per
+ * call costs a property lookup.
  */
 const api = () => (typeof window !== "undefined" ? window.agentAPI : null);
 
@@ -55,7 +39,7 @@ function unwrap(result) {
 /**
  * How long a turn may take to come back with an id.
  *
- * Everything before a turn has an id is setup in the main process: reading the
+ * Everything before a turn has an id is setup in the backend: reading the
  * workspace, resolving the provider, unlocking the key, listing the skills.
  * None of it is slow, and all of it is I/O that can block forever on a folder
  * that has gone away - a disconnected network drive, a credential store that
@@ -107,7 +91,7 @@ export function runTurn({
   primaryAgentId,
   mentioned,
   continuation,
-  // Who the window last saw in the room, so a main process that has restarted
+  // Who the window last saw in the room, so a backend that has restarted
   // since does not seat the conversation with the primary alone.
   roster,
   // Retry: the one agent that should speak, in place of a turn that failed.
@@ -136,7 +120,7 @@ export function runTurn({
   /**
    * Events that arrived before we knew what to call this turn.
    *
-   * The main process can emit before the call that starts the turn has finished
+   * The backend can emit before the call that starts the turn has finished
    * returning its id, and with a fast provider it reliably does: measured
    * against Groq, an entire reply - reasoning, delta and done - landed inside
    * six milliseconds, all of it before the id came back. Dropping those events
@@ -239,7 +223,7 @@ export function runTurn({
       const turn = unwrap(result);
       if (done) {
         // The start timer already gave up on this one. The turn is real and
-        // running in main, so it is stopped rather than left orphaned.
+        // running in the backend, so it is stopped rather than left orphaned.
         bridge.cancel(turn.id).catch(() => {});
         return;
       }
@@ -299,11 +283,11 @@ function steerTurn(id, text) {
 }
 
 /**
- * Turns still running in the main process.
+ * Turns still running in the backend.
  *
  * A window reload does not stop a turn - the loop, the tools and the key all
- * live in main - it only stops anyone watching. This is how a window that has
- * come back finds out what it walked away from.
+ * live in the backend - it only stops anyone watching. This is how a window
+ * that has come back finds out what it walked away from.
  */
 export function activeTurns() {
   const bridge = api();
@@ -475,7 +459,7 @@ export function toHistory(messages, { label = null } = {}) {
     // learns to write them.
     if (message?.quiet) continue;
     // Who said it, carried on the entry rather than written into the text:
-    // the main process turns the transcript round for whichever agent is
+    // the backend turns the transcript round for whichever agent is
     // about to speak, and it needs the id to know whose lines are whose. A
     // leading "Name:" the model wrote itself comes off, or the next seat reads
     // "Name: Name: ..." and learns it.
@@ -489,7 +473,7 @@ export function toHistory(messages, { label = null } = {}) {
       // model reads a CSV the same way it reads a paragraph and wants to know
       // which file it is looking at. Images become content parts, which is the
       // only shape any provider accepts them in - the same shape a screenshot
-      // from the computer tools already travels in, so the main process needed
+      // from the computer tools already travels in, so the backend needed
       // no new case for this.
       if (message.attachments?.length) {
         const { content, parts } = foldAttachments(message.content ?? "", message.attachments);

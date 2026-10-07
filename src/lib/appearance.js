@@ -565,7 +565,7 @@ function writeMirror(applied) {
  * Paint the remembered appearance before React mounts.
  *
  * Called from `main.jsx` next to `bootstrapTheme`, and for the same reason it
- * is a function rather than an inline `<script>`: the renderer's CSP is
+ * is a function rather than an inline `<script>`: the window's CSP is
  * `script-src 'self'`, so nothing inline runs at all.
  *
  * It has to run AFTER `bootstrapTheme`, because the accent has a light and a
@@ -581,7 +581,7 @@ export function bootstrapAppearance() {
 /**
  * Window zoom.
  *
- * Electron's own zoom rather than a root font-size, because the app sizes text
+ * The webview's own zoom rather than a root font-size, because the app sizes text
  * in pixels in a hundred places and rem scaling would move about a third of it.
  * Zoom moves everything, including the parts nobody remembered to make relative.
  */

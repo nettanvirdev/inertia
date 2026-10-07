@@ -4,13 +4,13 @@ import * as React from "react";
  * The two switches that decide what Inertia does without a window.
  *
  * Not part of the preferences store, and deliberately so: one of these is a
- * Windows registry entry and the other is read by the main process before the
- * renderer exists. Both answers live outside the renderer, so the renderer asks
+ * Windows registry entry and the other is read by the backend before the
+ * window exists. Both answers live outside the window, so the window asks
  * for them rather than keeping its own copy that could disagree with the
  * machine - a user who removed Inertia from startup in Task Manager must see an
  * off switch here the next time the pane opens.
  *
- * `available` is false in a browser tab and in tests, where there is no preload
+ * `available` is false in a browser tab and in tests, where there is no
  * bridge at all. The pane hides the rows rather than showing dead controls.
  */
 export function useBackgroundSettings() {
@@ -24,7 +24,7 @@ export function useBackgroundSettings() {
     try {
       setState(await api.get());
     } catch {
-      // The main process not answering means the window is going away anyway.
+      // The backend not answering means the window is going away anyway.
       setState(null);
     } finally {
       setLoading(false);
@@ -36,7 +36,7 @@ export function useBackgroundSettings() {
   }, [reload]);
 
   /**
-   * Flip a switch and take the main process's word for the result.
+   * Flip a switch and take the backend's word for the result.
    *
    * Not optimistic, unlike most settings here. Setting a login item can be
    * refused by the OS or by policy, and a switch that slides across and then

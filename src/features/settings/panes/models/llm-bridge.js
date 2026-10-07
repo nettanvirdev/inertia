@@ -4,7 +4,7 @@ import { llmClient } from "@/lib/llm";
  * The pane's view of the model bridge.
  *
  * `llmClient` rejects on failure, and every one of its failures is already a
- * sentence a person can act on - the main process names the status, the host
+ * sentence a person can act on - the backend names the status, the host
  * that did not resolve, the port nothing is listening on. Turning that into an
  * `{ ok }` result here rather than letting it throw means a dead endpoint
  * renders as a line of text next to the button that asked, instead of taking

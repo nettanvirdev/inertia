@@ -48,7 +48,7 @@ import {
  * MCP servers.
  *
  * The draft is the stored record, field for field, with no translation layer:
- * the main process validates `command`, `args`, `env`, `url` and `headers` by
+ * the backend validates `command`, `args`, `env`, `url` and `headers` by
  * those names, and a form that renamed them would make every error message it
  * sends back describe a field the user cannot see.
  *

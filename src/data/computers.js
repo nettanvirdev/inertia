@@ -17,7 +17,7 @@
  *
  * Three, and only three. A provider in this list is one the picker offers, so
  * naming one the app cannot make is how someone chooses a machine that will
- * never exist. The real list comes from the main process at runtime, with
+ * never exist. The real list comes from the backend at runtime, with
  * whether each one can run right now; this is only what to call them before
  * that answer arrives.
  */

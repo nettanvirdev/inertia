@@ -4,7 +4,7 @@
  * The composer is a contenteditable, but its VALUE is still the plain string
  * mentions.js describes. That is the whole trick: the pills are a rendering of
  * the text rather than a new data model, so the draft that gets saved, the
- * message that gets sent and the history the main process reads are all the
+ * message that gets sent and the history the backend reads are all the
  * same string they were when this was a textarea.
  *
  * These functions are deliberately plain DOM, not React. A contenteditable and

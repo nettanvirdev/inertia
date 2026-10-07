@@ -17,8 +17,8 @@ import { ImportCookiesDialog, forPreview } from "@/features/computers/ImportCook
  * A browser, beside the conversation, with tabs.
  *
  * The unusual thing about this component is that it does not render the page.
- * It cannot: each page is a Chromium view the main process parks over this
- * window, native and outside the DOM. So what this renders is the CHROME - the
+ * It cannot: each page is a native child webview the backend parks over this
+ * window, outside the DOM. So what this renders is the CHROME - the
  * tab strip, an address bar, back and forward - and, below it, a hole: an
  * empty box whose only job is to be measured and reported, so the view can be
  * put exactly there.
@@ -26,9 +26,10 @@ import { ImportCookiesDialog, forPreview } from "@/features/computers/ImportCook
  * ── The bug that cost the whole pane, and is now impossible ────────────────
  * The measurement is `getBoundingClientRect()`, which returns a `DOMRect` - an
  * object whose numbers live on its prototype rather than on itself. The
- * context bridge does not clone host objects, so the main process received
- * `{}`, the bounds clamped to zero, and every browser was created, navigated,
- * and never once made visible. The page loaded perfectly and was drawn
+ * Electron build's context bridge did not clone host objects, so the other
+ * side received `{}`, the bounds clamped to zero, and every browser was
+ * created, navigated, and never once made visible. The page loaded perfectly
+ * and was drawn
  * nowhere, which reads exactly like a browser that cannot load anything. See
  * `pane-rect.js`; the conversion is a named, tested function now.
  *
@@ -57,7 +58,7 @@ export function WebPane({ paneId, onClose, className }) {
 
   const dropTab = (id) => {
     const next = closeTab(tabs, current, id);
-    // The view belongs to the main process and outlives this component, so a
+    // The view belongs to the backend and outlives this component, so a
     // closed tab has to be closed there too, or it is a page nobody can see
     // and nobody can stop.
     preview.close(id).catch(() => {});

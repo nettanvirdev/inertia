@@ -3,16 +3,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * UI preference persistence.
  *
- * The renderer's localStorage is backed by Chromium's profile inside Electron's
- * userData directory, so it survives quit/relaunch and lives per-install - the
+ * The webview's localStorage lives in the profile Tauri keeps in the app's own
+ * data directory, so it survives quit/relaunch and lives per-install - the
  * same store `lib/theme.jsx` has always used for the theme. Keeping it here
- * rather than in the main process means a preference read costs nothing at
+ * rather than in the Rust backend means a preference read costs nothing at
  * mount: no IPC round-trip, no async gap where the UI renders the default and
  * then snaps to the stored value.
  *
  * Everything is namespaced under `inertia.ui.` so app data (should any land in
  * localStorage later) can never collide with a remembered toggle, and so
- * clearing preferences is one prefix scan.
+ * clearing preferences would be one prefix scan.
  */
 
 const NS = "inertia.ui.";
@@ -35,19 +35,6 @@ export function writePref(key, value) {
     else localStorage.setItem(NS + key, JSON.stringify(value));
   } catch {
     /* quota, or storage disabled - a lost preference is never worth a crash */
-  }
-}
-
-export function clearPrefs() {
-  try {
-    const doomed = [];
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const k = localStorage.key(i);
-      if (k?.startsWith(NS)) doomed.push(k);
-    }
-    for (const k of doomed) localStorage.removeItem(k);
-  } catch {
-    /* nothing to clear if the store is unavailable */
   }
 }
 

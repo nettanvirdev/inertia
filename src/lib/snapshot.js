@@ -2,7 +2,7 @@
  * The window's view of a turn's changes.
  *
  * Read at the point of use, like the crew bridge, so a browser preview with
- * no main process gets an honest "not available" rather than a throw.
+ * no backend gets an honest "not available" rather than a throw.
  */
 const bridge = () => (typeof window !== "undefined" ? window.snapshotAPI : null) ?? null;
 

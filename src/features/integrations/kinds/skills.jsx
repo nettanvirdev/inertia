@@ -27,7 +27,7 @@ const blank = () => ({
   extra: {},
 });
 
-/** Mirrors `slugify` in main/workspace/collections.cjs, which decides for real. */
+/** Mirrors `slugify` in `inertia-store/src/fsx.rs`, which decides for real. */
 function previewSlug(name) {
   return (
     String(name ?? "")
@@ -133,7 +133,7 @@ function SkillFolder({ id, name }) {
 }
 
 /**
- * What is wrong with the skill on disk, as the main process read it.
+ * What is wrong with the skill on disk, as the backend read it.
  *
  * The failure this exists for is silent: a skill with no description is loaded,
  * enabled and never once offered to an agent, and nothing anywhere says so. The

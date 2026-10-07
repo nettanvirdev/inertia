@@ -14,7 +14,7 @@ import {
 /**
  * The cache without React, which is all of the behaviour that can be wrong:
  * what is remembered, how old it is allowed to get, and whether two readers
- * asking at once ask the main process twice.
+ * asking at once ask the backend twice.
  */
 
 afterEach(() => {

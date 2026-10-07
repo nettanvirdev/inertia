@@ -98,7 +98,7 @@ export function useDockWidth() {
     }
     setDragging(true);
     // The native panes get out of the way for the length of the drag, or the
-    // pointer crosses onto a loaded page and the renderer never hears from it
+    // pointer crosses onto a loaded page and this page never hears from it
     // again. See `pane-drag.js` - this is the reason that module exists.
     setPaneDragging(true);
 

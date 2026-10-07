@@ -102,7 +102,7 @@ export async function clearAgentPicture(workspace, agent) {
 /**
  * Write the picked photo into the workspace, and say where it went.
  *
- * Returns the patch to merge into the profile. Outside Electron there is no
+ * Returns the patch to merge into the profile. Outside the desktop app there is no
  * folder, so the data URL is kept as it was - a browser preview should still
  * show the photo it was just given rather than silently dropping it.
  */

@@ -213,7 +213,7 @@ export function mergeRows(previous, rows, { id = (row) => row?.id } = {}) {
  *
  * `capabilities` was a list of seven invented names - Browser, Desktop, Voice
  * and Web search among them - that named no tool this app has ever had and that
- * nothing in the main process ever read. It is dropped rather than translated,
+ * nothing in the backend ever read. It is dropped rather than translated,
  * because translating it would invent a meaning it never carried: an agent that
  * claimed "browser" was not granted anything, so removing the claim takes
  * nothing away. What an agent may do is its permission rules, and an agent with

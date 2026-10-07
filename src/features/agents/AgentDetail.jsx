@@ -483,7 +483,7 @@ export function AgentDetail({ agentId, onBack }) {
                 {/* This was a second list of switches called "Capabilities",
                     naming seven things - Browser, Desktop, Voice, Web search
                     among them - that no tool in the app has ever provided and
-                    that nothing in the main process read. What an agent may
+                    that nothing in the backend read. What an agent may
                     actually reach for is its permission rules, which have a tab
                     of their own a few pixels away. Two controls for one idea,
                     and the prettier one did nothing. */}

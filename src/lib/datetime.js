@@ -152,11 +152,6 @@ export function formatTime(value, preferences) {
   return format(value, preferences, { hour: "2-digit", minute: "2-digit" });
 }
 
-/** The zone spelled out, so a timestamp cannot be read in the wrong one. */
-export function formatZoneName(value, preferences) {
-  return format(value, preferences, { timeZoneName: "short" }).split(", ").pop();
-}
-
 /** "GMT+2" for the zone right now. Computed rather than written into the list,
  *  because half these zones change offset twice a year. */
 export function zoneOffsetLabel(zone, at = new Date()) {

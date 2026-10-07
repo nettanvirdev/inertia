@@ -19,7 +19,7 @@ import { useToast } from "@/components/ui/toast";
  * reappears is one people learn to dismiss without reading, which is worse than
  * never having made it.
  *
- * The decision about whether to appear at all is made in the main process. A
+ * The decision about whether to appear at all is made in the backend. A
  * second copy of that rule here would eventually disagree with the first, and
  * the disagreement would show up as a repository quietly gaining a file.
  */

@@ -23,7 +23,7 @@ import path from "node:path";
 
 const UI = path.join(import.meta.dirname, "..", "..");
 
-/** Every .jsx under src/renderer. */
+/** Every .jsx under src/. */
 function sources(dir = UI, found = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);

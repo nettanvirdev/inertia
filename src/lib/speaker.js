@@ -7,15 +7,15 @@ import { voice } from "./voice";
  * different from this one.
  *
  * First, this decodes bytes with the Web Audio API instead of handing a blob
- * URL to an `<audio>` element. The window's Content-Security-Policy is
- * `default-src 'self'` with no `media-src`, so `<audio src="blob:...">` is
- * blocked outright - and loosening the policy so a page that renders
- * model-authored markdown can load media from arbitrary sources is not a trade
- * worth making for a convenience. `decodeAudioData` takes an ArrayBuffer that
- * already crossed the IPC bridge, so no resource is ever fetched by the page.
- * The speaking rate comes free with it: an AudioBufferSourceNode has a
- * playbackRate, so changing the slider costs nothing and does not re-synthesise
- * a single character.
+ * URL to an `<audio>` element. That began as a constraint - the policy this
+ * was written under had no `media-src`, so `<audio src="blob:...">` was
+ * blocked - and the window's policy now allows `blob:` media, so it is a
+ * choice. It stays because it needs nothing more: `decodeAudioData` takes the
+ * ArrayBuffer that already crossed the IPC bridge, so no URL is minted, none
+ * has to be revoked, and no resource is ever fetched by the page. The speaking
+ * rate comes free with it: an AudioBufferSourceNode has a playbackRate, so
+ * changing the slider costs nothing and does not re-synthesise a single
+ * character.
  *
  * Second, it pipelines. A long reply is many utterances, and synthesising all
  * of them before saying the first word means several seconds of silence. One

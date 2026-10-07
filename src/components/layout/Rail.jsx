@@ -62,17 +62,12 @@ export const NAV_ITEMS = [
  *
  * A feature that is switched off should leave nothing behind - not a greyed
  * row, not a gap, and not a route that still answers if something links to it.
- * The predicate lives in `shared/features.js` so the rail, the palette, the
- * router and the main process all read one answer.
+ * The predicate lives in `shared/features.js` so the rail, the palette and the
+ * router all read one answer - the same one the backend reads from the
+ * preference when it decides what a turn holds.
  */
 export function visibleNavItems(preferences) {
   return visibleItems(NAV_ITEMS, preferences);
-}
-
-/** The same list, for a component that already has the user in context. */
-export function useNavItems() {
-  const { user } = useApp();
-  return useMemo(() => visibleNavItems(user?.preferences), [user?.preferences]);
 }
 
 /**

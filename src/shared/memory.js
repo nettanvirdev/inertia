@@ -12,37 +12,11 @@
  * the body arrives only when the model asks for it. So a title has to be worth
  * reading on its own, and `summarise` is what makes a long body behave.
  *
- * Pure and dependency-free, because both sides need it: the renderer to render
- * and sort, the main process to score and inject. Two implementations of "which
- * memories matter" would be two different answers to one question.
+ * Pure and dependency-free. The window uses it to render and sort; scoring and
+ * injecting happen in the Rust backend (the `inertia-memory` crate), whose
+ * numbers these must match, or "which memories matter" gets two different
+ * answers.
  */
-
-/**
- * The kinds, matching what the Memory screen already renders.
- *
- * Deliberately few. A vocabulary a person has to think about before writing
- * anything down is a vocabulary that stops them writing anything down, and the
- * kind is a filter in one dropdown, not a taxonomy.
- */
-export const MEMORY_KINDS = [
-  "fact",
-  "preference",
-  "contact",
-  "project",
-  "credential-note",
-  // One per project, rewritten rather than added to: what was being worked on
-  // and what is unfinished. It is the memory that makes a new conversation in a
-  // familiar folder start somewhere rather than nowhere.
-  "handover",
-];
-
-/** Where a memory came from. `agent` is what the setup tools have always written. */
-export const MEMORY_SOURCES = ["learned", "pinned", "imported", "agent"];
-
-export const DEFAULT_KIND = "fact";
-
-/** Below this, the screen draws a memory as low confidence. */
-export const LOW_CONFIDENCE = 0.5;
 
 /** A memory nobody has recalled in this long reads as stale. */
 export const STALE_AFTER_DAYS = 21;
@@ -63,31 +37,7 @@ export const INJECT_MAX = 24;
 /** One line of advertising copy, however long the body is. */
 export const MAX_SUMMARY = 160;
 
-export function isMemoryKind(value) {
-  return MEMORY_KINDS.includes(String(value ?? ""));
-}
-
 /* -- scope ---------------------------------------------------------------- */
-
-/**
- * Who a memory is about.
- *
- * `global` is about the person: how they want to be worked with, what they call
- * things, decisions that hold everywhere. `project` is about one folder: its
- * conventions, its architecture, what was built last week and what is still
- * broken.
- *
- * The distinction is on the record rather than in a setting, and that is the
- * whole of the isolation guarantee. A setting could be changed, or read wrongly
- * in one of the several places that ask; a memory that says which folder it
- * belongs to can only ever be wrong about itself. Project A cannot reach a
- * conversation in project B because the record itself says where it applies.
- */
-export const MEMORY_SCOPES = ["global", "project"];
-
-export function isMemoryScope(value) {
-  return MEMORY_SCOPES.includes(String(value ?? ""));
-}
 
 /**
  * Compare two folder paths as the same place.
@@ -561,7 +511,3 @@ export const MEMORY_CAPTURE = [
     hint: "Nothing is written down unless you or the agent decides to. Nothing happens in the background.",
   },
 ];
-
-export function isCaptureMode(id) {
-  return MEMORY_CAPTURE.some((mode) => mode.id === String(id ?? ""));
-}

@@ -1,10 +1,10 @@
 /**
  * What the renderer is entitled to find on `window`.
  *
- * Transcribed from the Electron preload (`src/main/preload.cjs` in the app this
- * one is a port of), which is the authoritative contract: the renderer was
- * written against exactly these namespaces and exactly these method names, and
- * calls most of them without checking first.
+ * Transcribed from the preload of the Electron app this one is a port of, and
+ * now the authoritative contract itself: the renderer was written against
+ * exactly these namespaces and exactly these method names, and calls most of
+ * them without checking first.
  *
  * It is data rather than prose so a test can hold the bridge to it. Every
  * namespace-shaped bug so far has been of one of two kinds - a namespace that
@@ -245,10 +245,3 @@ export const CONTRACT = {
     methods: ["get", "setMinimiseToTray", "setLaunchAtLogin"],
   },
 };
-
-/** The namespaces this shell installs. */
-export function installedNamespaces() {
-  return Object.entries(CONTRACT)
-    .filter(([, spec]) => spec.status !== "absent")
-    .map(([name]) => name);
-}

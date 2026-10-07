@@ -1,12 +1,11 @@
 /**
  * A turn's events, folded into the message being written.
  *
- * Shared between the window and the main process, and that is the whole
- * reason this file exists. The window folds a live turn into the reply on
- * screen; main folds a finished routine's turn into the reply on disk, because
- * a routine runs whether or not a window is open and a transcript that only
- * exists while somebody is watching is not a transcript. One fold, so the two
- * cannot disagree about what a tool card looks like.
+ * The window folds a live turn into the reply on screen with this. The Rust
+ * backend builds a routine's reply on disk with its own fold (`reply.rs`),
+ * because a routine runs whether or not a window is open and a transcript that
+ * only exists while somebody is watching is not a transcript. The two must
+ * agree about what a tool card looks like.
  *
  * The ordering rules - a tool card appears the moment its call starts, not
  * when it finishes, and text written after a tool call belongs after that card
@@ -280,30 +279,6 @@ export function finishedStatus(message, event) {
   const said = textOf(message).trim();
   const acted = (message.parts ?? []).some((part) => part.type === "tool");
   return said || acted ? "sent" : "error";
-}
-
-/**
- * A whole turn, folded from its recorded events into one finished reply.
- *
- * For a turn nobody watched. The record holds every replayable event in the
- * order it happened, so folding it produces the same message the window would
- * have built live - byte for byte, since it is the same fold.
- */
-export function foldRecorded(message, events) {
-  let next = { ...message, parts: message.parts ?? [] };
-  let status = "streaming";
-  for (const event of events ?? []) {
-    next = applyEvent(next, event);
-    if (event.type === "done" || event.type === "error") status = finishedStatus(next, event);
-  }
-  return {
-    ...next,
-    content: textOf(next),
-    status,
-    ...(status === "error" && !next.error
-      ? { error: (events ?? []).find((event) => event.type === "error")?.message ?? "The reply produced nothing." }
-      : {}),
-  };
 }
 
 /**

@@ -228,7 +228,7 @@ export function VoicePane() {
       <EmptyState
         icon={AudioLines}
         title="Voice needs the desktop app"
-        description="A browser tab has no main process to reach ElevenLabs from, and no microphone permission worth granting a page that renders model output."
+        description="A browser tab has no backend to reach ElevenLabs from, and no microphone permission worth granting a page that renders model output."
       />
     );
   }

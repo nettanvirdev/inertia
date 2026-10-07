@@ -21,7 +21,7 @@ import { SettingsRow, SettingsSection } from "../SettingsRow";
  * and leaves should still get the behaviour they expect.
  *
  * The one thing this screen must never do is lie. Every control here changes
- * what the main process actually does on the next turn - the tools an agent
+ * what the backend actually does on the next turn - the tools an agent
  * holds, the block in its prompt, the navigation in the sidebar - rather than
  * hiding something that keeps running underneath.
  */

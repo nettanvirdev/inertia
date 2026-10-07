@@ -5,7 +5,7 @@ import { computers } from "@/lib/computers";
 /**
  * The keys the app needs by name.
  *
- * These are not ordinary secrets. The main process looks each one up by the
+ * These are not ordinary secrets. The backend looks each one up by the
  * exact string below before the user has named anything, so renaming one would
  * silently disconnect the feature it powers, and deleting one is a thing to do
  * on purpose from the feature's own screen rather than by reaching for a bin

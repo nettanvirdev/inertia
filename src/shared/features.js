@@ -2,8 +2,9 @@
  * Which optional parts of the app are switched on.
  *
  * One answer, asked by everything that has to agree: the navigation rail, the
- * command palette, the router, the window title, and the main process when it
- * decides which tools a turn holds. A feature visible in one of those and gone
+ * command palette, the router and the window title - and the backend reads the
+ * same preference, by the same rule, when it decides which tools a turn holds.
+ * A feature visible in one of those and gone
  * from another is the kind of half-removed thing that teaches a person not to
  * trust any switch in the app.
  *

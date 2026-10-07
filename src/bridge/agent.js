@@ -14,7 +14,7 @@ import { call, subscribe } from "./envelope";
  * which is the worst failure this feature has: a tool blocked forever with
  * nothing on screen to say why.
  *
- * Every method the preload declared is present, because callers reach them
+ * Every method `contract.js` lists is present, because callers reach them
  * through wrappers that do not all guard. The ones with no backend answer a
  * refusal in the envelope the caller already unwraps - a sentence it can show -
  * rather than being absent and surfacing as `is not a function` several frames

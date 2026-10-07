@@ -3,32 +3,29 @@ import * as React from "react";
 /**
  * The window's view of the team.
  *
- * The main process owns every run: it started the sessions, it holds the abort
+ * The backend owns every run: it started the sessions, it holds the abort
  * controllers, and it is the only thing that survives a reload. This is a
  * mirror, refreshed by a push, and it deliberately holds no opinion of its own
- * - a renderer that decided locally that a run had finished would be a second
+ * - a window that decided locally that a run had finished would be a second
  * source of truth, and the first one it disagreed with would be right.
  *
  * A snapshot on mount and a snapshot on every push, rather than deltas. The
  * tree changes shape while it is being drawn, because a run can spawn two more
  * halfway through streaming its reply, and a delta stream would have the
- * renderer reconstructing a shape the main process already knows.
+ * window reconstructing a shape the backend already knows.
  */
 
 /**
  * Read at the point of use, not captured at import.
  *
  * The other bridges in this folder bind `window.somethingAPI` to a module
- * constant, which is fine in the desktop app because preload runs first. It is
+ * constant, which is fine in the desktop app because `main.jsx` installs the
+ * bridges before anything else is imported. It is
  * wrong anywhere the module can be imported before the bridge exists - a test,
  * a browser preview - and the failure is silent: an empty panel that looks like
  * an empty team.
  */
 const bridge = () => (typeof window !== "undefined" ? window.crewAPI : null) ?? null;
-
-export function isCrewAvailable() {
-  return Boolean(bridge()?.snapshot);
-}
 
 function unwrap(result) {
   if (!result) return [];

@@ -18,7 +18,7 @@ import { Tooltip } from "@/components/ui/tooltip";
  * height by holding a Test button, and a Test button fits on a row.
  *
  * The actions are props rather than assumptions, because a key the app needs by
- * name cannot be renamed (the main process looks it up by that name) and should
+ * name cannot be renamed (the backend looks it up by that name) and should
  * not be deletable by accident, while a key you added yourself is yours to
  * remove. Passing no `onRemove` is how a row says so.
  */

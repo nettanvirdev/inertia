@@ -1,14 +1,14 @@
 /**
- * The renderer's view of the workspace, and the reason the UI never has to ask
- * whether it is running inside Electron.
+ * The window's view of the workspace, and the reason the UI never has to ask
+ * whether it is running inside the desktop app.
  *
- * Two adapters implement one interface. `bridgeClient` forwards to the preload
+ * Two adapters implement one interface. `bridgeClient` forwards to the Tauri
  * bridge and is what ships. `memoryClient` keeps the same data in localStorage
  * and is what runs in a plain browser tab - the Vite dev server, a screenshot,
  * a test. Without it every screen behind first-run setup would be unreachable
  * outside the packaged app, which is exactly the UI you most want to iterate on.
  *
- * Both return plain values and throw on failure. Unwrapping the main process's
+ * Both return plain values and throw on failure. Unwrapping the bridge's
  * `{ ok, error }` envelope happens here, once, so no caller repeats it.
  */
 
@@ -115,7 +115,7 @@ function memoryClient() {
       return { root: state.root, directories: [] };
     },
     async browse() {
-      return null; // no folder picker outside Electron - the field is typed into
+      return null; // no folder picker outside the desktop app - the field is typed into
     },
     async inspect(dir) {
       return { path: dir, exists: false, isEmpty: true, hasWorkspace: false, action: "create", writable: true, error: null };

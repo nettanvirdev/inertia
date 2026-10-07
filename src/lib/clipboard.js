@@ -49,11 +49,10 @@ export function fallbackCopy(text) {
 /**
  * What is on the clipboard, for the one place that needs to read it.
  *
- * Asks the main process rather than the page. Reading the clipboard is a
- * permission this app denies - see the handler behind `readClipboard` - so
- * `navigator.clipboard.readText()` is the path that quietly returns nothing in
- * a packaged build, which is exactly how a paste that does nothing gets
- * shipped.
+ * Asks the backend rather than the page. `navigator.clipboard.readText()`
+ * needs a user gesture the paste handler does not always have, and when it is
+ * refused it resolves to an empty string rather than an error - which is
+ * exactly how a paste that does nothing gets shipped. See `app_clipboard_read`.
  */
 export async function readClipboardText() {
   const bridge = typeof window !== "undefined" ? window.electronAPI : null;

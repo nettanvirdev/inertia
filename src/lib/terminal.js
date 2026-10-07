@@ -1,7 +1,7 @@
 /**
  * The window's half of the terminal pane.
  *
- * Output is pushed from the main process, so the interesting call here is
+ * Output is pushed from the backend, so the interesting call here is
  * `onEvent`; everything else is a request. Safe to call with no bridge - the
  * browser preview of this app has no shell to lend and the pane says so rather
  * than throwing on import.

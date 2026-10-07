@@ -2,11 +2,12 @@ import { describe, it, expect } from "vitest";
 import { defaultAgent, isPaused, pausedReason } from "./agents.js";
 
 /**
- * One predicate, two processes.
+ * One predicate, two halves.
  *
  * The value that means "paused" is written by a button in the window and read
- * by the agent bridge and the scheduler in main. These tests exist so that a
- * change to what counts as paused cannot happen in one half only.
+ * by the backend (`is_paused` in `src-tauri/src/agents.rs`) before a turn or a
+ * routine starts. These tests pin the window's half, so that a change to what
+ * counts as paused cannot happen in one half quietly.
  */
 describe("isPaused", () => {
   it("reads the value the pause button writes", () => {

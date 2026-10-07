@@ -46,15 +46,6 @@ export function isProtected(record) {
   return record?.protected === true;
 }
 
-/** Why a change was refused, and what to do about it. */
-export function protectedReason(record, what = "record") {
-  const name = String(record?.name ?? record?.title ?? "").trim() || `That ${what}`;
-  return (
-    `${name} is protected, so it cannot be changed or removed from here. ` +
-    `Open it in Inertia and turn off Protected first, if that is really what you want.`
-  );
-}
-
 export function pausedReason(agent) {
   const name = String(agent?.name ?? "").trim() || "That agent";
   return (

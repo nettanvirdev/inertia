@@ -71,9 +71,9 @@ const WRITE_DELAY = 400;
  * in that folder by earlier builds are still listed in the workspace layout and
  * are still cleared by the demo-data purge.
  *
- * `computers` is deliberately NOT here. Its records are written by the main
- * process, which is the only thing that can see whether the container behind
- * one is actually running - and a second writer mirroring stale renderer state
+ * `computers` is deliberately NOT here. Its records are written by the
+ * backend, which is the only thing that can see whether the container behind
+ * one is actually running - and a second writer mirroring stale window state
  * over the top would undo a status the provider had just corrected. The screen
  * reads them through the computers bridge instead.
  */
@@ -181,7 +181,7 @@ export const SOURCES = [
  */
 const DOCUMENTS = [
   // Permissions are two fields of one document rather than one blob, because
-  // the main process reads `workspace` and `agents` out of it separately and
+  // the backend reads `workspace` and `agents` out of it separately and
   // matching that shape here is what keeps the screen and the enforcement
   // talking about the same records.
   {

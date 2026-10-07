@@ -1,9 +1,6 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 
-export const useIsomorphicLayoutEffect =
-  typeof document !== "undefined" ? React.useLayoutEffect : React.useEffect;
-
 /** One shared body-level container per id, created once and never torn down. */
 function getContainer(id) {
   if (typeof document === "undefined") return null;
@@ -72,20 +69,4 @@ export function useEscapeLayer(open, onEscape) {
       stopEscapeListener();
     };
   }, [open]);
-}
-
-/** True while the user has asked the OS to reduce motion. */
-export function usePrefersReducedMotion() {
-  const [reduced, setReduced] = React.useState(false);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = (e) => setReduced(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
 }

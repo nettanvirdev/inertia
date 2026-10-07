@@ -131,8 +131,8 @@ export function ChatView() {
   const crewRuns = useCrew(activeThreadId);
   // Both live in the dock now and stack, so opening one no longer closes the
   // other - which was only ever a rule about a slot they had to share.
-  // Read once. Whether this build has a main process behind it does not
-  // change while the window is open.
+  // Read once. Whether this build has a backend behind it does not change
+  // while the window is open.
   const previewAvailable = isPreviewAvailable();
   const terminalAvailable = isTerminalAvailable();
   const [crewOpen, setCrewOpen] = React.useState(false);
@@ -552,7 +552,8 @@ export function ChatView() {
                   ) : null}
                   {/* A shell that stays where you left it, in the folder this
                       conversation is working in. The agent can read it and
-                      cannot type into it - see terminal.cjs for why. */}
+                      cannot type into it - see src-tauri/src/terminal.rs for
+                      why. */}
                   {terminalAvailable ? (
                     <IconButton
                       size="lg"

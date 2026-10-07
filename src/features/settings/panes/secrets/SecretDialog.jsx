@@ -9,7 +9,7 @@ import { SettingsField } from "../../SettingsRow";
  *
  * One dialog for both lists, because "paste a value" is the same act whether
  * the key is one the app needs by name or one the user invented. What differs
- * is only which fields exist: a key the main process looks up by a fixed name
+ * is only which fields exist: a key the backend looks up by a fixed name
  * cannot be renamed, and a label the catalogue already wrote is not the user's
  * to edit. Both are absences rather than disabled controls - a field you may
  * not use is worse than a field that is not there.

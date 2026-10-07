@@ -60,7 +60,7 @@ function initialsFrom(name) {
 /**
  * What the agent actually reads.
  *
- * This mirrors `person()` in `src/main/agent/prompt.cjs`, which is the code
+ * This mirrors `person()` in `inertia-agent/src/prompt.rs`, which is the code
  * that really assembles it. Two copies of a sentence is a small price for the
  * user being able to see the prompt they are writing: a bio field with no
  * preview is a text box you fill in and hope about.

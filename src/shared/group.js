@@ -1,10 +1,11 @@
 /*
  * What a group conversation is allowed to do on its own.
  *
- * Shared because both halves need the same numbers and neither can be the one
- * that decides them: the main process enforces these, and the settings screen
- * shows a person what they are. Two copies would drift, and the drift would
- * show up as a switch that says one thing while the app does another.
+ * Both halves need the same numbers and neither can be the one that decides
+ * them: the Rust backend enforces its twin of these, and the settings screen
+ * shows a person what they are. The two copies must not drift, because the
+ * drift would show up as a switch that says one thing while the app does
+ * another.
  */
 
 /** How many agent turns may pass without the person, before the floor returns. */
@@ -17,8 +18,8 @@ export const MAX_AGENTS = 6;
  * An agent's name as it is written after `@`.
  *
  * Lowercased and hyphenated so "Folder Organizer" is one token. The same rule
- * the composer uses for its pills, kept here because the main process reads
- * the agents' own replies for these and both sides must agree on the spelling.
+ * the composer uses for its pills; the backend reads the agents' own replies
+ * for these with the same rule, and both sides must agree on the spelling.
  */
 export function slugOf(name) {
   return String(name ?? "")

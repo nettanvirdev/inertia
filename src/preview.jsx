@@ -26,7 +26,7 @@ import { MemoryCard } from "./features/memory/MemoryCard.jsx";
  * than from the app, so the only way to see a table beside a diagram beside a
  * block of Rust is to have written the message that has all three. This is
  * that message, served at /preview.html by the dev server. It is not reachable
- * from the app, is not in the Electron build, and exists so a change to the
+ * from the app, is not in the packaged build, and exists so a change to the
  * markdown renderer can be looked at rather than asserted about.
  */
 
@@ -214,7 +214,7 @@ flowchart LR
 ${T}
 `;
 
-// The preview page has no main process behind it. A stand-in for the two calls
+// The preview page has no backend behind it. A stand-in for the two calls
 // a message can make lets the Run button and a remote picture be looked at
 // here rather than only in the packaged app.
 if (!window.electronAPI) {
@@ -226,7 +226,7 @@ if (!window.electronAPI) {
             resolve({
               ok: true,
               code: 0,
-              cwd: cwd ?? "D:/Inertia",
+              cwd: cwd ?? "C:/Users/you/Documents/Inertia",
               command,
               output: [
                 " M src/renderer/features/chat/markdown/CodeBlock.jsx",
@@ -514,7 +514,7 @@ function Page() {
         <div className="mb-4">
           <ChangesStrip
             changes={{
-              cwd: "C:/Users/x/Desktop/dentist",
+              cwd: "C:/work/clinic-site",
               files: [
                 { path: "app/globals.css", status: "M", additions: 212, deletions: 14 },
                 { path: "app/layout.tsx", status: "M", additions: 41, deletions: 10 },
@@ -540,10 +540,10 @@ function Page() {
           <PresentedFiles
             note="The site is built. These are the pages worth looking at."
             files={[
-              { path: "C:/Users/x/Desktop/dentist/app/page.tsx", name: "page.tsx", bytes: 8134 },
-              { path: "C:/Users/x/Desktop/dentist/app/globals.css", name: "globals.css", bytes: 3725 },
-              { path: "C:/Users/x/Desktop/dentist/public/hero.png", name: "hero.png", bytes: 184320 },
-              { path: "C:/Users/x/Desktop/dentist/out/build.qzx", name: "build.qzx", bytes: 91 },
+              { path: "C:/work/clinic-site/app/page.tsx", name: "page.tsx", bytes: 8134 },
+              { path: "C:/work/clinic-site/app/globals.css", name: "globals.css", bytes: 3725 },
+              { path: "C:/work/clinic-site/public/hero.png", name: "hero.png", bytes: 184320 },
+              { path: "C:/work/clinic-site/out/build.qzx", name: "build.qzx", bytes: 91 },
             ]}
           />
         </div>
@@ -560,9 +560,9 @@ function Page() {
               title: "Doctors.tsx",
               state: "done",
               durationMs: 2,
-              metadata: { path: "C:/Users/x/Desktop/dentist/app/components/Doctors.tsx", existed: false },
+              metadata: { path: "C:/work/clinic-site/app/components/Doctors.tsx", existed: false },
               args: {
-                filePath: "C:/Users/x/Desktop/dentist/app/components/Doctors.tsx",
+                filePath: "C:/work/clinic-site/app/components/Doctors.tsx",
                 content: `import Image from "next/image";
 import { ArrowRightIcon } from "./Icons";
 

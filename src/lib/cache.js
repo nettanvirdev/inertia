@@ -1,15 +1,15 @@
 import * as React from "react";
 
 /**
- * What the app has already asked the main process, kept so asking again is free.
+ * What the app has already asked the backend, kept so asking again is free.
  *
- * There are two caches in this renderer and they hold different things. The
+ * There are two caches in this window and they hold different things. The
  * workspace store holds everything that lives in the workspace folder - agents,
  * threads, routines, memories, settings documents - hydrated once when the app
  * opens and mirrored back on every change. That one is why the chat list is
  * instant.
  *
- * This is the other half: the answers to questions only the main process can
+ * This is the other half: the answers to questions only the backend can
  * answer, because they are about this machine rather than about the folder.
  * Whether Docker is runnable. Whether the sandbox image is built. Which voice
  * keys are present. None of that is in the folder, so none of it was in the
@@ -18,7 +18,7 @@ import * as React from "react";
  * pane, throws the answers away, and coming back pays for all of it a second
  * time. That is the blink.
  *
- * So: one map for the whole renderer, outliving any component that reads it.
+ * So: one map for the whole window, outliving any component that reads it.
  * A screen that has been opened before renders from what is remembered, with
  * no spinner and no round trip, and a refresh goes out behind it only when the
  * answer is old enough to be worth doubting. Stale for a moment and instant is
@@ -93,7 +93,7 @@ export function isStale(key, maxAgeMs = DEFAULT_MAX_AGE_MS) {
  *
  * Deduplication is the point of `inflight`: two panes mounting in the same
  * frame - or a pane mounting while a refresh is in the air - would otherwise
- * ask the main process the same question twice and race over which answer is
+ * ask the backend the same question twice and race over which answer is
  * written last.
  */
 export function load(key, loader) {
@@ -120,7 +120,7 @@ export function _reset() {
 }
 
 /**
- * Read something the main process knows, from the cache first.
+ * Read something the backend knows, from the cache first.
  *
  * `data` is whatever is remembered, available on the very first render, so a
  * screen that has been opened before never shows a spinner again. `loading` is

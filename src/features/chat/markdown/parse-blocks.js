@@ -35,8 +35,6 @@
  *    alignment row finally arrives.
  */
 
-import { parseInline } from "./parse-inline.js";
-
 const FENCE = /^ {0,3}(```+|~~~+)[ \t]*([^`\s]*)[^`]*$/;
 // A formula on its own, in either of the two spellings models use.
 const MATH_OPEN = /^ {0,3}(\$\$|\\\[)(.*)$/;
@@ -416,12 +414,4 @@ export function parseBlocks(source, options = {}) {
 
   flush();
   return blocks;
-}
-
-/**
- * Blocks carry their inline tree resolved on demand rather than eagerly: only
- * text-bearing blocks need it, and the renderer memoises per block.
- */
-export function inlineOf(text) {
-  return parseInline(text);
 }

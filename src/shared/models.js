@@ -75,9 +75,3 @@ function lookup(modelId) {
 export function knownContextWindow(modelId) {
   return lookup(modelId)?.[1] ?? null;
 }
-
-/** The most this model will write in one reply, or null. Required by some APIs
- *  and merely useful to the rest, which is why it is worth carrying. */
-export function knownMaxOutput(modelId) {
-  return lookup(modelId)?.[2] ?? null;
-}

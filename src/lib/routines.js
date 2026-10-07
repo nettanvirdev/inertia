@@ -1,7 +1,7 @@
 /**
  * The window's view of the scheduler.
  *
- * Thin on purpose. The scheduler is in the main process and keeps time whether
+ * Thin on purpose. The scheduler is in the backend and keeps time whether
  * a window exists or not, which is the whole point of a routine - so nothing
  * here decides anything. It asks, it commands, and it listens.
  *

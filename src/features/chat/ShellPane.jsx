@@ -20,8 +20,8 @@ import "@xterm/xterm/css/xterm.css";
 /**
  * Terminals, beside the conversation.
  *
- * The pane has two shapes because the main process has two backends - see
- * `main/terminal/index.cjs`. With a pty it is a real terminal: xterm.js,
+ * The pane has two shapes because the backend has two ways to run a shell -
+ * see the `inertia-terminal` crate. With a pty it is a real terminal: xterm.js,
  * every keystroke going straight through, `vim` and `htop` drawing, Ctrl+C
  * reaching the program. Without one it is a log and a command box, which is
  * what a piped shell honestly is.
@@ -33,7 +33,7 @@ import "@xterm/xterm/css/xterm.css";
  * ── Why the shell outlives the tab it is shown in ─────────────────────────
  * The shell belongs to the conversation. Switching to another dock tab must
  * not kill a running build, and coming back should show what happened while
- * you were gone - which is what the main process's screen is for. Closing a
+ * you were gone - which is what the backend's screen is for. Closing a
  * TERMINAL tab is different: that is a person saying they are done with that
  * shell, so it is closed for real.
  */

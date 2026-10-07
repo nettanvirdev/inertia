@@ -1800,7 +1800,8 @@ pre code {
   }
 }
 
-/* Electron frameless window drag regions */
+/* Frameless window drag regions. WebView2 ignores `-webkit-app-region`;
+   `installDragRegions` in `bridge/app.js` honours these classes instead. */
 .titlebar-drag {
   -webkit-app-region: drag;
 }

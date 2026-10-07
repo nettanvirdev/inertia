@@ -186,7 +186,7 @@ export function settleMemory(memory) {
     useCount: asNumber(memory.useCount, 0),
     confidence: asPercent(memory.confidence),
     // Which project a memory belongs to, and whether anything is allowed to
-    // believe it yet. Both are read by the screen and by the main process, so a
+    // believe it yet. Both are read by the screen and by the backend, so a
     // record hand-edited into a shape neither expects is settled here rather
     // than being guessed at twice.
     scope: memory.scope === "project" ? "project" : "global",

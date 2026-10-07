@@ -1,11 +1,12 @@
 /**
  * Telling the native panes that the dock is being dragged.
  *
- * A browser in this app is a Chromium view the main process parks over a hole
- * in the window. It is not in the DOM; it is above it - above every pixel,
+ * A browser in this app is a native child webview the backend parks over a
+ * hole in the window. It is not in the DOM; it is above it - above every pixel,
  * including the two-pixel handle you drag the dock's edge with. So the moment
- * a drag moves the pointer over a loaded page, the renderer stops receiving
- * pointer events entirely and the drag stalls with the column half-resized.
+ * a drag moves the pointer over a loaded page, the window's own page stops
+ * receiving pointer events entirely and the drag stalls with the column
+ * half-resized.
  *
  * That is not a bug in the drag. It is what a native child view is: the
  * operating system routes the mouse to it, and no amount of `z-index`,

@@ -234,7 +234,7 @@ export function ProviderDialog({
 
   /**
    * A key that has only been typed cannot be sent anywhere, because the request
-   * is built in the main process from the stored secret. So testing commits it
+   * is built in the backend from the stored secret. So testing commits it
    * first. That is a write the user asked for by pressing the button with a key
    * in the field, and it is the only way the test can mean anything.
    */

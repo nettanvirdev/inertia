@@ -1,9 +1,8 @@
 // First, and deliberately so. This puts the `window.*API` namespaces the whole
-// renderer is written against onto the window, backed by Tauri commands. Two
-// modules below read their bridge while they evaluate rather than per call, so
-// an import ordered after `App` would leave them holding `undefined` for the
-// life of the process. This is the only line in `src/` that is not a verbatim
-// copy of the Electron renderer.
+// UI is written against onto the window, backed by Tauri commands. Two modules
+// below read their bridge while they evaluate rather than per call, so an
+// import ordered after `App` would leave them holding `undefined` for the life
+// of the process.
 import "@/bridge";
 
 import React from "react";
@@ -38,7 +37,8 @@ import "@fontsource-variable/anek-bangla/wght.css";
 
 import "./styles/globals.css";
 
-// Both run before the first React paint - the CSP forbids an inline <script>.
+// Both run before the first React paint - the window's CSP (`script-src 'self'`
+// in `src-tauri/tauri.conf.json`) forbids an inline <script>.
 // Order matters: the accent ships a light and a dark value, so the appearance
 // cannot be painted until the theme it belongs to is on the document.
 bootstrapTheme();

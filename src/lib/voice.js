@@ -1,5 +1,5 @@
 /**
- * The renderer's view of the voice bridge.
+ * The window's view of the voice bridge.
  *
  * Same shape as `lib/integrations.js` and for the same reason: one adapter
  * unwraps the `{ ok, data }` envelope into a value or a thrown Error, and a
@@ -10,7 +10,7 @@
  * a screen draws its empty state instead of an error wall; anything that would
  * spend a character of the user's quota says plainly that it needs the desktop
  * app. The key is never in this file, this window, or this process - every call
- * here is a message to the main process, which owns the only copy.
+ * here is a message to the backend, which owns the only copy.
  */
 
 function unwrap(reply) {
@@ -30,7 +30,7 @@ export function isDesktop() {
 
 function unavailable(what) {
   throw new Error(
-    `${what} needs the desktop app. A browser tab has no main process to make the request in, and the API key it needs is deliberately not reachable from the page.`
+    `${what} needs the desktop app. A browser tab has no backend to make the request in, and the API key it needs is deliberately not reachable from the page.`
   );
 }
 

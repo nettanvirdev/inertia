@@ -1,11 +1,11 @@
 /**
  * The window's half of the browser pane.
  *
- * The page is a native view the main process parks over a rectangle of this
+ * The page is a native webview the backend parks over a rectangle of this
  * window, so nothing here renders it - this only says where the rectangle is,
  * where to go, and reads back what the page did. Everything returns the
  * bridge's `{ ok, data }` unwrapped, and everything is safe to call when there
- * is no bridge at all: the browser preview of this app has no main process,
+ * is no bridge at all: the browser preview of this app has no backend,
  * and a pane that throws on import would take the whole screen with it.
  */
 

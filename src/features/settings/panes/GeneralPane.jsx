@@ -355,7 +355,7 @@ export function GeneralPane() {
         />
       </SettingsSection>
 
-      {/* Hidden entirely when there is no main process to ask - a browser tab
+      {/* Hidden entirely when there is no backend to ask - a browser tab
           or a test render - rather than shown as two switches that do nothing. */}
       {background.available ? (
         <SettingsSection title="Startup and background">

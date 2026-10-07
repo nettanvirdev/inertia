@@ -6,7 +6,7 @@
  * a numbering scheme survives closing the middle one - so they live here once,
  * as data, rather than twice inside two components.
  *
- * A tab is `{ id, label }` and the id is what the main process keys a shell or
+ * A tab is `{ id, label }` and the id is what the backend keys a shell or
  * a browser view on. It has to be stable for the life of the tab and unique
  * across conversations, because two conversations open at once are two sets of
  * shells that must not be the same shells.
@@ -29,7 +29,7 @@ export function tabId(threadId, kind, serial) {
  * Counted from the highest ever used rather than from the length of the list,
  * because a person who opens three tabs, closes the second, and opens another
  * expects a new one - not a second tab called 2. The serial only ever goes up,
- * which is also what keeps ids from being reused while the main process still
+ * which is also what keeps ids from being reused while the backend still
  * holds a shell under the old one.
  */
 export function nextSerial(tabs = []) {

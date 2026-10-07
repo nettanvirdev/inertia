@@ -11,8 +11,8 @@ import { readPref, writePref, PREF } from "@/lib/persist";
  * one piece of state in the app the user typed themselves.
  *
  * So it is kept per thread, in the same localStorage the rest of the UI's
- * preferences use - which inside Electron is the profile in `userData`, so it
- * survives a relaunch.
+ * preferences use - which in the desktop app is the webview's profile in the
+ * app's data directory, so it survives a relaunch.
  *
  * ## Why writes are debounced
  *

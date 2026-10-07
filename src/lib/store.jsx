@@ -201,12 +201,12 @@ export function AppProvider({ children }) {
   const [messages, setMessages] = useState({});
   const [routines, setRoutines] = useState([]);
   const [memories, setMemories] = useState([]);
-  // Machines are not seeded and are not mirrored from here. The main process
-  // owns them, because it is the only thing that can see whether the container
+  // Machines are not seeded and are not mirrored from here. The backend owns
+  // them, because it is the only thing that can see whether the container
   // behind a record is still running.
   const [computers, setComputers] = useState([]);
   const [activity, setActivity] = useState([]);
-  // The permission document, in exactly the shape the main process reads back
+  // The permission document, in exactly the shape the backend reads back
   // out of `settings.permissions`: one workspace ruleset every agent inherits,
   // plus the overrides an agent wrote for itself. Both halves are flat arrays of
   // `{ tool, pattern, action }` because that is what the engine evaluates - a
@@ -356,7 +356,7 @@ export function AppProvider({ children }) {
    *
    * A temporary conversation exists only while the person is in it. Leaving
    * it - opening another chat, starting a new one, going to another screen -
-   * throws it away: the turn it was running is stopped, what the main process
+   * throws it away: the turn it was running is stopped, what the backend
    * held for it is forgotten, and it is gone from the state, which is the
    * only place it ever was. There is no way back to it, by design; a
    * conversation that can be recovered was never temporary.
@@ -526,11 +526,11 @@ export function AppProvider({ children }) {
    * figures had been given them by hand. A statistic nothing updates is
    * decoration.
    *
-   * Counted here rather than in main because this is where a turn is known to
-   * belong to an agent: main knows a session ran and what it cost, but the
-   * mapping from a turn to the teammate whose page shows it lives with the
-   * roster. `lastActiveAt` moves for the same reason - an agent that answered a
-   * second ago should not say "active 3h ago".
+   * Counted here rather than in the backend because this is where a turn is
+   * known to belong to an agent: the backend knows a session ran and what it
+   * cost, but the mapping from a turn to the teammate whose page shows it lives
+   * with the roster. `lastActiveAt` moves for the same reason - an agent that
+   * answered a second ago should not say "active 3h ago".
    */
   const recordActivity = useCallback((agentId, delta = {}) => {
     if (!agentId) return;
@@ -731,7 +731,7 @@ export function AppProvider({ children }) {
          * routinely wrong. The second comes after the turn has ended and says
          * whether anybody is due to speak next.
          *
-         * The chain is driven from here rather than from the main process
+         * The chain is driven from here rather than from the backend
          * because everything the person needs in order to stop it - the
          * transcript, the bubbles, the stop button - is over here. A chain the
          * window cannot see is a chain the person cannot interrupt.
@@ -879,7 +879,7 @@ export function AppProvider({ children }) {
    * The same thing `sendMessage` does at the end, minus the part about a
    * person: no message is added, nothing is steered, and the thread's preview
    * and title are left alone, because nobody said anything - the room simply
-   * moved on. `continuation` tells the main process this is the next link in a
+   * moved on. `continuation` tells the backend this is the next link in a
    * chain rather than an answer to something just said, so the floor is not
    * reset underneath it.
    */
@@ -1069,10 +1069,10 @@ export function AppProvider({ children }) {
    * Rejoin whatever was still running.
    *
    * The turn outlives the window by design - the loop, the tools and the key
-   * are all in main - so a reload in the middle of one used to leave a message
-   * spinning forever over work that was still happening and still writing
-   * files. Main keeps the event log; this asks for it once, on open, and plays
-   * it into the message the window left behind.
+   * are all in the backend - so a reload in the middle of one used to leave a
+   * message spinning forever over work that was still happening and still
+   * writing files. The backend keeps the event log; this asks for it once, on
+   * open, and plays it into the message the window left behind.
    *
    * A turn whose message is gone (the thread was deleted, the folder was
    * emptied) is left alone rather than cancelled: it may be a subagent's, and
@@ -1255,19 +1255,19 @@ export function AppProvider({ children }) {
 
       // A paused agent answers nothing.
       //
-      // The main process refuses this too, and that refusal is the one that
+      // The backend refuses this too, and that refusal is the one that
       // counts - it is the only one a reloaded window or a scheduled routine
       // cannot get past. This one exists so the person sees the reason in the
       // reply where they are looking, immediately, and because the browser
-      // preview has no main process to refuse anything at all. The message the
-      // two produce is the same string, from the same module.
+      // preview has no backend to refuse anything at all. The message the two
+      // produce is the same sentence, written once on each side.
       if (isPaused(agent)) {
         patchReply(() => ({ status: "error", error: pausedReason(agent) }));
         return;
       }
 
       // The desktop app runs the agent loop, which can call tools. A browser
-      // preview has no main process and no tools, so it falls back to a plain
+      // preview has no backend and no tools, so it falls back to a plain
       // stream - the same conversation, without the hands.
       if (isAgentAvailable()) {
         // In a group, `@` in the message is an instruction about who answers,
@@ -1536,7 +1536,7 @@ export function AppProvider({ children }) {
     // read. None of that should survive into a conversation that has nothing to
     // do with it, least of all the permissions.
     agentTools.forget(threadId)?.catch?.(() => {});
-    // And the runs it started, which are still in memory in the main process
+    // And the runs it started, which are still in memory in the backend
     // with nowhere left to be shown.
     forgetConversation(threadId)?.catch?.(() => {});
 
@@ -1696,7 +1696,7 @@ export function AppProvider({ children }) {
   /**
    * Runs nobody in this window asked for.
    *
-   * The scheduler keeps time in the main process whether a window is open or
+   * The scheduler keeps time in the backend whether a window is open or
    * not, so most runs start without anything here calling `runRoutine`. The
    * folder watcher would eventually redraw the row, but "eventually" is not
    * what someone watching a routine fire at nine o'clock wants, and the
@@ -2145,7 +2145,7 @@ export function AppProvider({ children }) {
   /**
    * Who may use a machine.
    *
-   * Written through the main process because it touches two records - the
+   * Written through the backend because it touches two records - the
    * computer's roster and each agent's `computerId` - and two writers that can
    * disagree is how an agent ends up pointed at a machine that has never heard
    * of it. The agent rows are updated from the answer rather than guessed.

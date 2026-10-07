@@ -20,8 +20,8 @@
  * the same vendor, or a local one and a hosted one, have to be tellable apart
  * by something the user chose.
  *
- * Shared because both halves need it - the settings pane edits these, and the
- * main process turns them into requests.
+ * Both halves need it - the settings pane edits these, and the backend turns
+ * them into requests.
  */
 
 /** The reference that travels with a message: `<providerId>/<modelId>`. */
@@ -94,7 +94,7 @@ export function normalizeBaseUrl(input) {
  *
  * Shared rather than living in the client, because the settings form has to
  * show the same answer the request will use. A form that says "OpenAI" beside
- * an endpoint the main process is about to address as Anthropic is a bug the
+ * an endpoint the backend is about to address as Anthropic is a bug the
  * user can see and cannot explain.
  *
  * An empty `kind` is decided by the host, and only Anthropic's own hosts are

@@ -13,7 +13,7 @@ import { SecretDialog } from "./secrets/SecretDialog";
 import { SecretRow } from "./secrets/SecretRow";
 import { REQUIRED_NAMES } from "./secrets/required";
 
-/** Mirrors the rule in src/main/workspace/secrets.cjs, which is the one enforcing it. */
+/** Mirrors `check_name` in `inertia-store/src/secrets.rs`, the one enforcing it. */
 const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 const EXAMPLE = "{secret:GITHUB_TOKEN}";

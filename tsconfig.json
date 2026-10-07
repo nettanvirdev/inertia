@@ -6,11 +6,11 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* The app's `src/` is a verbatim mirror of the Electron renderer: plain
-       JSX, no types. `allowJs` lets the installer's TypeScript import from it;
-       `checkJs` stays off because type-checking 43k lines of ported JavaScript
-       would report drift from a source of truth we are deliberately copying,
-       not authoring. */
+    /* The app's `src/` is plain JSX with no types, on purpose. `allowJs` lets
+       the installer's TypeScript import from it; `checkJs` stays off because
+       that JavaScript - which began as a port of an earlier Electron app - was
+       never written to satisfy a type checker, and checking it would report
+       noise rather than bugs. */
     "allowJs": true,
     "checkJs": false,
 

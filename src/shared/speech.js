@@ -14,9 +14,9 @@
  * end.
  *
  * This module is deliberately pure and dependency-free, exactly like
- * `permission.js`: the main process synthesises and the renderer previews, and
- * two implementations of "what does this reply sound like" would be two
- * different answers to a question that must only ever have one.
+ * `permission.js`: the backend synthesises, and everything in the window that
+ * decides what to send it - the call view, auto-speak, the speak button -
+ * reads this one answer to "what does this reply sound like".
  */
 
 /**

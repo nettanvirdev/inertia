@@ -96,7 +96,7 @@ export function SetupView() {
     if (initial) setPath(initial);
   }, [status, touched]);
 
-  // The layout is the main process's list, fetched rather than mirrored, so the
+  // The layout is the backend's list, fetched rather than mirrored, so the
   // disclosure can never drift from what actually gets created on disk.
   React.useEffect(() => {
     let alive = true;
@@ -203,13 +203,12 @@ export function SetupView() {
       <div className="flex min-h-full w-full items-center justify-center px-8 py-16">
         <div className="flex w-full max-w-[38rem] flex-col">
           {/*
-            Relative, not "/assets/...". The packaged app is loaded with
-            `loadFile(dist/index.html)`, so the document is a file:// URL and a
-            leading slash means the root of the drive: this exact image resolved
-            to file:///D:/assets/logo-256.png and the first screen a new user
-            ever sees opened with a broken-image box. Vite rewrites the absolute
-            form inside index.html but not inside JSX, which is why it looked
-            fine in dev and in the favicon and nowhere else.
+            Relative, not "/assets/...". Relative resolves the same under every
+            origin this page has been served from: the dev server, Tauri's
+            asset protocol, and the file:// URL the earlier Electron build
+            loaded - where a leading slash meant the root of the drive, and
+            this exact image resolved to file:///D:/assets/logo-256.png on the
+            first screen a new user ever saw. `icons.test.js` keeps it that way.
           */}
           <img
             src="./assets/logo-256.png"

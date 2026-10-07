@@ -138,13 +138,13 @@ function Cost({ usage, model, prices }) {
 /**
  * What the helper has done so far, or what it did.
  *
- * The parts come from main already folded by the same function the window
- * folds a reply with, so this is the transcript's own renderer over the
+ * The parts come from the backend already folded into the shape the window
+ * folds a reply into, so this is the transcript's own renderer over the
  * transcript's own shape - not a second rendering of the same events.
  *
  * `message` is only sent for the run this column has open (see `watch` in
- * crew.cjs), so a run that has just been opened draws its summary until the
- * next snapshot arrives a moment later rather than flashing empty.
+ * `bridge/crew.js`), so a run that has just been opened draws its summary
+ * until the next snapshot arrives a moment later rather than flashing empty.
  */
 function Transcript({ run }) {
   const parts = run.message?.parts;

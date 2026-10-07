@@ -42,7 +42,7 @@ function readStored() {
 /**
  * Paint the stored theme before React mounts, so a light-theme user never sees
  * the dark default flash. Called from main.jsx rather than an inline <script>
- * because the renderer's CSP is `script-src 'self'` - no inline execution.
+ * because the window's CSP is `script-src 'self'` - no inline execution.
  */
 export function bootstrapTheme() {
   const choice = readStored();
