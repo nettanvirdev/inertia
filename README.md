@@ -1,12 +1,19 @@
 <p align="center">
-  <img src="public/assets/logo-512.png" alt="Inertia logo" width="120">
+  <img src="public/assets/logo-512.png" alt="inertia-ai logo" width="120">
 </p>
 
-<h1 align="center">Inertia</h1>
+<h1 align="center">inertia-ai</h1>
 
 <p align="center">A desktop workspace for AI agents: chat, tools, sandboxes, routines and memory.</p>
 
-Inertia is a desktop app for working with AI agents on your own machine. You
+<p align="center">
+  <a href="https://github.com/nettanvirdev/inertia/actions/workflows/ci.yml"><img src="https://github.com/nettanvirdev/inertia/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/nettanvirdev/inertia/releases/latest"><img src="https://img.shields.io/github/v/release/nettanvirdev/inertia" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/platform-Windows-0078D6" alt="Platform: Windows">
+</p>
+
+inertia-ai (the app itself is called Inertia) is a desktop app for working with AI agents on your own machine. You
 chat with agents that can read and edit your files, run commands, drive a
 browser, delegate to sub-agents, use tools from MCP servers and APIs, and work
 on sandboxed computers with a desktop you can watch. Everything it knows
@@ -18,8 +25,7 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React.
 
 ![The Inertia chat view](docs/assets/screenshot.png)
 
-> Not to be confused with [Inertia.js](https://inertiajs.com); the two are
-> unrelated.
+> inertia-ai is not related to [Inertia.js](https://inertiajs.com).
 
 ## Features
 
@@ -87,8 +93,7 @@ bun run tauri build        # release build and installer
 Tests:
 
 ```bash
-bun run test
-bun run build
+bun run lint && bun run test && bun run build
 cargo test --workspace --manifest-path src-tauri/Cargo.toml
 ```
 
@@ -108,6 +113,7 @@ cargo test --workspace --manifest-path src-tauri/Cargo.toml
 | [Backend API](docs/backend-api.md) | Commands, events, and the frontend bridge |
 | [Releasing](docs/releasing.md) | Version bumps and the release checklist |
 | [Third-party licenses](docs/third-party-licenses.md) | Dependency and font licenses |
+| [Changelog](CHANGELOG.md) | What changed in each release |
 
 ## Security and privacy
 

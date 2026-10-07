@@ -37,24 +37,25 @@ snapshot (see [computers.md](computers.md#daytona)).
    cargo update --workspace --manifest-path uninstaller/src-tauri/Cargo.toml
    ```
    (`--workspace` updates only the local packages' entries.)
-3. If dependencies changed since the last release, regenerate the notices
+3. Move the `[Unreleased]` entries in `CHANGELOG.md` under the new version and date.
+4. If dependencies changed since the last release, regenerate the notices
    with `bun run notices` and commit `THIRD_PARTY_NOTICES.md` (see
    [third-party-licenses.md](third-party-licenses.md)).
-4. Run every check from [development.md](development.md#tests-and-checks).
-5. Build the Windows setup:
+5. Run every check from [development.md](development.md#tests-and-checks).
+6. Build the Windows setup:
    ```bash
    bun run build:setup
    ```
    The result is `dist-setup/Inertia-Setup-<version>.exe`.
-6. Smoke-test it on a clean Windows user account: install, first-run folder
+7. Smoke-test it on a clean Windows user account: install, first-run folder
    selection, add a provider, a chat with a tool call, uninstall. Check that
    **Settings > About** shows the new version.
-7. Commit the version bump, tag it and push:
+8. Commit the version bump, tag it and push:
    ```bash
    git tag v<version>
    git push origin master v<version>
    ```
-8. Create a GitHub release for the tag, attach
+9. Create a GitHub release for the tag, attach
    `Inertia-Setup-<version>.exe`, and write release notes: user-facing
    changes, anything that changes the workspace folder, sandbox image changes,
    and known issues.

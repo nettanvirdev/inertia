@@ -8,7 +8,8 @@
 
 ## Checklist
 
-- [ ] `bun run test` and `bun run build` pass
+- [ ] `bun run format:check`, `bun run lint`, `bun run test` and `bun run build` pass
+- [ ] `cargo fmt --all --check --manifest-path src-tauri/Cargo.toml` is clean
 - [ ] `cargo clippy --workspace --all-targets --manifest-path src-tauri/Cargo.toml -- -D warnings` is clean
 - [ ] `cargo test --workspace --manifest-path src-tauri/Cargo.toml` passes
 - [ ] Tests added or updated for changed behaviour

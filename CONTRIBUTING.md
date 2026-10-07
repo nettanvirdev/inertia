@@ -37,8 +37,11 @@ request what you tested on.
    file format or a permission.
 5. Make sure everything passes:
    ```bash
+   bun run format:check
+   bun run lint
    bun run test
    bun run build
+   cargo fmt --all --check --manifest-path src-tauri/Cargo.toml
    cargo clippy --workspace --all-targets --manifest-path src-tauri/Cargo.toml -- -D warnings
    cargo test --workspace --manifest-path src-tauri/Cargo.toml
    ```
@@ -68,8 +71,8 @@ characters.
 - **Rust**: run `cargo fmt`. Keep clippy clean under the workspace lints in
   `src-tauri/Cargo.toml`; avoid `unwrap`/`expect` outside tests. Library crates
   use `thiserror`; nothing under `src-tauri/crates/` may depend on Tauri.
-- **JavaScript**: plain JSX and ES modules in `src/`. Match the surrounding
-  code.
+- **JavaScript**: plain JSX and ES modules in `src/`. Run `bun run format`
+  (Prettier) and keep `bun run lint` (ESLint) free of errors.
 - **Comments** explain why, not what.
 - **Errors shown to people** are complete sentences that say what to do.
 - **Remove what nothing uses.** A command no screen calls, or a bridge method

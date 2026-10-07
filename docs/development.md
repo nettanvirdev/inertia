@@ -96,10 +96,13 @@ All of these must pass before a change is merged; CI
 
 ```bash
 # Window
+bun run format:check      # Prettier (`bun run format` fixes it)
+bun run lint              # ESLint
 bun run test              # Vitest: src/**/*.test.{js,jsx}
 bun run build             # tsc + vite build into dist/
 
 # Rust (run `bun run build` once first: the app crate embeds dist/ at compile time)
+cargo fmt --all --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --workspace --all-targets --manifest-path src-tauri/Cargo.toml -- -D warnings
 cargo test --workspace --manifest-path src-tauri/Cargo.toml
 
@@ -222,7 +225,8 @@ Commit the result. See [third-party-licenses.md](third-party-licenses.md).
   `expect` outside tests. `thiserror` in library crates, `anyhow` only in
   binaries. Nothing under `crates/` may depend on Tauri.
 - **JavaScript**: plain JSX and ES modules, no TypeScript in `src/` (the
-  installer UI is TypeScript). Logic that both sides must agree on goes in
+  installer UI is TypeScript). Formatted with Prettier (`.prettierrc.json`,
+  width 100) and linted with ESLint (`eslint.config.js`). Logic that both sides must agree on goes in
   `src/shared/` as pure functions with tests next to them.
 - **Comments** explain why, not what: the constraint, the failure a line
   prevents, the alternative that was rejected.
