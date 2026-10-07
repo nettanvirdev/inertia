@@ -14,7 +14,7 @@ rust-version = "1.85"
 license = "MIT"
 authors = ["Tanvir Ahamed"]
 repository = "https://github.com/nettanvirdev/inertia"
-homepage = "https://github.com/nettanvirdev/inertia"
+homepage = "https://nettanvir.dev/inertia-ai"
 
 # Warn, not deny: a lint that fails the build is a lint people disable at the
 # crate root. Each member opts in with `[lints] workspace = true`.

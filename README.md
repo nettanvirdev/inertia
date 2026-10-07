@@ -13,6 +13,12 @@
   <img src="https://img.shields.io/badge/platform-Windows-0078D6" alt="Platform: Windows">
 </p>
 
+<p align="center">
+  <a href="https://nettanvir.dev/inertia-ai"><b>Website and case study</b></a> ·
+  <a href="https://github.com/nettanvirdev/inertia/releases/latest">Download</a> ·
+  <a href="docs/README.md">Documentation</a>
+</p>
+
 inertia-ai (the app itself is called Inertia) is a desktop app for working with AI agents on your own machine. You
 chat with agents that can read and edit your files, run commands, drive a
 browser, delegate to sub-agents, use tools from MCP servers and APIs, and work
