@@ -81,10 +81,10 @@ export const GLYPHS_PEOPLE = {
   // reading as a lollipop at 14px, where the cradle's arc is only a few
   // pixels deep and the stem has nothing to sit on.
   Mic: [
-    "r 9 2 6 12 3",
-    "M5 10v1a7 7 0 0 0 14 0v-1",
-    "M12 18v4",
-    "M9 22h6",
+    "r 9.25 3.5 5.5 10.5 2.75",
+    "M6.2 10.5a5.8 5.8 0 0 0 11.6 0",
+    "M12 16.3v4.2",
+    "M8.8 20.5h6.4",
   ],
 
   // The handset, drawn as one continuous sweep rather than the usual two ear

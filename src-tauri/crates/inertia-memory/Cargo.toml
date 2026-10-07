@@ -2,6 +2,11 @@
 name = "inertia-memory"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "What an agent knows before the conversation starts"
 
 [lints]

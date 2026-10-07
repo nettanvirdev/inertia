@@ -81,7 +81,16 @@ export const GLYPHS_CORE = {
 
   Search: ["c 10.8 10.8 7.3", "M16.2 16.2 20.8 20.8"],
   SearchX: ["c 10.8 10.8 7.3", "M16.2 16.2 20.8 20.8", "M8.7 8.7 12.9 12.9", "M12.9 8.7 8.7 12.9"],
-  Command: ["M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"],
+  // A small square keystone with a three-quarter loop hung off each corner.
+  // Each loop carries its own two outward strokes, so the square stays a clean
+  // closed box and the loops can be tuned without redrawing it.
+  Command: [
+    "M9.25 9.25h5.5v5.5h-5.5z",
+    "M9.25 9.25V6.5a2.75 2.75 0 1 0-2.75 2.75h2.75",
+    "M14.75 9.25V6.5a2.75 2.75 0 1 1 2.75 2.75h-2.75",
+    "M14.75 14.75v2.75a2.75 2.75 0 1 0 2.75-2.75h-2.75",
+    "M9.25 14.75v2.75a2.75 2.75 0 1 1-2.75-2.75h2.75",
+  ],
 
   Copy: [
     "r 8.5 8.5 12.5 12.5 3.5",

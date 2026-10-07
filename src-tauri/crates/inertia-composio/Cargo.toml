@@ -2,6 +2,11 @@
 name = "inertia-composio"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "Composio-connected apps as a tool provider."
 
 [lints]

@@ -2,6 +2,11 @@
 name = "inertia-agent"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "The agent turn loop. Depends on trait seams only - never on a concrete provider, tool, or store."
 
 [lints]

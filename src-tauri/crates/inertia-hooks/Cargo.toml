@@ -2,6 +2,11 @@
 name = "inertia-hooks"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "Lifecycle hooks: the user's own programs, run at named moments of a turn"
 
 [lints]

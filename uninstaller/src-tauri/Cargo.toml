@@ -2,7 +2,10 @@
 name = "inertia-uninstall"
 version = "0.1.0"
 description = "Uninstaller for Inertia"
-authors = ["you"]
+authors = ["Tanvir Ahamed"]
+license = "MIT"
+repository = "https://github.com/nettanvirdev/inertia"
+publish = false
 edition = "2021"
 
 [[bin]]

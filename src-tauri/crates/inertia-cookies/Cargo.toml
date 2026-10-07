@@ -2,6 +2,11 @@
 name = "inertia-cookies"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "Reading a signed-in session out of a browser on this computer."
 
 [lints]

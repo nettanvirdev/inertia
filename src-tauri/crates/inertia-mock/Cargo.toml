@@ -2,6 +2,11 @@
 name = "inertia-mock"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "Fake implementations of every Inertia trait, for tests and the headless harness."
 
 [lints]

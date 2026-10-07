@@ -2,11 +2,21 @@
   "name": "inertia",
   "private": true,
   "version": "0.1.0",
+  "description": "A desktop workspace for AI agents: chat, tools, sandboxes, routines and memory.",
+  "license": "MIT",
+  "author": "Tanvir Ahamed",
+  "homepage": "https://github.com/nettanvirdev/inertia",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nettanvirdev/inertia.git"
+  },
+  "bugs": "https://github.com/nettanvirdev/inertia/issues",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "vitest run",
+    "notices": "node scripts/third-party-notices.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "dev:setup-ui": "vite --config vite.installer.config.ts",

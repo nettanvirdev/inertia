@@ -1,0 +1,36 @@
+# cargo-about config for the three Rust workspaces (app, installer,
+# uninstaller). Read by scripts/third-party-notices.mjs, which renders the
+# JSON output into THIRD_PARTY_NOTICES.md - so there is no .hbs template.
+#
+# `accepted` is the set of licenses actually present in the shipped graph.
+# A new dependency under anything else fails generation on purpose: look at
+# it before adding it here. Copyleft (GPL/LGPL/AGPL) does not belong here.
+
+accepted = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+# Everything we ship to. Dependencies only pulled in for other targets are
+# left out.
+targets = [
+    "x86_64-pc-windows-msvc",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+]
+
+# Only what ends up in the binary.
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+
+# Our own crates (inertia-*, inertia-setup, inertia-uninstall) are
+# `publish = false`; they are MIT and covered by LICENSE, not by this file.
+private = { ignore = true }

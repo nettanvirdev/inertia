@@ -11,6 +11,10 @@ members = ["crates/*"]
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
+license = "MIT"
+authors = ["Tanvir Ahamed"]
+repository = "https://github.com/nettanvirdev/inertia"
+homepage = "https://github.com/nettanvirdev/inertia"
 
 # Warn, not deny: a lint that fails the build is a lint people disable at the
 # crate root. Each member opts in with `[lints] workspace = true`.
@@ -62,18 +66,12 @@ futures = "0.3"
 futures-util = "0.3"
 async-stream = "0.3"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util", "process", "sync", "time", "signal"] }
-tokio-util = { version = "0.7", features = ["io"] }
 
 # ── network ─────────────────────────────────────────────────────────────────
 # rustls rather than native-tls: no OpenSSL to find at build time on Windows,
 # and one less thing that differs between the dev machine and the installer.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "charset", "http2"] }
-eventsource-stream = "0.2"
 url = "2"
-percent-encoding = "2"
-# Retry with jitter for provider rate limits, rather than a hand-rolled sleep
-# loop that every provider would reimplement slightly differently.
-backon = "1"
 
 # ── data ────────────────────────────────────────────────────────────────────
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
@@ -84,7 +82,6 @@ jiff = { version = "0.2", features = ["serde"] }
 # Tool input schemas are derived from the Rust structs that parse them, so a
 # schema and its parser cannot drift apart.
 schemars = { version = "1", features = ["preserve_order"] }
-dashmap = "6"
 parking_lot = "0.12"
 # API keys wrapped so they cannot be printed by an accidental `{:?}`.
 secrecy = { version = "0.10", features = ["serde"] }
@@ -102,41 +99,36 @@ pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
 base64 = "0.23"
 
 # ── integrations ────────────────────────────────────────────────────────────
-# The official MCP SDK. Reimplementing the protocol by hand would be a
-# liability the moment the spec revs.
-rmcp = "3"
 # The maintained fork; `serde_yaml` itself is deprecated. Most specs in the
 # wild are YAML, so this is not optional.
 serde_yaml_ng = "0.10"
 
 # ── file and text work, for the builtin tools ───────────────────────────────
-# The ripgrep crates, so search honours .gitignore the way the user expects.
+# The ripgrep `ignore` crate, so search honours .gitignore the way the user expects.
 ignore = "0.4"
-grep-searcher = "0.1"
 globset = "0.4"
 regex = "1"
-similar = "3"
-notify = "8"
 portable-pty = "0.9"
 
 # ── observability ───────────────────────────────────────────────────────────
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-appender = "0.2"
 
 # ── testing ─────────────────────────────────────────────────────────────────
 tempfile = "3"
-insta = { version = "1", features = ["json", "redactions"] }
 wiremock = "0.6"
-rstest = "0.27"
 tokio-test = "0.4"
 
 [package]
 name = "inertia"
 version.workspace = true
 edition.workspace = true
-description = "Inertia"
-authors = ["Inertia"]
+description = "A desktop workspace for AI agents: chat, tools, sandboxes, routines and memory."
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary

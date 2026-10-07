@@ -2,6 +2,11 @@
 name = "inertia-core"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 description = "Domain types and the trait seams every other Inertia crate implements."
 
 [lints]
