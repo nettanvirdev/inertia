@@ -79,8 +79,8 @@ fn parse(raw: &str) -> Option<(String, String)> {
         // path that merely contains "models" keeps it.
         if path.len() >= route.len() {
             let tail = &path[path.len() - route.len()..];
-            let boundary = path.len() == route.len()
-                || path.as_bytes()[path.len() - route.len() - 1] == b'/';
+            let boundary =
+                path.len() == route.len() || path.as_bytes()[path.len() - route.len() - 1] == b'/';
             if boundary && tail.eq_ignore_ascii_case(route) {
                 path.truncate(path.len() - route.len());
                 path = path.trim_end_matches('/').to_string();
@@ -218,13 +218,22 @@ mod tests {
 
     #[test]
     fn a_bare_host_gets_v1() {
-        assert_eq!(candidates("https://api.openai.com"), ["https://api.openai.com/v1"]);
-        assert_eq!(candidates("https://api.openai.com/"), ["https://api.openai.com/v1"]);
+        assert_eq!(
+            candidates("https://api.openai.com"),
+            ["https://api.openai.com/v1"]
+        );
+        assert_eq!(
+            candidates("https://api.openai.com/"),
+            ["https://api.openai.com/v1"]
+        );
     }
 
     #[test]
     fn a_missing_scheme_is_assumed_to_be_https() {
-        assert_eq!(candidates("api.openai.com/v1"), ["https://api.openai.com/v1"]);
+        assert_eq!(
+            candidates("api.openai.com/v1"),
+            ["https://api.openai.com/v1"]
+        );
     }
 
     #[test]
@@ -271,10 +280,16 @@ mod tests {
         let url = "https://gateway.test/advancing";
         forget(Some(url));
 
-        assert_eq!(endpoint(url, "messages"), "https://gateway.test/advancing/v1/messages");
+        assert_eq!(
+            endpoint(url, "messages"),
+            "https://gateway.test/advancing/v1/messages"
+        );
         assert!(can_advance(url));
         assert!(advance(url));
-        assert_eq!(endpoint(url, "messages"), "https://gateway.test/advancing/messages");
+        assert_eq!(
+            endpoint(url, "messages"),
+            "https://gateway.test/advancing/messages"
+        );
 
         // And there is nowhere further to go.
         assert!(!can_advance(url));
@@ -295,8 +310,14 @@ mod tests {
         let url = "https://gateway.test/forgetting";
         forget(Some(url));
         advance(url);
-        assert_eq!(endpoint(url, "messages"), "https://gateway.test/forgetting/messages");
+        assert_eq!(
+            endpoint(url, "messages"),
+            "https://gateway.test/forgetting/messages"
+        );
         forget(Some(url));
-        assert_eq!(endpoint(url, "messages"), "https://gateway.test/forgetting/v1/messages");
+        assert_eq!(
+            endpoint(url, "messages"),
+            "https://gateway.test/forgetting/v1/messages"
+        );
     }
 }

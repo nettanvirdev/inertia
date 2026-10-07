@@ -46,9 +46,14 @@ pub enum Block {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ImageSource {
-    Base64 { media_type: String, data: String },
+    Base64 {
+        media_type: String,
+        data: String,
+    },
     /// A URL the provider fetches itself, saving a round trip through us.
-    Url { url: String },
+    Url {
+        url: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -135,10 +140,7 @@ mod tests {
 
     #[test]
     fn blocks_serialise_with_their_tag() {
-        let json = serde_json::to_value(Block::Text {
-            text: "hi".into(),
-        })
-        .unwrap();
+        let json = serde_json::to_value(Block::Text { text: "hi".into() }).unwrap();
         assert_eq!(json["type"], "text");
 
         let json = serde_json::to_value(Block::RedactedThinking { data: "x".into() }).unwrap();

@@ -133,9 +133,9 @@ async fn reasoning_is_streamed_under_either_spelling() {
         ]);
         let events = stream_against(body).await;
         assert!(
-            events
-                .iter()
-                .any(|e| matches!(e, StreamEvent::Reasoning { text } if text == "thinking it over")),
+            events.iter().any(
+                |e| matches!(e, StreamEvent::Reasoning { text } if text == "thinking it over")
+            ),
             "{field} was not surfaced"
         );
     }
@@ -220,12 +220,10 @@ async fn a_keyless_local_runtime_is_supported() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/chat/completions"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_raw(
-                sse(&[r#"{"choices":[{"delta":{"content":"local reply"}}]}"#]),
-                "text/event-stream",
-            ),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_raw(
+            sse(&[r#"{"choices":[{"delta":{"content":"local reply"}}]}"#]),
+            "text/event-stream",
+        ))
         .mount(&server)
         .await;
 

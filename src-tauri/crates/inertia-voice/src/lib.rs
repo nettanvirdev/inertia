@@ -234,7 +234,11 @@ impl ElevenLabs {
     /// The account's voices, in the shape the settings pane draws.
     pub async fn voices(&self) -> Result<Vec<Voice>> {
         let data = self.json("/v1/voices").await?;
-        let rows = data.get("voices").and_then(Value::as_array).cloned().unwrap_or_default();
+        let rows = data
+            .get("voices")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
 
         Ok(rows
             .into_iter()
@@ -267,7 +271,11 @@ impl ElevenLabs {
 
                 Some(Voice {
                     id,
-                    name: if name.is_empty() { "Unnamed".into() } else { name },
+                    name: if name.is_empty() {
+                        "Unnamed".into()
+                    } else {
+                        name
+                    },
                     tone,
                     category: voice
                         .get("category")
@@ -394,8 +402,16 @@ impl ElevenLabs {
             return Err(VoiceError::Invalid("The recording was empty.".into()));
         }
 
-        let mime = if mime_type.is_empty() { "audio/webm" } else { mime_type };
-        let filename = if mime.contains("mp4") { "recording.mp4" } else { "recording.webm" };
+        let mime = if mime_type.is_empty() {
+            "audio/webm"
+        } else {
+            mime_type
+        };
+        let filename = if mime.contains("mp4") {
+            "recording.mp4"
+        } else {
+            "recording.webm"
+        };
 
         let part = reqwest::multipart::Part::bytes(audio)
             .file_name(filename)
@@ -405,7 +421,10 @@ impl ElevenLabs {
         let mut form = reqwest::multipart::Form::new()
             .text(
                 "model_id",
-                model_id.filter(|m| !m.is_empty()).unwrap_or(DEFAULT_STT_MODEL).to_string(),
+                model_id
+                    .filter(|m| !m.is_empty())
+                    .unwrap_or(DEFAULT_STT_MODEL)
+                    .to_string(),
             )
             .part("file", part);
         if let Some(language) = language.filter(|l| !l.is_empty()) {
@@ -413,7 +432,11 @@ impl ElevenLabs {
         }
 
         let response = self
-            .send(self.http.post(self.url("/v1/speech-to-text")).multipart(form))
+            .send(
+                self.http
+                    .post(self.url("/v1/speech-to-text"))
+                    .multipart(form),
+            )
             .await?;
         let data: Value = response
             .json()
@@ -564,7 +587,9 @@ mod tests {
         let server = server().await;
         Mock::given(method("POST"))
             .and(path("/v1/text-to-speech/v1"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw(b"ID3fake".to_vec(), "audio/mpeg"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_raw(b"ID3fake".to_vec(), "audio/mpeg"),
+            )
             .mount(&server)
             .await;
 

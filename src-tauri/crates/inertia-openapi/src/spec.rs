@@ -135,7 +135,10 @@ fn inline(
 
             let mut cleaned = serde_json::Map::new();
             for (key, child) in map {
-                cleaned.insert(key.clone(), inline(child, document, path, depth + 1, unresolved));
+                cleaned.insert(
+                    key.clone(),
+                    inline(child, document, path, depth + 1, unresolved),
+                );
             }
             Value::Object(cleaned)
         }
@@ -171,7 +174,11 @@ pub fn base_url(document: &Value) -> Option<String> {
         .and_then(Value::as_str)
         .unwrap_or("");
 
-    Some(format!("{scheme}://{host}{base}").trim_end_matches('/').to_string())
+    Some(
+        format!("{scheme}://{host}{base}")
+            .trim_end_matches('/')
+            .to_string(),
+    )
 }
 
 pub fn title(document: &Value) -> String {
@@ -228,7 +235,10 @@ paths:
     #[test]
     fn an_html_error_page_is_rejected_clearly() {
         let error = parse("<html><body>404 Not Found</body></html>").unwrap_err();
-        assert!(matches!(error, SpecError::Parse(_) | SpecError::NotASpec(_)));
+        assert!(matches!(
+            error,
+            SpecError::Parse(_) | SpecError::NotASpec(_)
+        ));
     }
 
     #[test]
@@ -253,7 +263,10 @@ paths:
             "paths": {}
         });
         let parsed = parse(&spec.to_string()).unwrap();
-        assert_eq!(base_url(&parsed).as_deref(), Some("https://api.example.com/v2"));
+        assert_eq!(
+            base_url(&parsed).as_deref(),
+            Some("https://api.example.com/v2")
+        );
     }
 
     // ── base URL ────────────────────────────────────────────────────────
@@ -343,7 +356,10 @@ paths:
         let resolved = resolve_refs(&json!({ "$ref": "#/components/schemas/Node" }), &document);
         let items = &resolved.value["properties"]["children"]["items"];
         assert_eq!(items["type"], "object");
-        assert!(items["description"].as_str().unwrap().contains("same shape"));
+        assert!(items["description"]
+            .as_str()
+            .unwrap()
+            .contains("same shape"));
     }
 
     #[test]

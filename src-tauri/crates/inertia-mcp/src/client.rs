@@ -203,7 +203,10 @@ impl Connection {
                         .post(&url)
                         .header(reqwest::header::CONTENT_TYPE, "application/json")
                         // Both, because the server chooses which it sends.
-                        .header(reqwest::header::ACCEPT, "application/json, text/event-stream")
+                        .header(
+                            reqwest::header::ACCEPT,
+                            "application/json, text/event-stream",
+                        )
                         .header("mcp-protocol-version", protocol::PROTOCOL_VERSION);
                     let request = match &session {
                         Some(id) => request.header("mcp-session-id", id.as_str()),
@@ -443,9 +446,7 @@ impl Connection {
         let mut cursor: Option<String> = None;
 
         for _ in 0..MAX_TOOL_PAGES {
-            let params = cursor
-                .as_ref()
-                .map(|c| serde_json::json!({ "cursor": c }));
+            let params = cursor.as_ref().map(|c| serde_json::json!({ "cursor": c }));
             let page = self.request("tools/list", params).await?;
 
             if let Some(found) = page.get("tools").and_then(Value::as_array) {
@@ -586,7 +587,11 @@ fn spawn_command(record: &ServerRecord) -> tokio::process::Command {
         }
 
         let mut command = tokio::process::Command::new("cmd.exe");
-        command.arg("/d").arg("/s").arg("/c").raw_arg(format!("\"{line}\""));
+        command
+            .arg("/d")
+            .arg("/s")
+            .arg("/c")
+            .raw_arg(format!("\"{line}\""));
         command
     }
     #[cfg(not(windows))]
@@ -631,7 +636,6 @@ fn kill_tree(pid: u32) {
             .status();
     }
 }
-
 
 /// Routes one decoded message to whoever is waiting for it.
 ///

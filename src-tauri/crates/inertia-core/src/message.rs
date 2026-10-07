@@ -119,9 +119,9 @@ impl UserEntry {
     }
 
     pub fn has_images(&self) -> bool {
-        self.parts.as_ref().is_some_and(|parts| {
-            parts.iter().any(|p| matches!(p, Part::ImageUrl { .. }))
-        })
+        self.parts
+            .as_ref()
+            .is_some_and(|parts| parts.iter().any(|p| matches!(p, Part::ImageUrl { .. })))
     }
 }
 
@@ -129,12 +129,8 @@ impl UserEntry {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Part {
-    Text {
-        text: String,
-    },
-    ImageUrl {
-        image_url: ImageUrl,
-    },
+    Text { text: String },
+    ImageUrl { image_url: ImageUrl },
 }
 
 /// An image reference, which older transcripts wrote as a bare string and
@@ -231,9 +227,7 @@ impl ThinkingBlock {
     /// Whether this block can be sent back to the provider.
     pub fn is_replayable(&self) -> bool {
         match self {
-            Self::Thinking { signature, .. } => {
-                signature.as_ref().is_some_and(|s| !s.is_empty())
-            }
+            Self::Thinking { signature, .. } => signature.as_ref().is_some_and(|s| !s.is_empty()),
             Self::RedactedThinking { .. } => true,
         }
     }
@@ -277,8 +271,7 @@ mod tests {
     // Old transcripts wrote `agent`; it was never a distinct role.
     #[test]
     fn agent_reads_as_assistant() {
-        let entry: Entry =
-            serde_json::from_str(r#"{"role":"agent","content":"hi"}"#).unwrap();
+        let entry: Entry = serde_json::from_str(r#"{"role":"agent","content":"hi"}"#).unwrap();
         assert!(matches!(entry, Entry::Assistant(_)));
         assert_eq!(entry.text(), "hi");
         // ...and is rewritten under the canonical name.
@@ -360,8 +353,7 @@ mod tests {
     #[test]
     fn images_load_from_both_spellings() {
         let object: Part =
-            serde_json::from_str(r#"{"type":"image_url","image_url":{"url":"data:x"}}"#)
-                .unwrap();
+            serde_json::from_str(r#"{"type":"image_url","image_url":{"url":"data:x"}}"#).unwrap();
         let bare: Part =
             serde_json::from_str(r#"{"type":"image_url","image_url":"data:x"}"#).unwrap();
         for part in [object, bare] {

@@ -38,13 +38,15 @@ fn problems(meta: &std::collections::BTreeMap<String, Meta>, body: &str) -> Vec<
             .to_string()
     };
     if text("name").is_empty() {
-        problems.push("No name in the frontmatter, so the folder name is being used instead.".into());
+        problems
+            .push("No name in the frontmatter, so the folder name is being used instead.".into());
     }
     if text("description").is_empty() {
         problems.push("No description, so an agent has nothing to decide by.".into());
     }
     if body.trim().is_empty() {
-        problems.push("Nothing below the frontmatter, so there are no instructions to load.".into());
+        problems
+            .push("Nothing below the frontmatter, so there are no instructions to load.".into());
     }
     problems
 }
@@ -170,7 +172,10 @@ mod tests {
         assert_eq!(record["enabled"], true);
         assert_eq!(record["tags"][0], "inertia");
         assert_eq!(record["version"], "2");
-        assert!(record["instructions"].as_str().unwrap().starts_with("# Setting up"));
+        assert!(record["instructions"]
+            .as_str()
+            .unwrap()
+            .starts_with("# Setting up"));
         assert!(record["problems"].as_array().unwrap().is_empty());
     }
 
@@ -207,8 +212,14 @@ mod tests {
         assert_eq!(record["extra"]["allowed-tools"][0], "read");
 
         let written = to_file(&record);
-        assert!(written.contains("allowed-tools: [read, write]"), "{written}");
-        assert_eq!(to_record("x", &written)["extra"]["allowed-tools"][1], "write");
+        assert!(
+            written.contains("allowed-tools: [read, write]"),
+            "{written}"
+        );
+        assert_eq!(
+            to_record("x", &written)["extra"]["allowed-tools"][1],
+            "write"
+        );
     }
 
     #[test]
@@ -223,7 +234,10 @@ mod tests {
 
     #[test]
     fn a_disabled_skill_stays_disabled() {
-        let record = to_record("x", "---\nname: X\ndescription: d\nenabled: false\n---\n\nB.");
+        let record = to_record(
+            "x",
+            "---\nname: X\ndescription: d\nenabled: false\n---\n\nB.",
+        );
         assert_eq!(record["enabled"], false);
         assert!(to_file(&record).contains("enabled: false"));
     }

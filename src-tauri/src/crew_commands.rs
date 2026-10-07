@@ -241,7 +241,11 @@ pub fn crew_cancel(
 /// status - so the truthful answer is that it did not happen, rather than a
 /// row that claims to be paused while its session keeps spending money.
 #[tauri::command]
-pub fn crew_pause(_state: State<'_, AppState>, _run_id: Option<String>, _options: Option<Value>) -> Value {
+pub fn crew_pause(
+    _state: State<'_, AppState>,
+    _run_id: Option<String>,
+    _options: Option<Value>,
+) -> Value {
     not_yet(
         "paused",
         "Pausing a run is not built yet. Stop it, or interrupt it and follow up when you are ready.",
@@ -249,8 +253,15 @@ pub fn crew_pause(_state: State<'_, AppState>, _run_id: Option<String>, _options
 }
 
 #[tauri::command]
-pub fn crew_resume(_state: State<'_, AppState>, _run_id: Option<String>, _options: Option<Value>) -> Value {
-    not_yet("resumed", "Pausing a run is not built yet, so there is nothing to resume.")
+pub fn crew_resume(
+    _state: State<'_, AppState>,
+    _run_id: Option<String>,
+    _options: Option<Value>,
+) -> Value {
+    not_yet(
+        "resumed",
+        "Pausing a run is not built yet, so there is nothing to resume.",
+    )
 }
 
 /// Run the same brief again as a new run, linked to the one it replaces.
@@ -323,9 +334,7 @@ mod tests {
     use async_trait::async_trait;
     use inertia_core::id::{SessionId, ToolCallId};
     use inertia_core::provider::Provider;
-    use inertia_core::tool::{
-        PermissionGate, Tool, ToolContext, ToolOutcome, ToolRegistry,
-    };
+    use inertia_core::tool::{PermissionGate, Tool, ToolContext, ToolOutcome, ToolRegistry};
     use inertia_mock::{MockGate, MockProvider};
     use inertia_store::Layout;
     use inertia_tools::Registry;
@@ -428,14 +437,13 @@ mod tests {
             let mut changes = self.runs.subscribe();
             loop {
                 changes.borrow_and_update();
-                if self
-                    .runs
-                    .get(id)
-                    .is_some_and(|run| !run.status.is_active())
-                {
+                if self.runs.get(id).is_some_and(|run| !run.status.is_active()) {
                     return;
                 }
-                changes.changed().await.expect("the table outlives the test");
+                changes
+                    .changed()
+                    .await
+                    .expect("the table outlives the test");
             }
         }
     }
@@ -489,7 +497,9 @@ mod tests {
             "stalling"
         }
 
-        async fn list_models(&self) -> inertia_core::Result<Vec<inertia_core::provider::ModelInfo>> {
+        async fn list_models(
+            &self,
+        ) -> inertia_core::Result<Vec<inertia_core::provider::ModelInfo>> {
             Ok(Vec::new())
         }
 
@@ -546,10 +556,31 @@ mod tests {
         assert_eq!(rows.len(), 1);
         let run = &rows[0];
         for key in [
-            "id", "parentId", "depth", "agentId", "agentName", "description", "prompt", "model",
-            "status", "activity", "startedAt", "endedAt", "steps", "text", "result", "error",
-            "usage", "collected", "restartedAs", "restartOf", "followUps", "canFollowUp", "inbox",
-            "events", "message",
+            "id",
+            "parentId",
+            "depth",
+            "agentId",
+            "agentName",
+            "description",
+            "prompt",
+            "model",
+            "status",
+            "activity",
+            "startedAt",
+            "endedAt",
+            "steps",
+            "text",
+            "result",
+            "error",
+            "usage",
+            "collected",
+            "restartedAs",
+            "restartOf",
+            "followUps",
+            "canFollowUp",
+            "inbox",
+            "events",
+            "message",
         ] {
             assert!(run.get(key).is_some(), "the snapshot is missing {key}");
         }
@@ -580,7 +611,10 @@ mod tests {
         let doomed = bench.spawn("read everything", "Reader").await;
         let spared = bench.spawn("write it up", "Writer").await;
 
-        assert_eq!(cancel(&bench.runs, &doomed, true), json!({ "cancelled": true }));
+        assert_eq!(
+            cancel(&bench.runs, &doomed, true),
+            json!({ "cancelled": true })
+        );
         assert_eq!(
             bench.runs.get(&doomed).expect("the run").status.as_str(),
             "cancelled"
@@ -609,7 +643,10 @@ mod tests {
         let again = interrupt(&bench.runs, &id);
         assert_eq!(again["interrupted"], false);
         assert!(
-            again["reason"].as_str().expect("a reason").contains("not running"),
+            again["reason"]
+                .as_str()
+                .expect("a reason")
+                .contains("not running"),
             "{again}"
         );
         assert!(interrupt(&bench.runs, "run-nope")["reason"]
@@ -619,9 +656,15 @@ mod tests {
 
         // An empty brief is refused before anything is started.
         let empty = follow_up(&bench.runs, &id, "   ");
-        assert_eq!(empty, json!({ "started": false, "reason": "Say what it should do next." }));
+        assert_eq!(
+            empty,
+            json!({ "started": false, "reason": "Say what it should do next." })
+        );
 
-        assert_eq!(follow_up(&bench.runs, &id, "do the other half"), json!({ "started": true }));
+        assert_eq!(
+            follow_up(&bench.runs, &id, "do the other half"),
+            json!({ "started": true })
+        );
         let reopened = bench.runs.get(&id).expect("the run");
         assert!(reopened.status.is_active(), "{}", reopened.status.as_str());
         assert_eq!(reopened.follow_ups, 1);
@@ -632,7 +675,10 @@ mod tests {
         let refused = follow_up(&bench.runs, &gone, "try again");
         assert_eq!(refused["started"], false);
         assert!(
-            refused["reason"].as_str().expect("a reason").contains("cancelled"),
+            refused["reason"]
+                .as_str()
+                .expect("a reason")
+                .contains("cancelled"),
             "{refused}"
         );
     }
@@ -641,9 +687,18 @@ mod tests {
     #[tokio::test]
     async fn pause_resume_and_restart_are_honest_about_not_existing() {
         for (key, value) in [
-            ("paused", not_yet("paused", "Pausing a run is not built yet.")),
-            ("resumed", not_yet("resumed", "Pausing a run is not built yet.")),
-            ("restarted", not_yet("restarted", "Restarting a run is not built yet.")),
+            (
+                "paused",
+                not_yet("paused", "Pausing a run is not built yet."),
+            ),
+            (
+                "resumed",
+                not_yet("resumed", "Pausing a run is not built yet."),
+            ),
+            (
+                "restarted",
+                not_yet("restarted", "Restarting a run is not built yet."),
+            ),
         ] {
             assert_eq!(value[key], false);
             assert!(value["reason"].as_str().is_some_and(|r| !r.is_empty()));
@@ -657,7 +712,10 @@ mod tests {
         let id = bench.spawn("look around", "Scout").await;
         bench.settled(&id).await;
 
-        assert_eq!(forget(&bench.runs, "thread-1"), json!({ "forgotten": true }));
+        assert_eq!(
+            forget(&bench.runs, "thread-1"),
+            json!({ "forgotten": true })
+        );
         assert!(snapshot(&bench.runs, "thread-1").is_empty());
         assert!(timeline(&bench.runs, "thread-1").is_empty());
     }

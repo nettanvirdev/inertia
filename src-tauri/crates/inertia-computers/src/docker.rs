@@ -64,7 +64,9 @@ fn env_file<'a>(
     use std::io::Write;
 
     let failed = |e: std::io::Error| {
-        ComputerError::Failed(format!("The machine's environment could not be written: {e}"))
+        ComputerError::Failed(format!(
+            "The machine's environment could not be written: {e}"
+        ))
     };
     let mut file = tempfile::NamedTempFile::new().map_err(failed)?;
     for (key, value) in pairs {
@@ -396,17 +398,14 @@ pub async fn ensure_image(cli: &dyn DockerCli, sink: Sink<'_>) -> Result<Built> 
     );
 
     let dir = context.path().display().to_string();
-    let dockerfile = context.path().join(&manifest.dockerfile).display().to_string();
+    let dockerfile = context
+        .path()
+        .join(&manifest.dockerfile)
+        .display()
+        .to_string();
     let result = cli
         .stream(
-            &[
-                "build",
-                "-t",
-                &manifest.reference,
-                "-f",
-                &dockerfile,
-                &dir,
-            ],
+            &["build", "-t", &manifest.reference, "-f", &dockerfile, &dir],
             BUILD_TIMEOUT,
             sink,
         )
@@ -476,9 +475,11 @@ impl DockerProvider {
             return Err(ComputerError::Timeout(timeout));
         }
         if output.code != 0 {
-            return Err(ComputerError::Failed(first_line(&output.stderr).unwrap_or_else(
-                || format!("docker {} failed.", args.first().copied().unwrap_or("")),
-            )));
+            return Err(ComputerError::Failed(
+                first_line(&output.stderr).unwrap_or_else(|| {
+                    format!("docker {} failed.", args.first().copied().unwrap_or(""))
+                }),
+            ));
         }
         Ok(output.stdout.trim().to_string())
     }
@@ -507,9 +508,10 @@ impl DockerProvider {
                     .into(),
             ));
         }
-        Err(ComputerError::Failed(first_line(&output.stderr).unwrap_or_else(
-            || format!("The network for {name} could not be made."),
-        )))
+        Err(ComputerError::Failed(
+            first_line(&output.stderr)
+                .unwrap_or_else(|| format!("The network for {name} could not be made.")),
+        ))
     }
 
     /// Runs a machine: its network, a new screen password, and the shared run
@@ -537,7 +539,10 @@ impl DockerProvider {
     /// that replaces the container itself.
     async fn container_name(&self, handle: &str) -> Result<String> {
         let name = self
-            .must(&["inspect", "-f", "{{.Name}}", handle], Duration::from_secs(15))
+            .must(
+                &["inspect", "-f", "{{.Name}}", handle],
+                Duration::from_secs(15),
+            )
             .await?;
         Ok(name.trim_start_matches('/').to_string())
     }
@@ -570,7 +575,12 @@ pub(crate) fn map_status(state: &str) -> Status {
 
 /// A percentage as Docker prints it: `12.34%`.
 pub(crate) fn parse_percent(value: &str) -> Option<f64> {
-    value.trim().trim_end_matches('%').trim().parse::<f64>().ok()
+    value
+        .trim()
+        .trim_end_matches('%')
+        .trim()
+        .parse::<f64>()
+        .ok()
 }
 
 /// Docker's zero time, which means "never started".
@@ -644,13 +654,21 @@ impl Provider for DockerProvider {
     /// the CLI alone and says yes while the daemon is stopped, which is exactly
     /// the state a person needs to be told about.
     async fn available(&self) -> Readiness {
-        match self.run(&["version", "--format", "{{.Server.Version}}"], Duration::from_secs(10)).await {
+        match self
+            .run(
+                &["version", "--format", "{{.Server.Version}}"],
+                Duration::from_secs(10),
+            )
+            .await
+        {
             Err(ComputerError::NotReady(reason)) => Readiness::not(reason),
             Err(e) => Readiness::not(e.to_string()),
             Ok(output) if output.timed_out => {
                 Readiness::not("Docker did not answer. It may be starting up.")
             }
-            Ok(output) if output.code == 0 && !output.stdout.trim().is_empty() => Readiness::ready(),
+            Ok(output) if output.code == 0 && !output.stdout.trim().is_empty() => {
+                Readiness::ready()
+            }
             Ok(output) => Readiness::not(
                 first_line(&output.stderr)
                     .unwrap_or_else(|| "Docker is installed but its daemon is not running.".into()),
@@ -674,11 +692,15 @@ impl Provider for DockerProvider {
         // the run and the record being written - would make `docker run` fail
         // on a name conflict, which reads as a bug in the app rather than as
         // debris.
-        let _ = self.run(&["rm", "-f", &name], Duration::from_secs(20)).await;
+        let _ = self
+            .run(&["rm", "-f", &name], Duration::from_secs(20))
+            .await;
 
         let cpus = spec.cpu.filter(|c| *c > 0.0).map(|c| c.to_string());
         let memory = spec.memory_gb.filter(|m| *m > 0.0).map(|m| format!("{m}g"));
-        let container = self.launch(&name, &manifest.reference, cpus, memory).await?;
+        let container = self
+            .launch(&name, &manifest.reference, cpus, memory)
+            .await?;
 
         Ok(Created {
             handle: container,
@@ -691,7 +713,8 @@ impl Provider for DockerProvider {
     }
 
     async fn start(&self, handle: &str) -> Result<()> {
-        self.must(&["start", handle], Duration::from_secs(60)).await?;
+        self.must(&["start", handle], Duration::from_secs(60))
+            .await?;
         Ok(())
     }
 
@@ -699,22 +722,26 @@ impl Provider for DockerProvider {
         // Not `must`: stopping something already stopped is the outcome the
         // caller wanted, and reporting it as a failure makes a Stop button
         // that errors on a stopped machine.
-        self.run(&["stop", "-t", "10", handle], Duration::from_secs(60)).await?;
+        self.run(&["stop", "-t", "10", handle], Duration::from_secs(60))
+            .await?;
         Ok(())
     }
 
     async fn pause(&self, handle: &str) -> Result<()> {
-        self.must(&["pause", handle], Duration::from_secs(30)).await?;
+        self.must(&["pause", handle], Duration::from_secs(30))
+            .await?;
         Ok(())
     }
 
     async fn resume(&self, handle: &str) -> Result<()> {
-        self.must(&["unpause", handle], Duration::from_secs(30)).await?;
+        self.must(&["unpause", handle], Duration::from_secs(30))
+            .await?;
         Ok(())
     }
 
     async fn remove(&self, handle: &str, name: Option<&str>) -> Result<()> {
-        self.run(&["rm", "-f", handle], Duration::from_secs(60)).await?;
+        self.run(&["rm", "-f", handle], Duration::from_secs(60))
+            .await?;
         // The volume and the network go with it, or a removed machine leaves
         // them behind forever with nothing in the UI that could ever mention
         // them again. The network's removal is allowed to fail: a machine made
@@ -734,7 +761,12 @@ impl Provider for DockerProvider {
     async fn status(&self, handle: &str) -> Health {
         let output = self
             .run(
-                &["inspect", "-f", "{{.State.Status}}|{{.State.StartedAt}}", handle],
+                &[
+                    "inspect",
+                    "-f",
+                    "{{.State.Status}}|{{.State.StartedAt}}",
+                    handle,
+                ],
                 Duration::from_secs(15),
             )
             .await;
@@ -944,7 +976,10 @@ impl Provider for DockerProvider {
     async fn snapshot(&self, handle: &str, name: &str) -> Result<Snapshot> {
         let id = format!("snap-{}", jiff::Timestamp::now().as_millisecond());
         let tag = format!("inertia-snapshot:{id}");
-        let owner = format!("LABEL {MACHINE_LABEL}={}", self.container_name(handle).await?);
+        let owner = format!(
+            "LABEL {MACHINE_LABEL}={}",
+            self.container_name(handle).await?
+        );
         self.must(
             &["commit", "-m", name, "-c", &owner, handle, &tag],
             Duration::from_secs(300),
@@ -1012,7 +1047,10 @@ impl Provider for DockerProvider {
         // timestamp, and another machine's disk is not this one's past.
         let owner_of = format!("{{{{index .Config.Labels \"{MACHINE_LABEL}\"}}}}");
         let owner = self
-            .must(&["image", "inspect", "-f", &owner_of, &tag], Duration::from_secs(15))
+            .must(
+                &["image", "inspect", "-f", &owner_of, &tag],
+                Duration::from_secs(15),
+            )
             .await
             .unwrap_or_default();
         if owner != name {
@@ -1025,14 +1063,21 @@ impl Provider for DockerProvider {
         // goes. A container that is already gone had none worth keeping.
         let limits = self
             .must(
-                &["inspect", "-f", "{{.HostConfig.NanoCpus}}|{{.HostConfig.Memory}}", handle],
+                &[
+                    "inspect",
+                    "-f",
+                    "{{.HostConfig.NanoCpus}}|{{.HostConfig.Memory}}",
+                    handle,
+                ],
                 Duration::from_secs(15),
             )
             .await
             .unwrap_or_default();
         let (cpus, memory) = parse_limits(&limits);
 
-        let _ = self.run(&["rm", "-f", handle], Duration::from_secs(60)).await;
+        let _ = self
+            .run(&["rm", "-f", handle], Duration::from_secs(60))
+            .await;
         let container = self.launch(name, &tag, cpus, memory).await?;
 
         Ok(Created {
@@ -1086,7 +1131,12 @@ impl Provider for DockerProvider {
     async fn screen(&self, handle: &str) -> Result<Option<Screen>> {
         let env = self
             .run(
-                &["inspect", "-f", "{{range .Config.Env}}{{println .}}{{end}}", handle],
+                &[
+                    "inspect",
+                    "-f",
+                    "{{range .Config.Env}}{{println .}}{{end}}",
+                    handle,
+                ],
                 Duration::from_secs(10),
             )
             .await?;
@@ -1204,7 +1254,12 @@ mod tests {
             })
         }
 
-        async fn stream(&self, args: &[&str], _timeout: Duration, sink: Sink<'_>) -> Result<Output> {
+        async fn stream(
+            &self,
+            args: &[&str],
+            _timeout: Duration,
+            sink: Sink<'_>,
+        ) -> Result<Output> {
             self.record(args);
             *self.dockerfile_was_there.lock().unwrap() = Path::new(args[4]).is_file();
             let mut stdout = String::new();
@@ -1234,7 +1289,9 @@ mod tests {
         let seen: Reported = std::sync::Arc::new(Mutex::new(Vec::new()));
         let held = seen.clone();
         (seen, move |stream: &str, text: &str| {
-            held.lock().unwrap().push((stream.to_string(), text.to_string()));
+            held.lock()
+                .unwrap()
+                .push((stream.to_string(), text.to_string()));
         })
     }
 
@@ -1256,14 +1313,27 @@ mod tests {
     /// The build streams as it goes, and it builds the embedded context.
     #[tokio::test]
     async fn a_missing_image_is_built_from_the_embedded_context_and_streams() {
-        let cli = FakeCli::new(1, 0, vec![
-            ("stdout", "Step 1/9 : FROM debian:bookworm-slim
-"),
-            ("stderr", "#4 resolve docker.io/library/debian
-"),
-            ("stdout", "Successfully tagged inertia-sandbox:1.1.0
-"),
-        ]);
+        let cli = FakeCli::new(
+            1,
+            0,
+            vec![
+                (
+                    "stdout",
+                    "Step 1/9 : FROM debian:bookworm-slim
+",
+                ),
+                (
+                    "stderr",
+                    "#4 resolve docker.io/library/debian
+",
+                ),
+                (
+                    "stdout",
+                    "Successfully tagged inertia-sandbox:1.1.0
+",
+                ),
+            ],
+        );
         let (seen, sink) = recorder();
         let built = ensure_image(&cli, &sink).await.unwrap();
 
@@ -1288,7 +1358,9 @@ mod tests {
         let reported = seen.lock().unwrap().clone();
         // The first line says what is about to happen, because a person who
         // pressed Build and sees nothing for a minute assumes it hung.
-        assert!(reported[0].1.contains(&format!("Building {}", image::manifest().reference)));
+        assert!(reported[0]
+            .1
+            .contains(&format!("Building {}", image::manifest().reference)));
         assert_eq!(reported[1].0, "stdout");
         assert!(reported[1].1.contains("FROM debian"));
         // stderr is carried through as stderr: buildkit writes its progress
@@ -1301,26 +1373,30 @@ mod tests {
     /// last. The first line is the buildkit banner and says nothing.
     #[tokio::test]
     async fn a_failed_build_reports_the_line_that_says_why() {
-        let cli = FakeCli::new(1, 1, vec![(
-            "stderr",
-            "#1 [internal] load build definition
+        let cli = FakeCli::new(
+            1,
+            1,
+            vec![(
+                "stderr",
+                "#1 [internal] load build definition
 ERROR: failed to solve: chromium: not found
 ",
-        )]);
+            )],
+        );
         let (_seen, sink) = recorder();
         let failure = ensure_image(&cli, &sink).await.unwrap_err();
-        assert!(failure.to_string().contains("chromium: not found"), "{failure}");
+        assert!(
+            failure.to_string().contains("chromium: not found"),
+            "{failure}"
+        );
     }
-
 
     /// What a new machine and a restored one are both run with.
     #[test]
     fn a_machine_runs_isolated_hardened_and_published_to_loopback_only() {
         let env = Path::new("/tmp/env");
         let args = run_args("inertia-box", "inertia-sandbox:1.1.0", None, None, env);
-        let pair = |flag: &str, value: &str| {
-            args.windows(2).any(|w| w[0] == flag && w[1] == value)
-        };
+        let pair = |flag: &str, value: &str| args.windows(2).any(|w| w[0] == flag && w[1] == value);
 
         assert_eq!(args[..2], ["run".to_string(), "-d".to_string()]);
         assert!(pair("--name", "inertia-box"));
@@ -1330,7 +1406,9 @@ ERROR: failed to solve: chromium: not found
         assert!(pair("--pids-limit", PIDS_LIMIT));
         // The password arrives through a file, never as a value in argv.
         assert!(pair("--env-file", &env.display().to_string()));
-        assert!(!args.iter().any(|a| a == "-e" || a.contains(SCREEN_PASSWORD_ENV)));
+        assert!(!args
+            .iter()
+            .any(|a| a == "-e" || a.contains(SCREEN_PASSWORD_ENV)));
         assert!(pair("-v", "inertia-box-workspace:/workspace"));
         assert!(pair("-p", "127.0.0.1::6080"));
         assert!(pair("-p", "127.0.0.1::6081"));
@@ -1340,7 +1418,9 @@ ERROR: failed to solve: chromium: not found
 
         let limited = run_args("inertia-box", "x", Some("2".into()), Some("8g".into()), env);
         assert!(limited.windows(2).any(|w| w[0] == "--cpus" && w[1] == "2"));
-        assert!(limited.windows(2).any(|w| w[0] == "--memory" && w[1] == "8g"));
+        assert!(limited
+            .windows(2)
+            .any(|w| w[0] == "--memory" && w[1] == "8g"));
     }
 
     /// A restore runs with the limits the machine had, read off its container.
@@ -1368,7 +1448,10 @@ ERROR: failed to solve: chromium: not found
     #[test]
     fn the_env_file_holds_each_pair_and_refuses_a_line_break() {
         let file = env_file([("A", "one two"), ("B", "x=y")]).unwrap();
-        assert_eq!(std::fs::read_to_string(file.path()).unwrap(), "A=one two\nB=x=y\n");
+        assert_eq!(
+            std::fs::read_to_string(file.path()).unwrap(),
+            "A=one two\nB=x=y\n"
+        );
 
         // A line break would end the value and start a variable nobody asked
         // for, so it is refused rather than written.
@@ -1392,12 +1475,22 @@ ERROR: failed to solve: chromium: not found
     /// on both IPv4 and IPv6 prints two that can differ.
     #[test]
     fn the_host_port_is_read_off_dockers_answer() {
-        assert_eq!(published_port("0.0.0.0:49154
-"), Some(49154));
+        assert_eq!(
+            published_port(
+                "0.0.0.0:49154
+"
+            ),
+            Some(49154)
+        );
         assert_eq!(published_port("127.0.0.1:32770"), Some(32770));
-        assert_eq!(published_port("[::]:49155
+        assert_eq!(
+            published_port(
+                "[::]:49155
 0.0.0.0:49154
-"), Some(49155));
+"
+            ),
+            Some(49155)
+        );
         // A container with no such publish prints nothing, and half a screen is
         // not worth showing.
         assert_eq!(published_port(""), None);
@@ -1480,10 +1573,11 @@ ERROR: failed to solve: chromium: not found
 
     #[test]
     fn listings_put_directories_first_then_names() {
-        let mut entries: Vec<DirEntry> = ["f\t1\t1\tzebra.txt", "d\t1\t1\tsrc", "f\t1\t1\tApple.txt"]
-            .iter()
-            .filter_map(|line| parse_entry(line))
-            .collect();
+        let mut entries: Vec<DirEntry> =
+            ["f\t1\t1\tzebra.txt", "d\t1\t1\tsrc", "f\t1\t1\tApple.txt"]
+                .iter()
+                .filter_map(|line| parse_entry(line))
+                .collect();
         sort_entries(&mut entries);
 
         let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();

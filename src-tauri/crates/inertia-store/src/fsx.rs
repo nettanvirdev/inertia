@@ -546,7 +546,10 @@ mod tests {
     fn a_path_that_does_not_exist_yet_resolves_through_its_existing_ancestor() {
         let dir = temp();
         let real = canonical(dir.path());
-        assert_eq!(canonical(&dir.path().join("a/b/../c.txt")), real.join("a").join("c.txt"));
+        assert_eq!(
+            canonical(&dir.path().join("a/b/../c.txt")),
+            real.join("a").join("c.txt")
+        );
         assert!(!real.to_string_lossy().starts_with(r"\\?\"));
     }
 
@@ -594,7 +597,10 @@ mod tests {
 
         let raw = std::fs::read_to_string(&file).unwrap();
         assert!(raw.ends_with("}\n"), "no trailing newline: {raw:?}");
-        assert!(raw.contains("\n  \"theme\""), "not 2-space indented: {raw:?}");
+        assert!(
+            raw.contains("\n  \"theme\""),
+            "not 2-space indented: {raw:?}"
+        );
     }
 
     #[test]
@@ -828,6 +834,8 @@ mod tests {
         });
 
         assert!(failures.is_empty(), "{failures:?}");
-        assert!(std::fs::read_to_string(&file).unwrap().starts_with("attempt "));
+        assert!(std::fs::read_to_string(&file)
+            .unwrap()
+            .starts_with("attempt "));
     }
 }

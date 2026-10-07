@@ -53,7 +53,9 @@ where
     // `tokio::spawn` rather than Tauri's wrapper, which hands back a handle
     // with no way to abort it - and abort is the entire point here.
     let task = tokio::spawn(work);
-    RUNNING.lock().insert(run_id.to_string(), task.abort_handle());
+    RUNNING
+        .lock()
+        .insert(run_id.to_string(), task.abort_handle());
 
     let finished = task.await;
     RUNNING.lock().remove(run_id);
@@ -239,10 +241,7 @@ pub fn computer_settings(state: State<'_, AppState>) -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub fn computer_save_settings(
-    state: State<'_, AppState>,
-    patch: Value,
-) -> Result<Value, String> {
+pub fn computer_save_settings(state: State<'_, AppState>, patch: Value) -> Result<Value, String> {
     let workspace = state.workspace()?;
     let mut current = settings(&state)?;
     if let (Some(target), Value::Object(changes)) = (current.as_object_mut(), patch) {
@@ -264,8 +263,7 @@ pub fn computer_save_settings(
 #[tauri::command]
 pub async fn computer_list(state: State<'_, AppState>) -> Result<Vec<Value>, String> {
     let workspace = state.workspace()?;
-    let records =
-        inertia_store::collections::list(&workspace.layout, Collection::Computers);
+    let records = inertia_store::collections::list(&workspace.layout, Collection::Computers);
 
     let mut out = Vec::new();
     for record in records {
@@ -315,10 +313,7 @@ pub async fn computer_refresh(state: State<'_, AppState>, id: String) -> Result<
 /* -- lifecycle ------------------------------------------------------------ */
 
 #[tauri::command]
-pub async fn computer_create(
-    state: State<'_, AppState>,
-    draft: Value,
-) -> Result<Value, String> {
+pub async fn computer_create(state: State<'_, AppState>, draft: Value) -> Result<Value, String> {
     let settings = settings(&state)?;
     let provider_id = draft
         .get("provider")
@@ -414,7 +409,11 @@ async fn lifecycle(state: &AppState, id: &str, action: &str) -> Result<Value, St
             let name = (!name.is_empty()).then_some(name.as_str());
             provider.remove(&handle, name).await
         }
-        other => return Err(format!("`{other}` is not something a computer can be asked to do.")),
+        other => {
+            return Err(format!(
+                "`{other}` is not something a computer can be asked to do."
+            ))
+        }
     };
 
     if let Err(failure) = outcome {
@@ -429,7 +428,11 @@ async fn lifecycle(state: &AppState, id: &str, action: &str) -> Result<Value, St
         return Ok(json!({ "id": id, "removed": true }));
     }
 
-    patch(state, id, json!({ "error": Value::Null, "lastUsedAt": now() }))?;
+    patch(
+        state,
+        id,
+        json!({ "error": Value::Null, "lastUsedAt": now() }),
+    )?;
     refreshed(state, id).await
 }
 
@@ -595,7 +598,11 @@ pub async fn computer_write_file(
 ) -> Result<Value, String> {
     let (provider, record) = machine(&state, &id)?;
     provider
-        .write_file(field(&record, "handle"), &path, &content.unwrap_or_default())
+        .write_file(
+            field(&record, "handle"),
+            &path,
+            &content.unwrap_or_default(),
+        )
         .await
         .map_err(err)?;
     Ok(json!({ "path": path, "written": true }))
@@ -808,13 +815,20 @@ fn image_snapshot_name() -> String {
 /// Checked before anything that drives a screen, because every one of those
 /// commands against a stopped container fails with a message about a container
 /// rather than about the machine.
-pub(crate) fn running_machine(state: &AppState, id: &str) -> Result<(Arc<dyn Provider>, Value), String> {
+pub(crate) fn running_machine(
+    state: &AppState,
+    id: &str,
+) -> Result<(Arc<dyn Provider>, Value), String> {
     let (provider, record) = machine(state, id)?;
     let status = field(&record, "status");
     if status != "running" {
         let name = field(&record, "name");
         let name = if name.is_empty() { id } else { name };
-        let doing = if status.is_empty() { "not running" } else { status };
+        let doing = if status.is_empty() {
+            "not running"
+        } else {
+            status
+        };
         return Err(format!("{name} is {doing}. Start it first."));
     }
     Ok((provider, record))
@@ -913,7 +927,10 @@ pub(crate) fn drive_command(action: &str, args: &Value) -> Result<String, String
             }),
         )?,
         "type" => one("type", json!({ "text": arg("text") }))?,
-        "key" => one("key", json!({ "key": arg("key"), "modifiers": arg("modifiers") }))?,
+        "key" => one(
+            "key",
+            json!({ "key": arg("key"), "modifiers": arg("modifiers") }),
+        )?,
         "scroll" => one(
             "scroll",
             json!({ "direction": arg("direction"), "amount": arg("amount") }),
@@ -1102,7 +1119,8 @@ mod tests {
 
     #[test]
     fn the_pointer_verbs_go_through_the_same_compiler_as_the_agents_batch() {
-        let click = drive_command("click", &json!({ "x": 12, "y": 34, "button": "right" })).unwrap();
+        let click =
+            drive_command("click", &json!({ "x": 12, "y": 34, "button": "right" })).unwrap();
         assert!(click.contains("mousemove --sync 12 34"));
         assert!(click.contains("mousedown 3"));
 

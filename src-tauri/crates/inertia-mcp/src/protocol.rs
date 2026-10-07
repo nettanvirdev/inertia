@@ -273,8 +273,8 @@ pub fn sanitize_schema(schema: &Value) -> Value {
                         // Unsupported combinators. Dropping them widens the
                         // schema, which is safe: the tool validates its own
                         // arguments anyway.
-                        "$ref" | "$defs" | "definitions" | "anyOf" | "oneOf" | "allOf"
-                        | "not" | "$schema" => continue,
+                        "$ref" | "$defs" | "definitions" | "anyOf" | "oneOf" | "allOf" | "not"
+                        | "$schema" => continue,
                         _ => {
                             cleaned.insert(key.clone(), strip(child));
                         }
@@ -366,7 +366,8 @@ mod tests {
 
     #[test]
     fn an_error_reply_is_recognised() {
-        let message = json!({"jsonrpc":"2.0","id":7,"error":{"code":-32602,"message":"bad params"}});
+        let message =
+            json!({"jsonrpc":"2.0","id":7,"error":{"code":-32602,"message":"bad params"}});
         let Some(Incoming::Failure { id, error }) = classify(&message) else {
             panic!("expected a failure");
         };
@@ -376,7 +377,8 @@ mod tests {
 
     #[test]
     fn a_notification_is_recognised() {
-        let message = json!({"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":3}});
+        let message =
+            json!({"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":3}});
         let Some(Incoming::Notification { method, params }) = classify(&message) else {
             panic!("expected a notification");
         };

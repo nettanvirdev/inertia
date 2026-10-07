@@ -6,7 +6,11 @@
 //! transcript assembly all really happen.
 
 // An `unwrap` in a test is a readable assertion, not a latent panic.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::needless_pass_by_value)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::needless_pass_by_value
+)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -190,9 +194,8 @@ async fn the_system_prompt_and_tool_list_reach_the_provider() {
 /// refusal.
 #[tokio::test]
 async fn a_failing_tool_does_not_end_the_turn() {
-    let tool = Arc::new(
-        MockTool::new("broken").with_behaviour(Behaviour::Failure("no such file".into())),
-    );
+    let tool =
+        Arc::new(MockTool::new("broken").with_behaviour(Behaviour::Failure("no such file".into())));
     let gate = Arc::new(MockGate::allow_all());
     let harness = run(
         MockProvider::new()
@@ -316,13 +319,11 @@ async fn the_step_budget_forces_a_prose_wrap_up() {
     // The wind-up request offers no tools at all - that is what actually
     // forces prose; the note only explains why.
     let last = harness.provider.last_request().unwrap();
-    assert!(last.tools.is_empty(), "tools were still offered at the limit");
-    assert!(last
-        .history
-        .last()
-        .unwrap()
-        .text()
-        .contains("step limit"));
+    assert!(
+        last.tools.is_empty(),
+        "tools were still offered at the limit"
+    );
+    assert!(last.history.last().unwrap().text().contains("step limit"));
 }
 
 /// Four byte-identical calls in a row is a stuck model, not progress. With

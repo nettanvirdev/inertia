@@ -1,7 +1,11 @@
 //! The file tools, exercised through the real registry against a real
 //! temporary directory.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::needless_pass_by_value)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::needless_pass_by_value
+)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -25,7 +29,12 @@ impl Fixture {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().to_path_buf();
         let gate = Arc::new(MockGate::allow_all());
-        let registry = Registry::new(gate).with_tools(file_tools(Arc::new(ReadState::new()), Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher()))));
+        let registry = Registry::new(gate).with_tools(file_tools(
+            Arc::new(ReadState::new()),
+            Arc::new(inertia_lsp::Lsp::with_launcher(
+                inertia_lsp::testing::fake_launcher(),
+            )),
+        ));
 
         Self {
             _dir: dir,
@@ -87,7 +96,9 @@ async fn an_empty_file_says_so() {
     let fixture = Fixture::new();
     fixture.write_file("empty.txt", "");
 
-    let result = fixture.call("read", json!({ "filePath": "empty.txt" })).await;
+    let result = fixture
+        .call("read", json!({ "filePath": "empty.txt" }))
+        .await;
     assert!(result.ok);
     assert_eq!(result.output, "(Empty file)");
 }
@@ -99,7 +110,10 @@ async fn reading_can_be_paged() {
     fixture.write_file("long.txt", &body);
 
     let result = fixture
-        .call("read", json!({ "filePath": "long.txt", "offset": 50, "limit": 3 }))
+        .call(
+            "read",
+            json!({ "filePath": "long.txt", "offset": 50, "limit": 3 }),
+        )
         .await;
 
     assert!(result.output.contains("50: line 50"));
@@ -120,7 +134,11 @@ async fn an_offset_past_the_end_explains_the_range() {
         .await;
 
     assert!(!result.ok);
-    assert!(result.output.contains("out of range"), "got {}", result.output);
+    assert!(
+        result.output.contains("out of range"),
+        "got {}",
+        result.output
+    );
     assert!(result.output.contains("2 lines"), "got {}", result.output);
 }
 
@@ -146,7 +164,9 @@ async fn a_binary_file_is_refused_rather_than_mangled() {
     let fixture = Fixture::new();
     std::fs::write(fixture.root.join("data.bin"), [0u8, 1, 2, 3, 0, 5]).unwrap();
 
-    let result = fixture.call("read", json!({ "filePath": "data.bin" })).await;
+    let result = fixture
+        .call("read", json!({ "filePath": "data.bin" }))
+        .await;
     assert!(!result.ok);
     assert!(result.output.contains("binary"), "got {}", result.output);
 }
@@ -158,7 +178,9 @@ async fn binary_content_is_detected_by_sniffing() {
     let fixture = Fixture::new();
     std::fs::write(fixture.root.join("sneaky.txt"), [b'a', 0, b'b', 0]).unwrap();
 
-    let result = fixture.call("read", json!({ "filePath": "sneaky.txt" })).await;
+    let result = fixture
+        .call("read", json!({ "filePath": "sneaky.txt" }))
+        .await;
     assert!(!result.ok);
     assert!(result.output.contains("binary"));
 }
@@ -286,7 +308,10 @@ async fn a_file_just_written_can_be_edited_immediately() {
     let fixture = Fixture::new();
 
     fixture
-        .call("write", json!({ "filePath": "a.txt", "content": "hello world\n" }))
+        .call(
+            "write",
+            json!({ "filePath": "a.txt", "content": "hello world\n" }),
+        )
         .await;
     let result = fixture
         .call(
@@ -332,7 +357,11 @@ async fn an_ambiguous_edit_is_refused_with_a_usable_message() {
         .await;
 
     assert!(!result.ok);
-    assert!(result.output.contains("Found 2 matches"), "got {}", result.output);
+    assert!(
+        result.output.contains("Found 2 matches"),
+        "got {}",
+        result.output
+    );
     // Unchanged: ambiguity never resolves by picking one.
     assert_eq!(fixture.read_file("a.txt"), "x = 1\nx = 1\n");
 }
@@ -412,7 +441,11 @@ async fn editing_a_missing_file_reports_it_as_missing() {
         .await;
 
     assert!(!result.ok);
-    assert!(result.output.contains("does not exist"), "got {}", result.output);
+    assert!(
+        result.output.contains("does not exist"),
+        "got {}",
+        result.output
+    );
 }
 
 // ── the permission surface ──────────────────────────────────────────────
@@ -421,9 +454,13 @@ async fn editing_a_missing_file_reports_it_as_missing() {
 /// should never imply approving a write.
 #[tokio::test]
 async fn reading_and_writing_ask_under_different_keys() {
-
     let state = Arc::new(ReadState::new());
-    let tools = file_tools(state, Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())));
+    let tools = file_tools(
+        state,
+        Arc::new(inertia_lsp::Lsp::with_launcher(
+            inertia_lsp::testing::fake_launcher(),
+        )),
+    );
     let args = json!({ "filePath": "a.txt" });
 
     let keys: Vec<String> = tools.iter().map(|t| t.permission(&args).key).collect();
@@ -450,7 +487,9 @@ async fn run_under(
         Arc::new(ReadState::new()),
         Arc::new(inertia_tools::Lists::new()),
         Arc::new(inertia_tools::builtin::Background::default()),
-        Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())),
+        Arc::new(inertia_lsp::Lsp::with_launcher(
+            inertia_lsp::testing::fake_launcher(),
+        )),
     ));
     let ctx = ToolContext {
         root: root.to_path_buf(),
@@ -477,21 +516,42 @@ async fn an_allowed_read_still_asks_before_leaving_the_working_folder() {
     let workspace = tempfile::tempdir().unwrap();
     let project = tempfile::tempdir().unwrap();
     let elsewhere = tempfile::tempdir().unwrap();
-    inertia_store::Layout::new(workspace.path()).scaffold().unwrap();
+    inertia_store::Layout::new(workspace.path())
+        .scaffold()
+        .unwrap();
     std::fs::write(elsewhere.path().join("id_rsa"), "private").unwrap();
     std::fs::write(project.path().join("notes.txt"), "mine").unwrap();
 
     let outside = elsewhere.path().join("id_rsa").display().to_string();
     for (tool, args) in [
         ("read", json!({ "filePath": outside })),
-        ("glob", json!({ "pattern": "*", "path": elsewhere.path().display().to_string() })),
-        ("grep", json!({ "pattern": "private", "path": elsewhere.path().display().to_string() })),
+        (
+            "glob",
+            json!({ "pattern": "*", "path": elsewhere.path().display().to_string() }),
+        ),
+        (
+            "grep",
+            json!({ "pattern": "private", "path": elsewhere.path().display().to_string() }),
+        ),
     ] {
-        let (result, gate) =
-            run_under(vec![allow("read")], workspace.path(), project.path(), tool, args).await;
+        let (result, gate) = run_under(
+            vec![allow("read")],
+            workspace.path(),
+            project.path(),
+            tool,
+            args,
+        )
+        .await;
         assert!(!result.ok, "{tool}: {}", result.output);
-        assert!(!result.output.contains("private"), "{tool}: {}", result.output);
-        assert!(gate.asked().iter().any(|r| r.key == "external_directory"), "{tool}");
+        assert!(
+            !result.output.contains("private"),
+            "{tool}: {}",
+            result.output
+        );
+        assert!(
+            gate.asked().iter().any(|r| r.key == "external_directory"),
+            "{tool}"
+        );
     }
 
     let (inside, gate) = run_under(
@@ -511,24 +571,53 @@ async fn an_allowed_read_still_asks_before_leaving_the_working_folder() {
 #[tokio::test]
 async fn the_workspace_secrets_rules_and_hooks_are_refused_whatever_the_rules_say() {
     let workspace = tempfile::tempdir().unwrap();
-    inertia_store::Layout::new(workspace.path()).scaffold().unwrap();
-    std::fs::write(workspace.path().join("secrets/secrets.json"), r#"{"KEY":"sk-test"}"#).unwrap();
+    inertia_store::Layout::new(workspace.path())
+        .scaffold()
+        .unwrap();
+    std::fs::write(
+        workspace.path().join("secrets/secrets.json"),
+        r#"{"KEY":"sk-test"}"#,
+    )
+    .unwrap();
     let everything = vec![allow("read"), allow("edit"), allow("external_directory")];
     let work = workspace.path().join("files/work");
-    let secrets = workspace.path().join("secrets/secrets.json").display().to_string();
+    let secrets = workspace
+        .path()
+        .join("secrets/secrets.json")
+        .display()
+        .to_string();
 
     for (tool, args) in [
         ("read", json!({ "filePath": secrets })),
         ("read", json!({ "filePath": "../../secrets/secrets.json" })),
-        ("write", json!({ "filePath": "../../settings/permissions.json", "content": "{}" })),
-        ("write", json!({ "filePath": "../../hooks/hooks.json", "content": "{}" })),
-        ("file_copy", json!({ "source": "../../secrets", "destination": "stolen" })),
+        (
+            "write",
+            json!({ "filePath": "../../settings/permissions.json", "content": "{}" }),
+        ),
+        (
+            "write",
+            json!({ "filePath": "../../hooks/hooks.json", "content": "{}" }),
+        ),
+        (
+            "file_copy",
+            json!({ "source": "../../secrets", "destination": "stolen" }),
+        ),
         ("file_delete", json!({ "path": "../..", "recursive": true })),
     ] {
-        let (result, _) =
-            run_under(everything.clone(), workspace.path(), &work, tool, args.clone()).await;
+        let (result, _) = run_under(
+            everything.clone(),
+            workspace.path(),
+            &work,
+            tool,
+            args.clone(),
+        )
+        .await;
         assert!(!result.ok, "{tool} {args}: {}", result.output);
-        assert!(!result.output.contains("sk-test"), "{tool}: {}", result.output);
+        assert!(
+            !result.output.contains("sk-test"),
+            "{tool}: {}",
+            result.output
+        );
     }
 
     // A search of the whole workspace walks past the secrets, not into them.
@@ -566,6 +655,10 @@ async fn a_remembered_command_does_not_carry_a_chained_one() {
         )
         .await;
         assert!(!result.ok, "{command}: {}", result.output);
-        assert!(result.output.contains("refused"), "{command}: {}", result.output);
+        assert!(
+            result.output.contains("refused"),
+            "{command}: {}",
+            result.output
+        );
     }
 }

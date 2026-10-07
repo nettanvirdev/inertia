@@ -79,7 +79,12 @@ pub struct Capabilities {
 impl Capabilities {
     /// Everything, which is what a folder of JSON files can do.
     pub const fn all() -> Self {
-        Self { list: true, remember: true, update: true, forget: true }
+        Self {
+            list: true,
+            remember: true,
+            update: true,
+            forget: true,
+        }
     }
 }
 
@@ -181,7 +186,10 @@ impl Local {
 
     /// The memories in force for a turn in this folder.
     pub fn in_scope(&self, rows: &[Value]) -> Vec<Value> {
-        let folder = self.project.as_ref().map(|p| p.to_string_lossy().to_string());
+        let folder = self
+            .project
+            .as_ref()
+            .map(|p| p.to_string_lossy().to_string());
         record::approved(record::applicable(rows, folder.as_deref()))
             .into_iter()
             .cloned()
@@ -249,7 +257,9 @@ impl Local {
     pub fn touch(&self, ids: &[String]) {
         let now = now_iso();
         for id in ids {
-            let Ok(layout) = self.home_of(id) else { continue };
+            let Ok(layout) = self.home_of(id) else {
+                continue;
+            };
             let used = collections::get(&layout, Collection::Memories, id)
                 .ok()
                 .flatten()
@@ -508,7 +518,9 @@ fn strip_location(record: &mut Value, scope: &str) {
 /// a memory - the tool, a capture pass, the screen - produces a record the
 /// screen can sort.
 fn stamp_used(record: &mut Value) {
-    let Some(map) = record.as_object_mut() else { return };
+    let Some(map) = record.as_object_mut() else {
+        return;
+    };
     if !map.get("lastUsedAt").is_some_and(Value::is_string) {
         map.insert("lastUsedAt".into(), Value::String(now_iso()));
     }
@@ -559,17 +571,22 @@ mod tests {
         assert_eq!(written.len(), 1, "one file, in the project");
 
         // And nothing in the workspace.
-        assert!(std::fs::read_dir(dir.path().join("workspace").join("memory"))
-            .map(|entries| entries.flatten().count())
-            .unwrap_or(0)
-            == 0);
+        assert!(
+            std::fs::read_dir(dir.path().join("workspace").join("memory"))
+                .map(|entries| entries.flatten().count())
+                .unwrap_or(0)
+                == 0
+        );
     }
 
     #[test]
     fn a_global_memory_stays_in_the_workspace() {
         let (dir, store) = store();
         store
-            .remember(&json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed" }), true)
+            .remember(
+                &json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed" }),
+                true,
+            )
             .expect("the memory is written");
 
         let held = std::fs::read_dir(dir.path().join("workspace").join("memory"))
@@ -639,7 +656,9 @@ mod tests {
 
         // And it is still editable where it lies, rather than being duplicated
         // into the project.
-        store.update("old", json!({ "body": "corrected" })).expect("updated");
+        store
+            .update("old", json!({ "body": "corrected" }))
+            .expect("updated");
         assert_eq!(record::text(&store.list()[0], "body"), "corrected");
         assert!(!folder.join(".inertia").join("memory").exists());
     }
@@ -648,10 +667,16 @@ mod tests {
     fn the_same_fact_twice_is_one_record() {
         let (_dir, store) = store();
         let first = store
-            .remember(&json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed", "tags": ["name"] }), true)
+            .remember(
+                &json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed", "tags": ["name"] }),
+                true,
+            )
             .expect("written");
         let again = store
-            .remember(&json!({ "title": "Call me Tanvir", "body": "Tanvir is fine", "tags": ["person"] }), true)
+            .remember(
+                &json!({ "title": "Call me Tanvir", "body": "Tanvir is fine", "tags": ["person"] }),
+                true,
+            )
             .expect("merged");
 
         assert_eq!(record::text(&first, "id"), record::text(&again, "id"));

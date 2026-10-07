@@ -70,7 +70,10 @@ fn asked(options: &Value) -> (String, Vec<String>) {
 }
 
 /// Read one profile, off the runtime thread.
-async fn harvest(source_id: &str, domains: Vec<String>) -> Result<(inertia_cookies::Source, inertia_cookies::Harvest), String> {
+async fn harvest(
+    source_id: &str,
+    domains: Vec<String>,
+) -> Result<(inertia_cookies::Source, inertia_cookies::Harvest), String> {
     let source = inertia_cookies::source_by_id(source_id)
         .ok_or_else(|| "That browser profile is no longer on this computer.".to_string())?;
     let reading = source.clone();
@@ -115,9 +118,9 @@ pub async fn preview_import_cookies(options: Value) -> Result<Value, String> {
     // Any live pane reaches the store; they all share one. A pane has to exist,
     // though, and the dialog is only reachable from inside one.
     let panes = crate::preview::Panes::global();
-    let webview = panes
-        .any_webview()
-        .ok_or_else(|| "The browser pane is not open, so there is nothing to sign in.".to_string())?;
+    let webview = panes.any_webview().ok_or_else(|| {
+        "The browser pane is not open, so there is nothing to sign in.".to_string()
+    })?;
 
     let mut imported = 0u32;
     let mut refused: std::collections::BTreeMap<String, u32> = Default::default();
@@ -132,7 +135,9 @@ pub async fn preview_import_cookies(options: Value) -> Result<Value, String> {
                 }
             },
             None => {
-                *refused.entry("the store gave it no host".to_string()).or_insert(0) += 1;
+                *refused
+                    .entry("the store gave it no host".to_string())
+                    .or_insert(0) += 1;
             }
         }
     }
@@ -172,7 +177,11 @@ fn shape(cookie: &inertia_cookies::Cookie) -> Option<tauri::webview::cookie::Coo
     }
 
     let mut built = Cookie::new(cookie.name.clone(), cookie.value.clone());
-    built.set_domain(if host.starts_with('.') { host.to_string() } else { bare.to_string() });
+    built.set_domain(if host.starts_with('.') {
+        host.to_string()
+    } else {
+        bare.to_string()
+    });
     built.set_path(if cookie.path.starts_with('/') {
         cookie.path.clone()
     } else {
@@ -217,8 +226,8 @@ pub async fn computer_import_cookies(
     let (provider, record) = crate::computers::running_machine(&state, &id)?;
     let handle = crate::computers::handle_of(&record);
 
-    let payload = serde_json::to_string(&json!({ "cookies": found.cookies }))
-        .map_err(|e| e.to_string())?;
+    let payload =
+        serde_json::to_string(&json!({ "cookies": found.cookies })).map_err(|e| e.to_string())?;
 
     provider
         .write_file(&handle, inject::SCRIPT, inject::PROGRAM)
@@ -265,7 +274,10 @@ pub async fn computer_import_cookies(
 
     if said.get("ok").and_then(Value::as_bool) != Some(true) {
         answer["ok"] = json!(false);
-        answer["reason"] = said.get("reason").cloned().unwrap_or_else(|| json!("failed"));
+        answer["reason"] = said
+            .get("reason")
+            .cloned()
+            .unwrap_or_else(|| json!("failed"));
         return Ok(answer);
     }
 
@@ -276,7 +288,10 @@ pub async fn computer_import_cookies(
         .unwrap_or_else(|| json!(found.cookies.len()));
     answer["failed"] = said.get("failed").cloned().unwrap_or_else(|| json!(0));
     answer["profiles"] = said.get("profiles").cloned().unwrap_or_else(|| json!(1));
-    answer["browserClosed"] = said.get("browserClosed").cloned().unwrap_or_else(|| json!(false));
+    answer["browserClosed"] = said
+        .get("browserClosed")
+        .cloned()
+        .unwrap_or_else(|| json!(false));
     Ok(answer)
 }
 
@@ -319,20 +334,30 @@ mod tests {
         use tauri::webview::cookie::SameSite;
         let built = shape(&cookie(".example.com", Some("strict"))).expect("a cookie");
         assert_eq!(built.secure(), Some(true));
-        assert_eq!(built.http_only(), Some(true), "an httpOnly session cookie is the whole point");
+        assert_eq!(
+            built.http_only(),
+            Some(true),
+            "an httpOnly session cookie is the whole point"
+        );
         assert_eq!(built.same_site(), Some(SameSite::Strict));
         assert!(built.expires().is_some());
     }
 
     #[test]
     fn a_same_site_the_store_did_not_say_is_left_unstated() {
-        assert_eq!(shape(&cookie(".example.com", None)).expect("a cookie").same_site(), None);
+        assert_eq!(
+            shape(&cookie(".example.com", None))
+                .expect("a cookie")
+                .same_site(),
+            None
+        );
     }
 
     /// What the dialog sends, in both of the shapes it can send it.
     #[test]
     fn the_domain_filter_is_read_from_text_or_from_a_list() {
-        let (id, domains) = asked(&json!({ "sourceId": "chrome:.", "domains": "github.com, .example.com" }));
+        let (id, domains) =
+            asked(&json!({ "sourceId": "chrome:.", "domains": "github.com, .example.com" }));
         assert_eq!(id, "chrome:.");
         assert_eq!(domains, vec!["github.com", "example.com"]);
 

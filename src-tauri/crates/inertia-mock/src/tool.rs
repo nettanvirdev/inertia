@@ -5,9 +5,7 @@
 //! implementation of it that could drift.
 
 use async_trait::async_trait;
-use inertia_core::tool::{
-    PermissionRequest, Tool, ToolContext, ToolOutcome, ToolSource,
-};
+use inertia_core::tool::{PermissionRequest, Tool, ToolContext, ToolOutcome, ToolSource};
 use parking_lot::Mutex;
 
 /// What the fake does when called.
@@ -123,9 +121,7 @@ impl Tool for MockTool {
         match &self.behaviour {
             Behaviour::Echo => Ok(ToolOutcome::text(args.to_string())),
             Behaviour::Output(text) => Ok(ToolOutcome::text(text.clone())),
-            Behaviour::Failure(message) => {
-                Err(inertia_core::Error::InvalidInput(message.clone()))
-            }
+            Behaviour::Failure(message) => Err(inertia_core::Error::InvalidInput(message.clone())),
             Behaviour::Fatal => Err(inertia_core::Error::Auth("no credentials".into())),
         }
     }

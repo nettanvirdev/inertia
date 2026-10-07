@@ -54,7 +54,9 @@ struct Shell {
 
 /// Is `name` runnable from PATH. Used once, to prefer pwsh.
 fn on_path(name: &str) -> bool {
-    let Some(path) = std::env::var_os("PATH") else { return false };
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
     let extensions: Vec<String> = if cfg!(windows) {
         std::env::var("PATHEXT")
             .unwrap_or_else(|_| ".EXE;.CMD;.BAT".to_string())
@@ -82,7 +84,12 @@ fn pick_shell() -> Shell {
         let modern = on_path("pwsh");
         return Shell {
             program: if modern { "pwsh" } else { "powershell.exe" }.to_string(),
-            name: if modern { "PowerShell 7 (pwsh)" } else { "Windows PowerShell 5.1" }.to_string(),
+            name: if modern {
+                "PowerShell 7 (pwsh)"
+            } else {
+                "Windows PowerShell 5.1"
+            }
+            .to_string(),
             modern,
             // -NonInteractive so a cmdlet that wants confirmation errors
             // instead of waiting forever; -NoProfile so the user's profile
@@ -158,7 +165,9 @@ fn wrap(command: &str) -> String {
     if !cfg!(windows) {
         return command.to_string();
     }
-    format!("{command}\nif ($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}")
+    format!(
+        "{command}\nif ($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}"
+    )
 }
 
 fn platform_name() -> &'static str {
@@ -436,7 +445,8 @@ impl Tool for ShellTool {
             // settings list.
             let shown = dir.to_string_lossy();
             let pattern = format!("{}/*", shown.trim_end_matches(['\\', '/']));
-            let request = PermissionRequest::new("external_directory", &pattern).with_always(&pattern);
+            let request =
+                PermissionRequest::new("external_directory", &pattern).with_always(&pattern);
             if !ctx.permissions.ask(&request).await?.is_allowed() {
                 return Err(Error::Denied(format!(
                     "`{cmd}` touches {shown}, outside the working folder, and that was not allowed."
@@ -444,7 +454,11 @@ impl Tool for ShellTool {
             }
         }
 
-        if args.get("background").and_then(Value::as_bool).unwrap_or(false) {
+        if args
+            .get("background")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
             return self.run_detached(cmd, &cwd);
         }
         self.run_and_wait(cmd, &cwd, &args, &warnings).await
@@ -626,7 +640,9 @@ async fn absorb<R: tokio::io::AsyncRead + Unpin>(buffer: Arc<Mutex<String>>, mut
     loop {
         match reader.read(&mut chunk).await {
             Ok(0) | Err(_) => break,
-            Ok(n) => buffer.lock().push_str(&String::from_utf8_lossy(&chunk[..n])),
+            Ok(n) => buffer
+                .lock()
+                .push_str(&String::from_utf8_lossy(&chunk[..n])),
         }
     }
 }
@@ -716,8 +732,14 @@ mod tests {
     #[test]
     fn the_label_carries_the_danger() {
         let (tool, _) = tools();
-        assert!(tool.render(&json!({ "command": "rm -rf /" })).unwrap().contains("filesystem"));
-        assert_eq!(tool.render(&json!({ "command": "npm test" })).as_deref(), Some("npm test"));
+        assert!(tool
+            .render(&json!({ "command": "rm -rf /" }))
+            .unwrap()
+            .contains("filesystem"));
+        assert_eq!(
+            tool.render(&json!({ "command": "npm test" })).as_deref(),
+            Some("npm test")
+        );
     }
 
     #[test]
@@ -736,7 +758,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let (tool, _) = tools();
         let out = tool
-            .execute(json!({ "command": say("hello from inertia") }), &ctx(dir.path(), Arc::new(MockGate::allow_all())))
+            .execute(
+                json!({ "command": say("hello from inertia") }),
+                &ctx(dir.path(), Arc::new(MockGate::allow_all())),
+            )
             .await
             .unwrap();
         assert!(out.output.contains("hello from inertia"), "{}", out.output);
@@ -753,7 +778,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let (tool, _) = tools();
         let out = tool
-            .execute(json!({ "command": exit_with(3) }), &ctx(dir.path(), Arc::new(MockGate::allow_all())))
+            .execute(
+                json!({ "command": exit_with(3) }),
+                &ctx(dir.path(), Arc::new(MockGate::allow_all())),
+            )
             .await
             .unwrap();
         assert!(out.output.contains("Exit code: 3"), "{}", out.output);
@@ -771,7 +799,11 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(out.output.contains("exceeding its 500 ms timeout"), "{}", out.output);
+        assert!(
+            out.output.contains("exceeding its 500 ms timeout"),
+            "{}",
+            out.output
+        );
         let meta = out.metadata.unwrap();
         assert_eq!(meta["timedOut"], true);
         assert!(meta["durationMs"].as_u64().unwrap() < 10_000);
@@ -782,7 +814,10 @@ mod tests {
         let gone = std::env::temp_dir().join("inertia-not-a-folder-9f3c1a");
         let (tool, _) = tools();
         let err = tool
-            .execute(json!({ "command": say("1") }), &ctx(&gone, Arc::new(MockGate::allow_all())))
+            .execute(
+                json!({ "command": say("1") }),
+                &ctx(&gone, Arc::new(MockGate::allow_all())),
+            )
             .await
             .unwrap_err()
             .to_string();
@@ -797,15 +832,25 @@ mod tests {
         std::fs::create_dir(dir.path().join("sub")).unwrap();
         let (tool, _) = tools();
         let gate = Arc::new(MockGate::allow_all());
-        let pwd = if cfg!(windows) { "(Get-Location).Path" } else { "pwd" };
+        let pwd = if cfg!(windows) {
+            "(Get-Location).Path"
+        } else {
+            "pwd"
+        };
         let out = tool
-            .execute(json!({ "command": pwd, "workdir": "sub" }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "command": pwd, "workdir": "sub" }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .unwrap();
         assert!(out.output.to_lowercase().contains("sub"), "{}", out.output);
 
         let err = tool
-            .execute(json!({ "command": pwd, "workdir": "nope" }), &ctx(dir.path(), gate))
+            .execute(
+                json!({ "command": pwd, "workdir": "nope" }),
+                &ctx(dir.path(), gate),
+            )
             .await
             .unwrap_err()
             .to_string();
@@ -821,7 +866,10 @@ mod tests {
         let (tool, _) = tools();
         let gate = Arc::new(MockGate::deny_all());
         let err = tool
-            .execute(json!({ "command": "rm -rf src" }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "command": "rm -rf src" }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .unwrap_err();
         assert!(matches!(err, Error::Denied(_)), "{err}");
@@ -832,13 +880,20 @@ mod tests {
 
         let gate = Arc::new(MockGate::deny_all());
         let err = tool
-            .execute(json!({ "command": "cat ../elsewhere/notes.txt" }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "command": "cat ../elsewhere/notes.txt" }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .unwrap_err();
         assert!(matches!(err, Error::Denied(_)), "{err}");
         let asked = gate.asked();
         assert_eq!(asked[0].key, "external_directory");
-        assert!(asked[0].target.ends_with("elsewhere/*"), "{}", asked[0].target);
+        assert!(
+            asked[0].target.ends_with("elsewhere/*"),
+            "{}",
+            asked[0].target
+        );
         assert_eq!(asked[0].always.as_deref(), Some(asked[0].target.as_str()));
     }
 
@@ -849,7 +904,10 @@ mod tests {
         let gate = Arc::new(MockGate::allow_all());
         let context = ctx(dir.path(), gate);
         let started = tool
-            .execute(json!({ "command": counting(), "background": true }), &context)
+            .execute(
+                json!({ "command": counting(), "background": true }),
+                &context,
+            )
             .await
             .unwrap();
         let meta = started.metadata.unwrap();
@@ -863,8 +921,15 @@ mod tests {
             background_tools(bg.clone()).try_into().ok().unwrap();
 
         let listed = list.execute(json!({}), &context).await.unwrap();
-        assert!(listed.output.contains(&pid.to_string()), "{}", listed.output);
-        assert!(listed.metadata.unwrap()["pids"].as_array().unwrap().contains(&json!(pid)));
+        assert!(
+            listed.output.contains(&pid.to_string()),
+            "{}",
+            listed.output
+        );
+        assert!(listed.metadata.unwrap()["pids"]
+            .as_array()
+            .unwrap()
+            .contains(&json!(pid)));
 
         let read = logs.execute(json!({ "pid": pid }), &context).await.unwrap();
         assert!(read.output.contains("line 1"), "{}", read.output);
@@ -877,7 +942,11 @@ mod tests {
 
         // Stopping a finished one forgets it; a second stop has nothing.
         kill.execute(json!({ "pid": pid }), &context).await.unwrap();
-        let err = kill.execute(json!({ "pid": pid }), &context).await.unwrap_err().to_string();
+        let err = kill
+            .execute(json!({ "pid": pid }), &context)
+            .await
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("shell_list"), "{err}");
     }
 
@@ -887,7 +956,10 @@ mod tests {
         let (tool, bg) = tools();
         let context = ctx(dir.path(), Arc::new(MockGate::allow_all()));
         let started = tool
-            .execute(json!({ "command": forever(), "background": true }), &context)
+            .execute(
+                json!({ "command": forever(), "background": true }),
+                &context,
+            )
             .await
             .unwrap();
         let pid = started.metadata.unwrap()["pid"].as_u64().unwrap();
@@ -920,7 +992,10 @@ mod tests {
         let mut set = background_tools(bg.clone());
         let write = set.remove(3);
         let logs = set.remove(1);
-        let typed = write.execute(json!({ "pid": pid, "input": "3001" }), &context).await.unwrap();
+        let typed = write
+            .execute(json!({ "pid": pid, "input": "3001" }), &context)
+            .await
+            .unwrap();
         assert!(typed.output.contains("Sent"));
         settle(2000).await;
 
@@ -929,8 +1004,14 @@ mod tests {
         assert!(after.output.contains("using 3001"), "{}", after.output);
 
         // It has exited by now, so a further write is refused rather than lost.
-        let err = write.execute(json!({ "pid": pid, "input": "more" }), &context).await.unwrap_err();
-        assert!(err.to_string().contains("No running background process"), "{err}");
+        let err = write
+            .execute(json!({ "pid": pid, "input": "more" }), &context)
+            .await
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("No running background process"),
+            "{err}"
+        );
     }
 
     #[tokio::test]

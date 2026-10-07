@@ -577,13 +577,25 @@ mod tests {
 
         let tool = InviteTool(seat(&layout, rooms.clone()));
         let out = tool
-            .execute(json!({ "agent": "Climate Scientist", "why": "the numbers" }), &ctx())
+            .execute(
+                json!({ "agent": "Climate Scientist", "why": "the numbers" }),
+                &ctx(),
+            )
             .await
             .expect("the tool ran");
 
-        assert_eq!(out.metadata.as_ref().and_then(|m| m.get("joined")), Some(&json!("b")));
+        assert_eq!(
+            out.metadata.as_ref().and_then(|m| m.get("joined")),
+            Some(&json!("b"))
+        );
         rooms.spoke("t1", "a", &[]);
-        assert_eq!(rooms.seated("t1").and_then(|(active, _, _)| active).as_deref(), Some("b"));
+        assert_eq!(
+            rooms
+                .seated("t1")
+                .and_then(|(active, _, _)| active)
+                .as_deref(),
+            Some("b")
+        );
     }
 
     #[tokio::test]
@@ -595,10 +607,16 @@ mod tests {
         let tool = InviteTool(seat(&layout, rooms));
         // `@climate-scientist` is exactly what the room section writes.
         let out = tool
-            .execute(json!({ "agent": "@climate-scientist", "why": "ask them" }), &ctx())
+            .execute(
+                json!({ "agent": "@climate-scientist", "why": "ask them" }),
+                &ctx(),
+            )
             .await
             .expect("the tool ran");
-        assert_eq!(out.metadata.and_then(|m| m.get("joined").cloned()), Some(json!("b")));
+        assert_eq!(
+            out.metadata.and_then(|m| m.get("joined").cloned()),
+            Some(json!("b"))
+        );
     }
 
     #[tokio::test]
@@ -615,7 +633,10 @@ mod tests {
             .execute(json!({ "agent": "b.json", "why": "the numbers" }), &ctx())
             .await
             .expect("the tool ran");
-        assert_eq!(out.metadata.and_then(|m| m.get("joined").cloned()), Some(json!("b")));
+        assert_eq!(
+            out.metadata.and_then(|m| m.get("joined").cloned()),
+            Some(json!("b"))
+        );
     }
 
     #[tokio::test]
@@ -686,6 +707,9 @@ mod tests {
                 ..Default::default()
             },
         );
-        assert_eq!(locked.iter().map(|t| t.id()).collect::<Vec<_>>(), vec!["part"]);
+        assert_eq!(
+            locked.iter().map(|t| t.id()).collect::<Vec<_>>(),
+            vec!["part"]
+        );
     }
 }

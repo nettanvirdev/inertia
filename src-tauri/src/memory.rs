@@ -38,7 +38,10 @@ pub struct ModelPass {
 
 impl ModelPass {
     pub fn new(settings: Arc<inertia_store::Settings>, model_ref: String) -> Self {
-        Self { settings, model_ref }
+        Self {
+            settings,
+            model_ref,
+        }
     }
 }
 
@@ -77,7 +80,9 @@ impl Complete for ModelPass {
 /// never a precondition for this one, so everything here that could fail is
 /// allowed to and says nothing.
 pub fn arm(state: &AppState, thread_id: &str, history: &[Entry], model_ref: &str) {
-    let Ok(settings) = state.memory_settings() else { return };
+    let Ok(settings) = state.memory_settings() else {
+        return;
+    };
     if !settings.enabled || settings.capture == "off" {
         return;
     }

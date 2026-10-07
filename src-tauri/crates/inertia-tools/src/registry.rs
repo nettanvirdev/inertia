@@ -166,7 +166,10 @@ impl ToolRegistry for Registry {
             // only for certain arguments stays visible, because the model can
             // still call it correctly for everything else.
             let key = tool.permission(&serde_json::Value::Null).key;
-            if self.permissions.verdict(&key, inertia_core::permission::ANY).await
+            if self
+                .permissions
+                .verdict(&key, inertia_core::permission::ANY)
+                .await
                 == Action::Deny
             {
                 continue;
@@ -267,7 +270,11 @@ impl ToolRegistry for Registry {
                     title: outcome.title.or_else(|| tool.render(&args)),
                     output: capped.output,
                     metadata,
-                    images: outcome.images.into_iter().filter(|s| !s.is_empty()).collect(),
+                    images: outcome
+                        .images
+                        .into_iter()
+                        .filter(|s| !s.is_empty())
+                        .collect(),
                     duration_ms: elapsed(started),
                 })
             }

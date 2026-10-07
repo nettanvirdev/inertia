@@ -14,7 +14,10 @@ use tauri::{Emitter, Manager};
 /// beats shipping it as a Tauri resource next to the exe: what people download
 /// has to be one self-contained file, and a resource sitting beside it is one
 /// more thing to lose between here and a machine.
-const PAYLOAD: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/payload.exe"));
+const PAYLOAD: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/resources/payload.exe"
+));
 
 const PRODUCT_NAME: &str = env!("APP_PRODUCT_NAME");
 const APP_VERSION: &str = env!("APP_VERSION");

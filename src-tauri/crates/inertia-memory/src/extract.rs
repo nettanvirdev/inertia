@@ -158,7 +158,11 @@ pub fn build_prompt(
     ];
 
     let own = instructions.trim();
-    parts.push(if own.is_empty() { DEFAULT_INSTRUCTIONS.into() } else { own.into() });
+    parts.push(if own.is_empty() {
+        DEFAULT_INSTRUCTIONS.into()
+    } else {
+        own.into()
+    });
 
     if let Some(folder) = folder.filter(|f| !f.is_empty()) {
         parts.push(format!("The project is at {folder}."));
@@ -176,7 +180,9 @@ pub fn build_prompt(
     }
 
     if !note.trim().is_empty() {
-        parts.push(format!("The current handover note, to be replaced:\n\n{note}"));
+        parts.push(format!(
+            "The current handover note, to be replaced:\n\n{note}"
+        ));
     }
 
     parts.push(FORMAT.into());
@@ -197,7 +203,10 @@ pub fn build_prompt(
         transcript.to_string()
     };
 
-    Prompt { system: parts.join("\n\n"), text }
+    Prompt {
+        system: parts.join("\n\n"),
+        text,
+    }
 }
 
 /// The first JSON object in a reply, tolerating a fence or a sentence around it.
@@ -287,7 +296,10 @@ pub fn harvest(
             .filter(|id| !id.is_empty() && existing_ids.contains(*id))
             .map(str::to_string);
 
-        out.push(Harvested { record: built, replaces });
+        out.push(Harvested {
+            record: built,
+            replaces,
+        });
     }
     out
 }
@@ -335,7 +347,10 @@ mod tests {
 
     #[test]
     fn what_is_already_known_is_listed_so_it_is_not_written_twice() {
-        let known = vec![Known { id: "a".into(), title: "Deploys go to fly.io".into() }];
+        let known = vec![Known {
+            id: "a".into(),
+            title: "Deploys go to fly.io".into(),
+        }];
         let prompt = build_prompt("hi", "", &known, "", Some("D:/work/api"));
         assert!(prompt.system.contains("- a: Deploys go to fly.io"));
         assert!(prompt.system.contains("The project is at D:/work/api."));

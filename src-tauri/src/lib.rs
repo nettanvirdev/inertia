@@ -414,8 +414,12 @@ impl notify::LoginItem for Autostart {
     fn set(&self, on: bool) -> Result<(), String> {
         use tauri_plugin_autostart::ManagerExt;
         let manager = self.0.autolaunch();
-        if on { manager.enable() } else { manager.disable() }
-            .map_err(|e| format!("The system refused to change what starts at login: {e}"))
+        if on {
+            manager.enable()
+        } else {
+            manager.disable()
+        }
+        .map_err(|e| format!("The system refused to change what starts at login: {e}"))
     }
 }
 

@@ -173,7 +173,11 @@ impl ToolResult {
     }
 
     /// A failure the model should read and respond to.
-    pub fn failed(call_id: ToolCallId, tool: impl Into<String>, message: impl Into<String>) -> Self {
+    pub fn failed(
+        call_id: ToolCallId,
+        tool: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
         Self {
             call_id,
             tool: tool.into(),

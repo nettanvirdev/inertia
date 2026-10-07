@@ -522,7 +522,12 @@ mod tests {
     #[test]
     fn two_skills_with_one_name_are_advertised_by_folder() {
         let (_dir, layout) = workspace();
-        write_skill(&layout, "deploy-api", &["name: Deploy", "description: API"], "A.");
+        write_skill(
+            &layout,
+            "deploy-api",
+            &["name: Deploy", "description: API"],
+            "A.",
+        );
         let names: Vec<String> = advertised(&layout).into_iter().map(|s| s.name).collect();
         assert_eq!(names, vec!["deploy", "deploy-api"]);
     }
@@ -556,9 +561,16 @@ mod tests {
         let (_dir, layout) = workspace();
         let out = load(&layout, "Deploy").await.expect("the skill loaded");
 
-        assert!(out.output.starts_with("<skill name=\"Deploy\">\nRun the pipeline."), "{}", out.output);
+        assert!(
+            out.output
+                .starts_with("<skill name=\"Deploy\">\nRun the pipeline."),
+            "{}",
+            out.output
+        );
         let dir = layout.collection_dir(Collection::Skills).join("deploy");
-        assert!(out.output.contains(&format!("The folder for this skill is {}", dir.display())));
+        assert!(out
+            .output
+            .contains(&format!("The folder for this skill is {}", dir.display())));
         assert_eq!(out.title.as_deref(), Some("Loaded Deploy"));
 
         let metadata = out.metadata.expect("metadata");
@@ -606,7 +618,10 @@ mod tests {
     async fn a_disabled_skill_is_turned_off_not_missing() {
         let (_dir, layout) = workspace();
         let text = message(load(&layout, "archive").await);
-        assert_eq!(text, "The skill Archive is turned off. The user can enable it in Skills.");
+        assert_eq!(
+            text,
+            "The skill Archive is turned off. The user can enable it in Skills."
+        );
     }
 
     #[tokio::test]
@@ -624,17 +639,38 @@ mod tests {
         // Two folders, one written name, and the name is nobody's folder id -
         // which is what makes it genuinely ambiguous. A name that also spells a
         // folder is not ambiguous at all: the id wins, as the next test says.
-        write_skill(&layout, "ship-web", &["name: Ship", "description: d"], "Web.");
-        write_skill(&layout, "ship-api", &["name: Ship", "description: d"], "Api.");
+        write_skill(
+            &layout,
+            "ship-web",
+            &["name: Ship", "description: d"],
+            "Web.",
+        );
+        write_skill(
+            &layout,
+            "ship-api",
+            &["name: Ship", "description: d"],
+            "Api.",
+        );
         let text = message(load(&layout, "Ship").await);
-        assert!(text.contains("ship-web") && text.contains("ship-api"), "{text}");
-        assert!(text.starts_with("More than one skill is called Ship."), "{text}");
+        assert!(
+            text.contains("ship-web") && text.contains("ship-api"),
+            "{text}"
+        );
+        assert!(
+            text.starts_with("More than one skill is called Ship."),
+            "{text}"
+        );
     }
 
     #[tokio::test]
     async fn the_folder_name_wins_when_it_is_also_another_skills_written_name() {
         let (_dir, layout) = workspace();
-        write_skill(&layout, "other", &["name: deploy", "description: d"], "By name.");
+        write_skill(
+            &layout,
+            "other",
+            &["name: deploy", "description: d"],
+            "By name.",
+        );
         let out = load(&layout, "deploy").await.expect("the skill loaded");
         assert!(out.output.contains("Run the pipeline."), "{}", out.output);
     }
@@ -656,7 +692,12 @@ mod tests {
         .expect("file");
 
         let out = load(&layout, "deploy").await.expect("the skill loaded");
-        assert!(out.output.contains("<skill_files>\n  scripts/check.py\n  checklist.md\n</skill_files>"), "{}", out.output);
+        assert!(
+            out.output
+                .contains("<skill_files>\n  scripts/check.py\n  checklist.md\n</skill_files>"),
+            "{}",
+            out.output
+        );
         assert!(!out.output.contains("  SKILL.md"));
         assert!(!out.output.contains("loose.txt"));
         assert_eq!(
@@ -673,9 +714,15 @@ mod tests {
             std::fs::write(dir.join(format!("file-{n:02}.txt")), "x").expect("file");
         }
         let out = load(&layout, "deploy").await.expect("the skill loaded");
-        assert!(out.output.contains("  ...and 5 more, not listed"), "{}", out.output);
+        assert!(
+            out.output.contains("  ...and 5 more, not listed"),
+            "{}",
+            out.output
+        );
         assert_eq!(
-            out.metadata.expect("metadata")["files"].as_array().map(Vec::len),
+            out.metadata.expect("metadata")["files"]
+                .as_array()
+                .map(Vec::len),
             Some(MAX_FILES)
         );
     }
@@ -688,22 +735,39 @@ mod tests {
         write_skill(
             &layout,
             "picky",
-            &["name: Picky", "description: d", "allowed-tools: read, shell"],
+            &[
+                "name: Picky",
+                "description: d",
+                "allowed-tools: read, shell",
+            ],
             "P.",
         );
         let out = load(&layout, "picky").await.expect("the skill loaded");
-        assert!(out.output.contains("carried out with these tools: read, shell."), "{}", out.output);
+        assert!(
+            out.output
+                .contains("carried out with these tools: read, shell."),
+            "{}",
+            out.output
+        );
         assert!(out.output.contains("permission rules are unchanged"));
 
         // The list spelling, and the camel-case key, both count.
         write_skill(
             &layout,
             "listed",
-            &["name: Listed", "description: d", "allowedTools: [glob, grep]"],
+            &[
+                "name: Listed",
+                "description: d",
+                "allowedTools: [glob, grep]",
+            ],
             "L.",
         );
         let out = load(&layout, "listed").await.expect("the skill loaded");
-        assert!(out.output.contains("these tools: glob, grep."), "{}", out.output);
+        assert!(
+            out.output.contains("these tools: glob, grep."),
+            "{}",
+            out.output
+        );
     }
 
     #[tokio::test]
@@ -717,7 +781,8 @@ mod tests {
         );
         let out = load(&layout, "odd").await.expect("the skill loaded");
         assert!(
-            out.output.starts_with("<skill name=\"The &quot;big&quot; &lt;one&gt;\">"),
+            out.output
+                .starts_with("<skill name=\"The &quot;big&quot; &lt;one&gt;\">"),
             "{}",
             out.output
         );
@@ -728,7 +793,12 @@ mod tests {
         // Skill names and tool ids are separate namespaces: a skill is only
         // ever reached through this tool, by name.
         let (_dir, layout) = workspace();
-        write_skill(&layout, "shell", &["name: shell", "description: d"], "Not the tool.");
+        write_skill(
+            &layout,
+            "shell",
+            &["name: shell", "description: d"],
+            "Not the tool.",
+        );
         let tool = skill_tool(layout.clone());
         assert_eq!(tool.id(), "skill");
         let out = load(&layout, "shell").await.expect("the skill loaded");

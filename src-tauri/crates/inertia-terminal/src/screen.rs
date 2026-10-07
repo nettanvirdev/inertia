@@ -610,6 +610,8 @@ mod tests {
             s.write(&format!("line {i}\r\n"));
         }
         assert!(s.lines.len() <= SCROLLBACK_LINES + 8, "{}", s.lines.len());
-        assert!(s.text().contains(&format!("line {}", SCROLLBACK_LINES + 199)));
+        assert!(s
+            .text()
+            .contains(&format!("line {}", SCROLLBACK_LINES + 199)));
     }
 }

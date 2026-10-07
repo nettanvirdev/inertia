@@ -63,7 +63,9 @@ pub async fn check(ctx: &ToolContext, path: &Path) -> Result<()> {
     let dir = if real.is_dir() {
         real.clone()
     } else {
-        real.parent().map(Path::to_path_buf).unwrap_or_else(|| real.clone())
+        real.parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| real.clone())
     };
     let pattern = format!("{}/*", dir.to_string_lossy().trim_end_matches(['\\', '/']));
     let request = PermissionRequest::new("external_directory", &pattern).with_always(&pattern);
@@ -110,7 +112,13 @@ fn is_project_hooks(real: &Path) -> bool {
         .take(2)
         .map(|part| part.as_os_str().to_string_lossy().to_string())
         .collect();
-    let same = |a: &str, b: &str| if cfg!(windows) { a.eq_ignore_ascii_case(b) } else { a == b };
+    let same = |a: &str, b: &str| {
+        if cfg!(windows) {
+            a.eq_ignore_ascii_case(b)
+        } else {
+            a == b
+        }
+    };
     tail.len() == 2 && same(&tail[1], PROJECT_HOOKS[0]) && same(&tail[0], PROJECT_HOOKS[1])
 }
 
@@ -147,7 +155,9 @@ impl Fence {
     /// Is `real` in the workspace's `files/` folder, which every
     /// conversation shares?
     fn shares(&self, real: &Path) -> bool {
-        self.shared.as_ref().is_some_and(|files| is_within(files, real))
+        self.shared
+            .as_ref()
+            .is_some_and(|files| is_within(files, real))
     }
 }
 
@@ -205,9 +215,15 @@ mod tests {
             "../../hooks/hooks.json",
             "../../hooks",
         ] {
-            assert!(matches!(reach(&ctx, place).await, Err(Error::Denied(_))), "{place}");
+            assert!(
+                matches!(reach(&ctx, place).await, Err(Error::Denied(_))),
+                "{place}"
+            );
         }
-        assert!(gate.asked().is_empty(), "nobody may be asked about it either");
+        assert!(
+            gate.asked().is_empty(),
+            "nobody may be asked about it either"
+        );
         assert!(reach(&ctx, "../../settings/app.json").await.is_ok());
     }
 
@@ -218,7 +234,10 @@ mod tests {
         let f = fixture();
         let gate = Arc::new(MockGate::allow_all().guarding(&f.workspace));
         let ctx = ctx(&f.project, gate);
-        assert!(matches!(reach(&ctx, ".inertia/hooks.json").await, Err(Error::Denied(_))));
+        assert!(matches!(
+            reach(&ctx, ".inertia/hooks.json").await,
+            Err(Error::Denied(_))
+        ));
         assert!(reach(&ctx, ".inertia/rules/style.md").await.is_ok());
         assert!(reach(&ctx, "hooks.json").await.is_ok());
     }
@@ -228,18 +247,25 @@ mod tests {
         let f = fixture();
         let gate = Arc::new(MockGate::allow_all().guarding(&f.workspace));
         let ctx = ctx(&f.project, gate);
-        assert!(matches!(check_tree(&ctx, &f.workspace).await, Err(Error::Denied(_))));
+        assert!(matches!(
+            check_tree(&ctx, &f.workspace).await,
+            Err(Error::Denied(_))
+        ));
         assert!(check(&ctx, &f.workspace).await.is_ok());
     }
 
     #[tokio::test]
     async fn outside_the_working_folder_asks_once_per_folder() {
         let f = fixture();
-        let gate = Arc::new(MockGate::new(Policy::Scripted(vec![Decision::Deny])).guarding(&f.workspace));
+        let gate =
+            Arc::new(MockGate::new(Policy::Scripted(vec![Decision::Deny])).guarding(&f.workspace));
         let ctx = ctx(&f.project, gate.clone());
 
         assert!(reach(&ctx, "src/main.rs").await.is_ok());
-        assert!(gate.asked().is_empty(), "the working folder is not asked about");
+        assert!(
+            gate.asked().is_empty(),
+            "the working folder is not asked about"
+        );
 
         let file = f.outside.join("id_rsa");
         assert!(matches!(

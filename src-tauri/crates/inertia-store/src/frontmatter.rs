@@ -241,7 +241,9 @@ pub fn parse(text: &str) -> Document {
         if let (Some(item), Some(open)) = (list_item(line), block.as_ref()) {
             // The first `- ` decides the shape. Until one arrives an open key
             // is an empty map, because that is what an indented map would need.
-            let entry = meta.entry(open.clone()).or_insert_with(|| Value::List(vec![]));
+            let entry = meta
+                .entry(open.clone())
+                .or_insert_with(|| Value::List(vec![]));
             if !matches!(entry, Value::List(_)) {
                 *entry = Value::List(vec![]);
             }
@@ -256,7 +258,9 @@ pub fn parse(text: &str) -> Document {
 
         if line.starts_with([' ', '\t']) {
             if let Some(open) = block.as_ref() {
-                let entry = meta.entry(open.clone()).or_insert_with(|| Value::Map(BTreeMap::new()));
+                let entry = meta
+                    .entry(open.clone())
+                    .or_insert_with(|| Value::Map(BTreeMap::new()));
                 if matches!(entry, Value::List(_)) {
                     continue;
                 }
@@ -324,7 +328,8 @@ fn split_fences(source: &str) -> Option<(&str, &str)> {
 fn strip_fence_line(source: &str) -> Option<&str> {
     let rest = source.strip_prefix("---")?;
     let rest = rest.trim_start_matches([' ', '\t']);
-    rest.strip_prefix("\r\n").or_else(|| rest.strip_prefix('\n'))
+    rest.strip_prefix("\r\n")
+        .or_else(|| rest.strip_prefix('\n'))
 }
 
 /// `1.0` prints as `1`, so a round trip does not turn an integer into a float.
@@ -359,7 +364,11 @@ fn format_scalar(value: &Value) -> String {
     match value {
         Value::List(items) => format!(
             "[{}]",
-            items.iter().map(format_scalar).collect::<Vec<_>>().join(", ")
+            items
+                .iter()
+                .map(format_scalar)
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
         Value::Bool(b) => b.to_string(),
         Value::Number(n) => format_number(*n),

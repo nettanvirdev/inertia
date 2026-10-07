@@ -124,7 +124,9 @@ fn dpapi_unprotect(blob: &[u8]) -> std::result::Result<Vec<u8>, String> {
 
     if let Some(mut stdin) = child.stdin.take() {
         let payload = base64::engine::general_purpose::STANDARD.encode(blob);
-        stdin.write_all(payload.as_bytes()).map_err(|e| e.to_string())?;
+        stdin
+            .write_all(payload.as_bytes())
+            .map_err(|e| e.to_string())?;
     }
 
     let output = child.wait_with_output().map_err(|e| e.to_string())?;
@@ -211,7 +213,11 @@ pub fn key_for(source: &Source) -> Key {
         };
         // Five bytes of `DPAPI` in front of the blob the operating system
         // understands.
-        let blob = if wrapped.starts_with(b"DPAPI") { &wrapped[5..] } else { &wrapped[..] };
+        let blob = if wrapped.starts_with(b"DPAPI") {
+            &wrapped[5..]
+        } else {
+            &wrapped[..]
+        };
         match dpapi_unprotect(blob) {
             Ok(key) => Key::Gcm(key),
             Err(why) => Key::Unavailable(format!(
@@ -239,7 +245,12 @@ pub fn strip_domain_hash<'a>(plain: &'a [u8], host: &str) -> &'a [u8] {
 ///
 /// Never an error: one unreadable cookie in eight hundred is a number in a
 /// summary, not the end of an import.
-pub fn decrypt_value(blob: &[u8], plain: &str, host: &str, key: &Key) -> std::result::Result<String, String> {
+pub fn decrypt_value(
+    blob: &[u8],
+    plain: &str,
+    host: &str,
+    key: &Key,
+) -> std::result::Result<String, String> {
     if blob.is_empty() {
         return Ok(plain.to_string());
     }
@@ -380,7 +391,8 @@ mod tests {
             blob.extend_from_slice(&cipher.encrypt(nonce, b"x".as_slice()).expect("sealed"));
             blob
         };
-        let why = decrypt_value(&blob, "", "example.com", &Key::Gcm(vec![2u8; 32])).expect_err("a reason");
+        let why = decrypt_value(&blob, "", "example.com", &Key::Gcm(vec![2u8; 32]))
+            .expect_err("a reason");
         assert!(why.contains("does not open it"), "{why}");
     }
 }

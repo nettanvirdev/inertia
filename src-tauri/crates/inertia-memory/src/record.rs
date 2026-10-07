@@ -103,12 +103,18 @@ pub fn scope_of(record: &Value) -> &str {
 }
 
 pub fn is_pinned(record: &Value) -> bool {
-    record.get("pinned").and_then(Value::as_bool).unwrap_or(false)
+    record
+        .get("pinned")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
 }
 
 /// Waiting for approval is not the same as being known.
 pub fn is_pending(record: &Value) -> bool {
-    record.get("pending").and_then(Value::as_bool).unwrap_or(false)
+    record
+        .get("pending")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
 }
 
 /* -- folders -------------------------------------------------------------- */
@@ -256,14 +262,20 @@ pub fn looks_secret(text: &str) -> bool {
     // A named field with a long opaque value after it, which is what a
     // hand-written config line looks like.
     let lower = text.to_lowercase();
-    for name in ["api_key", "api-key", "apikey", "secret", "token", "password", "passwd"] {
+    for name in [
+        "api_key", "api-key", "apikey", "secret", "token", "password", "passwd",
+    ] {
         for (at, _) in lower.match_indices(name) {
             let rest = &text[at + name.len()..];
             let rest = rest.trim_start_matches(['"', '\'']);
-            let Some(marker) = rest.find([':', '=']) else { continue };
+            let Some(marker) = rest.find([':', '=']) else {
+                continue;
+            };
             if rest[..marker].trim().is_empty()
                 && opaque_run(
-                    rest[marker + 1..].trim_start().trim_start_matches(['"', '\'']),
+                    rest[marker + 1..]
+                        .trim_start()
+                        .trim_start_matches(['"', '\'']),
                     16,
                     "_-/+.",
                 )
@@ -358,10 +370,7 @@ pub fn find_duplicate<'a>(records: &'a [Value], candidate: &Value) -> Option<&'a
 /// wiped the tags somebody had added, so a memory got worse every time it was
 /// confirmed.
 pub fn merged(previous: &Value, next: &Value) -> Value {
-    let mut out: Map<String, Value> = previous
-        .as_object()
-        .cloned()
-        .unwrap_or_default();
+    let mut out: Map<String, Value> = previous.as_object().cloned().unwrap_or_default();
     if let Some(fields) = next.as_object() {
         for (key, value) in fields {
             out.insert(key.clone(), value.clone());
@@ -442,10 +451,7 @@ mod tests {
 
     #[test]
     fn a_memory_waiting_for_approval_is_not_in_force() {
-        let records = [
-            json!({ "id": "a" }),
-            json!({ "id": "b", "pending": true }),
-        ];
+        let records = [json!({ "id": "a" }), json!({ "id": "b", "pending": true })];
         let live = approved(records.iter().collect());
         assert_eq!(live.len(), 1);
         assert_eq!(live[0]["id"], "a");
@@ -474,7 +480,9 @@ mod tests {
         assert!(looks_secret("xoxb-1234567890-abc"));
         assert!(looks_secret("AKIAIOSFODNN7EXAMPLE"));
         assert!(looks_secret("-----BEGIN RSA PRIVATE KEY-----"));
-        assert!(looks_secret("eyJhbGciOiJIUzI1.eyJzdWIiOiIxMjM.SflKxwRJSMeKKF2"));
+        assert!(looks_secret(
+            "eyJhbGciOiJIUzI1.eyJzdWIiOiIxMjM.SflKxwRJSMeKKF2"
+        ));
         assert!(looks_secret("api_key: 0123456789abcdefghij"));
         assert!(looks_secret(r#""token" = "0123456789abcdefghij""#));
     }
@@ -483,7 +491,9 @@ mod tests {
     fn what_a_memory_may_legitimately_say_about_a_secret() {
         // Saying where a key lives is the whole point of the credential-note
         // kind, and none of these may be refused.
-        assert!(!looks_secret("The Composio API key is in the secret store as COMPOSIO_API_KEY."));
+        assert!(!looks_secret(
+            "The Composio API key is in the secret store as COMPOSIO_API_KEY."
+        ));
         assert!(!looks_secret("sk-"));
         assert!(!looks_secret("Set the token in settings."));
     }
@@ -505,10 +515,15 @@ mod tests {
             json!({ "id": "b", "title": "Tests run with vitest", "body": "not jest" }),
         ];
         // The same title, punctuated differently.
-        let twin = find_duplicate(&records, &json!({ "title": "deploys go to fly.io!", "body": "x" }));
+        let twin = find_duplicate(
+            &records,
+            &json!({ "title": "deploys go to fly.io!", "body": "x" }),
+        );
         assert_eq!(twin.unwrap()["id"], "a");
 
-        assert!(find_duplicate(&records, &json!({ "title": "Something else", "body": "x" })).is_none());
+        assert!(
+            find_duplicate(&records, &json!({ "title": "Something else", "body": "x" })).is_none()
+        );
     }
 
     #[test]

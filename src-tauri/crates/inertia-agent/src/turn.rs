@@ -60,7 +60,8 @@ pub const DOOM_LOOP_KEY: &str = "doom_loop";
 /// tests first" after four hundred lines of its own reasoning treats it as a
 /// new request queued behind the old one, finishes what it was doing, and only
 /// then turns to it - which is the opposite of what someone interrupting means.
-pub const STEER_NOTE: &str = "The person you are talking to typed this while you were working, so it \
+pub const STEER_NOTE: &str =
+    "The person you are talking to typed this while you were working, so it \
 arrived in the middle of your turn rather than as a new request after it. \
 Their words follow, and they are about the job you are doing right now. \
 Read them against the plan you were following, change or abandon whatever \
@@ -735,8 +736,8 @@ mod steering_tests {
 
         // Minted first, the way the app registers a turn before it builds one.
         let steer = Steer::new();
-        let agent = Agent::new(provider.clone(), registry, gate, config())
-            .with_steering(steer.clone());
+        let agent =
+            Agent::new(provider.clone(), registry, gate, config()).with_steering(steer.clone());
         assert!(steer.send("said before the turn started"));
 
         let _ = agent.run(turn()).collect::<Vec<_>>().await;
@@ -745,7 +746,10 @@ mod steering_tests {
         assert!(user_texts(&requests[0])
             .iter()
             .any(|text| text.ends_with("said before the turn started")));
-        assert!(steer.is_closed(), "the turn must close the queue it was given");
+        assert!(
+            steer.is_closed(),
+            "the turn must close the queue it was given"
+        );
     }
 
     #[tokio::test]

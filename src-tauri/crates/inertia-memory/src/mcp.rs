@@ -205,8 +205,14 @@ pub fn decode(text: &str) -> Decoded {
         }
     }
 
-    let body = rest[end + 1..].strip_prefix('\n').unwrap_or(&rest[end + 1..]);
-    Decoded { body: body.to_string(), kind, folder }
+    let body = rest[end + 1..]
+        .strip_prefix('\n')
+        .unwrap_or(&rest[end + 1..]);
+    Decoded {
+        body: body.to_string(),
+        kind,
+        folder,
+    }
 }
 
 /* -- reading whatever the server sent ------------------------------------- */
@@ -220,7 +226,14 @@ pub fn rows_of(data: &Value) -> Vec<Value> {
     if let Some(rows) = data.as_array() {
         return rows.clone();
     }
-    for key in ["memories", "results", "items", "documents", "entities", "data"] {
+    for key in [
+        "memories",
+        "results",
+        "items",
+        "documents",
+        "entities",
+        "data",
+    ] {
         if let Some(rows) = data.get(key).and_then(Value::as_array) {
             return rows.clone();
         }
@@ -277,10 +290,14 @@ pub fn to_memory(row: &Value, server_id: &str) -> Option<Value> {
         Some(at) => body[..at].to_string(),
         None => body.lines().next().unwrap_or_default().to_string(),
     };
-    let title: String = if written.is_empty() { opening } else { written.clone() }
-        .chars()
-        .take(120)
-        .collect();
+    let title: String = if written.is_empty() {
+        opening
+    } else {
+        written.clone()
+    }
+    .chars()
+    .take(120)
+    .collect();
 
     let text = match split {
         Some(at) if written.is_empty() => body[at + 2..].to_string(),
@@ -384,7 +401,11 @@ impl Remote {
         backend: &str,
         record: Option<&Value>,
     ) -> Result<Self, String> {
-        let id = backend.strip_prefix(PREFIX).unwrap_or(backend).trim().to_string();
+        let id = backend
+            .strip_prefix(PREFIX)
+            .unwrap_or(backend)
+            .trim()
+            .to_string();
         if id.is_empty() {
             return Err("No memory server was chosen.".into());
         }
@@ -409,7 +430,12 @@ impl Remote {
             ));
         }
 
-        Ok(Self { server, id, label, jobs })
+        Ok(Self {
+            server,
+            id,
+            label,
+            jobs,
+        })
     }
 
     /// The tool that reads everything.
@@ -618,7 +644,12 @@ mod live {
             root: PathBuf,
             handle: Handle,
         ) -> Self {
-            Self { provider, id: server_id.into(), root, handle }
+            Self {
+                provider,
+                id: server_id.into(),
+                root,
+                handle,
+            }
         }
 
         /// The namespaced id the provider gives this server's tools.
@@ -711,7 +742,10 @@ mod tests {
         }
 
         fn unreachable(names: &[&str], why: &str) -> Self {
-            Self { broken: Some(why.to_string()), ..Self::with(names) }
+            Self {
+                broken: Some(why.to_string()),
+                ..Self::with(names)
+            }
         }
     }
 
@@ -777,7 +811,10 @@ mod tests {
 
     #[test]
     fn it_recognises_supermemory() {
-        let jobs = mapping(None, &advertised(&["search_memory", "add_memory", "listMemories"]));
+        let jobs = mapping(
+            None,
+            &advertised(&["search_memory", "add_memory", "listMemories"]),
+        );
         assert_eq!(jobs.list.as_deref(), Some("listMemories"));
         assert_eq!(jobs.recall.as_deref(), Some("search_memory"));
     }
@@ -786,7 +823,12 @@ mod tests {
     fn it_recognises_a_knowledge_graph_server() {
         let jobs = mapping(
             None,
-            &advertised(&["create_entities", "delete_entities", "search_nodes", "read_graph"]),
+            &advertised(&[
+                "create_entities",
+                "delete_entities",
+                "search_nodes",
+                "read_graph",
+            ]),
         );
         assert_eq!(jobs.list.as_deref(), Some("search_nodes"));
         assert_eq!(jobs.remember.as_deref(), Some("create_entities"));
@@ -825,7 +867,14 @@ mod tests {
     #[test]
     fn it_takes_the_shapes_servers_actually_wrap_rows_in() {
         assert_eq!(rows_of(&json!([{ "id": "1" }])).len(), 1);
-        for key in ["memories", "results", "items", "documents", "entities", "data"] {
+        for key in [
+            "memories",
+            "results",
+            "items",
+            "documents",
+            "entities",
+            "data",
+        ] {
             assert_eq!(rows_of(&json!({ key: [{ "id": "1" }] })).len(), 1, "{key}");
         }
     }
@@ -856,7 +905,10 @@ mod tests {
             json!({ "memory_id": "2", "content": "Uses pnpm." }),
             json!({ "uuid": "3", "text": "Uses pnpm." }),
         ] {
-            assert_eq!(record::text(&to_memory(&row, "s").expect("a memory"), "body"), "Uses pnpm.");
+            assert_eq!(
+                record::text(&to_memory(&row, "s").expect("a memory"), "body"),
+                "Uses pnpm."
+            );
         }
     }
 
@@ -872,7 +924,8 @@ mod tests {
     /// edit or delete the wrong record entirely.
     #[test]
     fn a_remote_id_cannot_shadow_a_local_one() {
-        let made = to_memory(&json!({ "id": "abc", "memory": "..." }), "server-1").expect("a memory");
+        let made =
+            to_memory(&json!({ "id": "abc", "memory": "..." }), "server-1").expect("a memory");
         assert_eq!(record::text(&made, "id"), "mcp:server-1:abc");
         assert_eq!(record::text(&made, "remoteId"), "abc");
         assert_eq!(record::text(&made, "origin"), "remote");
@@ -921,14 +974,19 @@ mod tests {
         .expect("a memory");
         assert_eq!(record::text(&back, "kind"), "fact");
         assert_eq!(record::text(&back, "scope"), "global");
-        assert_eq!(record::text(&back, "title"), "Something Claude Code saved yesterday");
+        assert_eq!(
+            record::text(&back, "title"),
+            "Something Claude Code saved yesterday"
+        );
     }
 
     #[test]
     fn a_multi_line_body_stays_whole() {
-        let back =
-            to_memory(&json!({ "id": "1", "memory": "A title\n\nLine one.\nLine two." }), "s1")
-                .expect("a memory");
+        let back = to_memory(
+            &json!({ "id": "1", "memory": "A title\n\nLine one.\nLine two." }),
+            "s1",
+        )
+        .expect("a memory");
         assert_eq!(record::text(&back, "title"), "A title");
         assert_eq!(record::text(&back, "body"), "Line one.\nLine two.");
     }
@@ -940,7 +998,10 @@ mod tests {
         assert_eq!(decode("no header here").body, "no header here");
         assert_eq!(decode("").body, "");
         // No closing bracket is not a header, so none of it is lost.
-        assert_eq!(decode("[inertia:kind=handover\nBody.").body, "[inertia:kind=handover\nBody.");
+        assert_eq!(
+            decode("[inertia:kind=handover\nBody.").body,
+            "[inertia:kind=handover\nBody."
+        );
     }
 
     /* -- the backend, end to end ------------------------------------------ */
@@ -948,8 +1009,8 @@ mod tests {
     #[test]
     fn a_server_with_no_reading_tool_is_refused_in_a_sentence() {
         let server = Arc::new(Fake::with(&["add_memory"]));
-        let why = Remote::open(server, "mcp:s1", Some(&json!({ "name": "Notes" })))
-            .expect_err("refused");
+        let why =
+            Remote::open(server, "mcp:s1", Some(&json!({ "name": "Notes" }))).expect_err("refused");
         assert!(why.starts_with("Notes does not offer a tool for reading memories"));
     }
 
@@ -964,8 +1025,10 @@ mod tests {
     fn a_stored_memory_comes_back_off_the_server() {
         let text = encode(&json!({ "title": "Uses pnpm", "body": "Not npm." }));
         let server = Arc::new(
-            Fake::with(&["list_memories", "add_memory", "delete_memory"])
-                .answering("list_memories", json!({ "memories": [{ "id": "7", "memory": text }] })),
+            Fake::with(&["list_memories", "add_memory", "delete_memory"]).answering(
+                "list_memories",
+                json!({ "memories": [{ "id": "7", "memory": text }] }),
+            ),
         );
         let remote = Remote::open(server, "mcp:s1", None).expect("opened");
 
@@ -992,11 +1055,18 @@ mod tests {
         let remote = Remote::open(server.clone(), "mcp:s1", None).expect("opened");
 
         let kept = remote
-            .remember(&json!({ "title": "Call me Tanvir", "body": "Tanvir is fine" }), true)
+            .remember(
+                &json!({ "title": "Call me Tanvir", "body": "Tanvir is fine" }),
+                true,
+            )
             .expect("answered");
         assert_eq!(record::text(&kept, "id"), "mcp:s1:7");
         // The server was read, and never written to.
-        assert!(server.calls.lock().iter().all(|(tool, _)| tool == "list_memories"));
+        assert!(server
+            .calls
+            .lock()
+            .iter()
+            .all(|(tool, _)| tool == "list_memories"));
     }
 
     #[test]
@@ -1013,7 +1083,10 @@ mod tests {
             .expect("answered");
 
         let calls = server.calls.lock();
-        let (_, args) = calls.iter().find(|(tool, _)| tool == "add_memory").expect("written");
+        let (_, args) = calls
+            .iter()
+            .find(|(tool, _)| tool == "add_memory")
+            .expect("written");
         let text = args["text"].as_str().expect("text");
         assert!(text.starts_with("[inertia:kind=handover; project=D:/api]\n"));
         // And the shape servers that model a conversation want, in the same call.
@@ -1034,16 +1107,23 @@ mod tests {
     fn an_unreachable_server_falls_back_to_local_memories_and_says_why() {
         let (_dir, local) = local_store();
         local
-            .remember(&json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed" }), true)
+            .remember(
+                &json!({ "title": "Call me Tanvir", "body": "not Mr Ahamed" }),
+                true,
+            )
             .expect("written locally");
 
         let server = Arc::new(Fake::unreachable(&["list_memories"], "The process exited."));
-        let remote = Remote::open(server, "mcp:s1", Some(&json!({ "name": "Notes" })))
-            .expect("opened");
+        let remote =
+            Remote::open(server, "mcp:s1", Some(&json!({ "name": "Notes" }))).expect("opened");
         let store = local.with_remote(Arc::new(remote));
 
         let rows = store.list();
-        assert_eq!(rows.len(), 1, "the workspace's own memories are used instead");
+        assert_eq!(
+            rows.len(),
+            1,
+            "the workspace's own memories are used instead"
+        );
         assert_eq!(record::text(&rows[0], "title"), "Call me Tanvir");
 
         let why = store.problem().expect("a note saying why");
@@ -1055,12 +1135,19 @@ mod tests {
     #[test]
     fn a_write_the_server_refuses_lands_in_the_workspace() {
         let (_dir, local) = local_store();
-        let server = Arc::new(Fake::unreachable(&["list_memories", "add_memory"], "Timed out."));
-        let store = local
-            .with_remote(Arc::new(Remote::open(server, "mcp:s1", None).expect("opened")));
+        let server = Arc::new(Fake::unreachable(
+            &["list_memories", "add_memory"],
+            "Timed out.",
+        ));
+        let store = local.with_remote(Arc::new(
+            Remote::open(server, "mcp:s1", None).expect("opened"),
+        ));
 
         let saved = store
-            .remember(&json!({ "title": "Deploys go to fly.io", "body": "never render" }), true)
+            .remember(
+                &json!({ "title": "Deploys go to fly.io", "body": "never render" }),
+                true,
+            )
             .expect("kept somewhere");
         assert!(!record::text(&saved, "id").starts_with(PREFIX));
         assert_eq!(store.list().len(), 1);
@@ -1079,7 +1166,10 @@ mod tests {
             .remember(&json!({ "title": "One", "body": "fact" }), true)
             .expect("written");
         assert_eq!(store.list().len(), 1);
-        assert!(store.problem().expect("a note").contains("not connected yet"));
+        assert!(store
+            .problem()
+            .expect("a note")
+            .contains("not connected yet"));
     }
 
     /// Once a server has failed, the rest of the turn does not wait on it again.

@@ -82,10 +82,7 @@ fn normalize(path: &Path) -> PathBuf {
             Component::CurDir => {}
             Component::ParentDir => {
                 // Popping past the root is a no-op, as it is for every shell.
-                if matches!(
-                    out.components().next_back(),
-                    Some(Component::Normal(_))
-                ) {
+                if matches!(out.components().next_back(), Some(Component::Normal(_))) {
                     out.pop();
                 }
             }
@@ -190,9 +187,8 @@ async fn prepare(args: &Value, ctx: &ToolContext, verb: &str) -> Result<Prepared
     }
 
     if let Some(parent) = target.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| {
-            refuse(format!("Could not create {}: {e}", parent.display()))
-        })?;
+        std::fs::create_dir_all(parent)
+            .map_err(|e| refuse(format!("Could not create {}: {e}", parent.display())))?;
     }
 
     Ok(Prepared {
@@ -642,7 +638,11 @@ mod tests {
         assert_eq!(out.title.as_deref(), Some("shot.png"));
         assert_eq!(
             out.output,
-            format!("Copied {} to {} (9 B).", display(&source), display(&destination))
+            format!(
+                "Copied {} to {} (9 B).",
+                display(&source),
+                display(&destination)
+            )
         );
     }
 
@@ -664,7 +664,10 @@ mod tests {
         assert!(inbox.join("notes.md").exists());
         assert!(!source.exists());
         assert!(out.output.starts_with("Moved "));
-        assert_eq!(out.metadata.unwrap()["path"], json!(display(&inbox.join("notes.md"))));
+        assert_eq!(
+            out.metadata.unwrap()["path"],
+            json!(display(&inbox.join("notes.md")))
+        );
     }
 
     #[tokio::test]
@@ -700,8 +703,14 @@ mod tests {
             .await
             .expect("the copy ran");
 
-        assert_eq!(std::fs::read_to_string(backup.join("a/one.txt")).unwrap(), "one");
-        assert_eq!(std::fs::read_to_string(backup.join("b/two.txt")).unwrap(), "two");
+        assert_eq!(
+            std::fs::read_to_string(backup.join("a/one.txt")).unwrap(),
+            "one"
+        );
+        assert_eq!(
+            std::fs::read_to_string(backup.join("b/two.txt")).unwrap(),
+            "two"
+        );
         let metadata = out.metadata.expect("metadata");
         assert_eq!(metadata["directory"], json!(true));
         assert_eq!(metadata["bytes"], json!(null));
@@ -736,7 +745,11 @@ mod tests {
             .expect("overwrite was asked for");
         assert_eq!(std::fs::read_to_string(&blocked).unwrap(), "new");
         assert_eq!(allowed.metadata.unwrap()["replaced"], json!(true));
-        assert!(allowed.output.ends_with(", replacing what was there."), "{}", allowed.output);
+        assert!(
+            allowed.output.ends_with(", replacing what was there."),
+            "{}",
+            allowed.output
+        );
     }
 
     #[tokio::test]
@@ -803,7 +816,10 @@ mod tests {
             )
             .await
             .expect_err("nothing there");
-        assert_eq!(message(err), format!("Nothing to move at {}", display(&ghost)));
+        assert_eq!(
+            message(err),
+            format!("Nothing to move at {}", display(&ghost))
+        );
     }
 
     #[tokio::test]
@@ -818,7 +834,10 @@ mod tests {
             .await
             .expect("the copy ran");
         assert!(dir.path().join("copy.txt").exists());
-        assert_eq!(out.metadata.unwrap()["path"], json!(display(&dir.path().join("copy.txt"))));
+        assert_eq!(
+            out.metadata.unwrap()["path"],
+            json!(display(&dir.path().join("copy.txt")))
+        );
     }
 
     #[tokio::test]
@@ -828,7 +847,10 @@ mod tests {
         let gate = Arc::new(MockGate::allow_all());
 
         let first = FileFolderTool
-            .execute(json!({ "path": display(&target) }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "path": display(&target) }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .expect("created");
         assert_eq!(first.metadata.unwrap()["created"], json!(true));
@@ -840,7 +862,10 @@ mod tests {
             .await
             .expect("already there is fine");
         assert_eq!(second.metadata.unwrap()["created"], json!(false));
-        assert_eq!(second.output, format!("{} already exists.", display(&target)));
+        assert_eq!(
+            second.output,
+            format!("{} already exists.", display(&target))
+        );
     }
 
     #[tokio::test]
@@ -864,7 +889,10 @@ mod tests {
         let gate = Arc::new(MockGate::allow_all());
 
         let out = FileDeleteTool
-            .execute(json!({ "path": display(&file) }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "path": display(&file) }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .expect("deleted");
 
@@ -883,7 +911,10 @@ mod tests {
         let gate = Arc::new(MockGate::allow_all());
 
         let refused = FileDeleteTool
-            .execute(json!({ "path": display(&out) }), &ctx(dir.path(), gate.clone()))
+            .execute(
+                json!({ "path": display(&out) }),
+                &ctx(dir.path(), gate.clone()),
+            )
             .await
             .expect_err("a folder without recursive");
         assert_eq!(
@@ -904,7 +935,10 @@ mod tests {
             .await
             .expect("deleted");
         assert!(!out.exists());
-        assert_eq!(done.output, format!("Deleted the folder {}.", display(&out)));
+        assert_eq!(
+            done.output,
+            format!("Deleted the folder {}.", display(&out))
+        );
         assert_eq!(done.metadata.unwrap()["directory"], json!(true));
 
         let sweep = gate
@@ -948,7 +982,10 @@ mod tests {
             )
             .await
             .expect_err("nothing there");
-        assert_eq!(message(err), format!("Nothing to delete at {}", display(&ghost)));
+        assert_eq!(
+            message(err),
+            format!("Nothing to delete at {}", display(&ghost))
+        );
     }
 
     // The permission descriptors are what rules are written against, so their
@@ -960,10 +997,16 @@ mod tests {
         assert_eq!(copy.always.as_deref(), Some("/b"));
 
         let folder = FileFolderTool.permission(&json!({ "path": "/c" }));
-        assert_eq!((folder.key.as_str(), folder.target.as_str()), ("edit", "/c"));
+        assert_eq!(
+            (folder.key.as_str(), folder.target.as_str()),
+            ("edit", "/c")
+        );
 
         let delete = FileDeleteTool.permission(&json!({ "path": "/d" }));
-        assert_eq!((delete.key.as_str(), delete.target.as_str()), ("edit", "/d"));
+        assert_eq!(
+            (delete.key.as_str(), delete.target.as_str()),
+            ("edit", "/d")
+        );
         assert_eq!(delete.always.as_deref(), Some("/d"));
     }
 
@@ -971,12 +1014,20 @@ mod tests {
     fn the_ids_and_labels_match_the_electron_tools() {
         let tools = manage_tools();
         let ids: Vec<&str> = tools.iter().map(|t| t.id()).collect();
-        assert_eq!(ids, vec!["file_copy", "file_move", "file_folder", "file_delete"]);
         assert_eq!(
-            FileMoveTool.render(&json!({ "source": "a", "destination": "b" })).as_deref(),
+            ids,
+            vec!["file_copy", "file_move", "file_folder", "file_delete"]
+        );
+        assert_eq!(
+            FileMoveTool
+                .render(&json!({ "source": "a", "destination": "b" }))
+                .as_deref(),
             Some("a to b")
         );
-        assert_eq!(FileDeleteTool.render(&json!({ "path": "x" })).as_deref(), Some("x"));
+        assert_eq!(
+            FileDeleteTool.render(&json!({ "path": "x" })).as_deref(),
+            Some("x")
+        );
     }
 
     #[test]

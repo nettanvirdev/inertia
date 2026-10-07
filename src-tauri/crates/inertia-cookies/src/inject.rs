@@ -226,7 +226,10 @@ mod tests {
     #[test]
     fn the_last_answer_wins() {
         let said = "INERTIA_COOKIES {\"written\":1}\nINERTIA_COOKIES {\"written\":2}\n";
-        assert_eq!(parse_result(said).expect("an answer")["written"], serde_json::json!(2));
+        assert_eq!(
+            parse_result(said).expect("an answer")["written"],
+            serde_json::json!(2)
+        );
     }
 
     /// The script deletes its own payload whatever happens. That is the line

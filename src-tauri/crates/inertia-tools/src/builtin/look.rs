@@ -83,7 +83,10 @@ fn walk(dir: &Path, prefix: &str, depth: usize, all: bool, out: &mut Vec<String>
 
     // Directories first, then alphabetical: the shape of a project reads off a
     // listing grouped that way and does not off a raw readdir order.
-    entries.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.to_lowercase().cmp(&b.0.to_lowercase())));
+    entries.sort_by(|a, b| {
+        b.1.cmp(&a.1)
+            .then_with(|| a.0.to_lowercase().cmp(&b.0.to_lowercase()))
+    });
 
     for (name, is_dir) in entries {
         if out.len() >= MAX_ENTRIES {
@@ -141,7 +144,12 @@ impl Tool for LsTool {
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        Some(args.get("path").and_then(Value::as_str).unwrap_or(".").to_string())
+        Some(
+            args.get("path")
+                .and_then(Value::as_str)
+                .unwrap_or(".")
+                .to_string(),
+        )
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
@@ -293,9 +301,8 @@ impl Tool for TodoTool {
             .cloned()
             .unwrap_or_default();
 
-        let status_is = |todo: &Value, want: &str| {
-            todo.get("status").and_then(Value::as_str) == Some(want)
-        };
+        let status_is =
+            |todo: &Value, want: &str| todo.get("status").and_then(Value::as_str) == Some(want);
 
         let running = todos.iter().filter(|t| status_is(t, "in_progress")).count();
         if running > 1 {
@@ -307,7 +314,7 @@ impl Tool for TodoTool {
 
         let list = Value::Array(todos.clone());
         self.0
-            .0
+             .0
             .lock()
             .insert(ctx.session.to_string(), list.clone());
 
@@ -324,7 +331,9 @@ impl Tool for TodoTool {
                 };
                 format!(
                     "[{mark}] {}",
-                    todo.get("content").and_then(Value::as_str).unwrap_or_default()
+                    todo.get("content")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
                 )
             })
             .collect::<Vec<_>>()
@@ -511,7 +520,9 @@ impl Tool for PresentPlanTool {
             body.push(format!(
                 "{}. {}{detail}",
                 i + 1,
-                step.get("title").and_then(Value::as_str).unwrap_or_default()
+                step.get("title")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
             ));
         }
         if !risks.is_empty() {
@@ -653,7 +664,10 @@ mod tests {
             .expect("the tool ran");
 
         assert_eq!(out.title.as_deref(), Some("1/3 done"));
-        assert_eq!(out.output, "[x] read the code\n[>] write the fix\n[ ] run the tests");
+        assert_eq!(
+            out.output,
+            "[x] read the code\n[>] write the fix\n[ ] run the tests"
+        );
         assert_eq!(lists.get("t1").as_array().map(Vec::len), Some(3));
     }
 

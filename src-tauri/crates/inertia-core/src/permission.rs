@@ -128,7 +128,10 @@ impl Verdict {
 /// arguments" is written - it is what approving `git status` remembers - and
 /// no arguments is one of the ways to call it.
 fn matches(pattern: &str, value: &str) -> bool {
-    if pattern.strip_suffix(" *").is_some_and(|bare| matches(bare, value)) {
+    if pattern
+        .strip_suffix(" *")
+        .is_some_and(|bare| matches(bare, value))
+    {
         return true;
     }
     let p: Vec<char> = pattern.chars().collect();
@@ -249,7 +252,10 @@ pub fn evaluate_shaped(rules: &[Rule], tool: &str, target: &str, shape: &Shape) 
     if whole.action == Action::Deny {
         return whole;
     }
-    let verdicts: Vec<Verdict> = parts.iter().map(|part| evaluate(rules, tool, part)).collect();
+    let verdicts: Vec<Verdict> = parts
+        .iter()
+        .map(|part| evaluate(rules, tool, part))
+        .collect();
     if let Some(denied) = verdicts.iter().find(|v| v.action == Action::Deny) {
         return denied.clone();
     }
@@ -300,10 +306,7 @@ pub fn is_visible(rules: &[Rule], tool: &str) -> bool {
     if verdict.action != Action::Deny {
         return true;
     }
-    verdict
-        .rule
-        .map(|r| r.pattern != ANY)
-        .unwrap_or(true)
+    verdict.rule.map(|r| r.pattern != ANY).unwrap_or(true)
 }
 
 /// Filters a tool list down to what the model may see.
@@ -358,9 +361,7 @@ mod tests {
     use super::*;
 
     fn rules(rs: &[(&str, Action, &str)]) -> Vec<Rule> {
-        rs.iter()
-            .map(|(t, a, p)| Rule::new(*t, *a, *p))
-            .collect()
+        rs.iter().map(|(t, a, p)| Rule::new(*t, *a, *p)).collect()
     }
 
     // ── pattern matching ────────────────────────────────────────────────
@@ -545,8 +546,13 @@ mod tests {
             Action::Ask
         );
         assert_eq!(
-            evaluate_shaped(&rs, "shell", "git status; rm -rf /", &chain(&["git status", "rm -rf /"]))
-                .action,
+            evaluate_shaped(
+                &rs,
+                "shell",
+                "git status; rm -rf /",
+                &chain(&["git status", "rm -rf /"])
+            )
+            .action,
             Action::Ask
         );
     }
@@ -557,7 +563,12 @@ mod tests {
             ("shell", Action::Allow, "git status *"),
             ("shell", Action::Allow, "head *"),
         ]);
-        let verdict = evaluate_shaped(&rs, "shell", "git status | head", &chain(&["git status", "head"]));
+        let verdict = evaluate_shaped(
+            &rs,
+            "shell",
+            "git status | head",
+            &chain(&["git status", "head"]),
+        );
         assert_eq!(verdict.action, Action::Allow);
         assert!(verdict.rule.is_some());
     }
@@ -588,7 +599,10 @@ mod tests {
             evaluate_shaped(&outright, "shell", "echo $(cat secrets)", &shape).action,
             Action::Allow
         );
-        let refused = rules(&[("shell", Action::Allow, ANY), ("shell", Action::Deny, "echo *")]);
+        let refused = rules(&[
+            ("shell", Action::Allow, ANY),
+            ("shell", Action::Deny, "echo *"),
+        ]);
         assert_eq!(
             evaluate_shaped(&refused, "shell", "echo $(cat secrets)", &shape).action,
             Action::Deny
@@ -598,7 +612,10 @@ mod tests {
     #[test]
     fn a_whole_target_is_evaluated_as_before() {
         let rs = rules(&[("read", Action::Allow, ANY)]);
-        assert_eq!(evaluate_shaped(&rs, "read", "a.txt", &Shape::Whole), evaluate(&rs, "read", "a.txt"));
+        assert_eq!(
+            evaluate_shaped(&rs, "read", "a.txt", &Shape::Whole),
+            evaluate(&rs, "read", "a.txt")
+        );
     }
 
     // ── visibility ──────────────────────────────────────────────────────
@@ -647,7 +664,10 @@ mod tests {
     #[test]
     fn different_keys_accumulate() {
         let workspace = rules(&[("shell", Action::Ask, ANY)]);
-        let agent = rules(&[("shell", Action::Deny, "rm *"), ("read", Action::Allow, ANY)]);
+        let agent = rules(&[
+            ("shell", Action::Deny, "rm *"),
+            ("read", Action::Allow, ANY),
+        ]);
         let merged = merge(&[&workspace, &agent]);
         assert_eq!(merged.len(), 3);
     }
@@ -679,8 +699,7 @@ mod tests {
 
     #[test]
     fn a_rule_without_a_pattern_covers_everything() {
-        let rule: Rule =
-            serde_json::from_str(r#"{"tool":"shell","action":"allow"}"#).unwrap();
+        let rule: Rule = serde_json::from_str(r#"{"tool":"shell","action":"allow"}"#).unwrap();
         assert_eq!(rule.pattern, ANY);
     }
 }

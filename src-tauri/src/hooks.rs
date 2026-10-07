@@ -32,7 +32,10 @@ pub struct ListOptions {
 
 /// Everything loaded for the workspace, with its warnings and where it came from.
 #[tauri::command]
-pub fn hooks_list(state: State<'_, AppState>, options: Option<ListOptions>) -> Result<Value, String> {
+pub fn hooks_list(
+    state: State<'_, AppState>,
+    options: Option<ListOptions>,
+) -> Result<Value, String> {
     let workspace = state.workspace().ok();
     let layout = workspace.as_ref().map(|w| &w.layout);
     let cwd = options
@@ -126,7 +129,10 @@ pub fn hooks_reveal(app: AppHandle, state: State<'_, AppState>) -> Result<Value,
     let file = workspace.layout.document(Document::Hooks);
     let opener = app.opener();
 
-    if opener.open_path(file.display().to_string(), None::<&str>).is_err() {
+    if opener
+        .open_path(file.display().to_string(), None::<&str>)
+        .is_err()
+    {
         // No file yet: open the folder instead, which is where it would go.
         if let Some(folder) = file.parent() {
             let _ = std::fs::create_dir_all(folder);
@@ -199,7 +205,9 @@ struct AskModel {
 
 impl std::fmt::Debug for AskModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AskModel").field("model", &self.model).finish()
+        f.debug_struct("AskModel")
+            .field("model", &self.model)
+            .finish()
     }
 }
 
@@ -261,11 +269,7 @@ impl TurnHooks {
     /// Resolved from the same settings the turn resolved its own model from,
     /// and quietly left alone when nothing resolves: a prompt handler then
     /// reports that it had no model, which is visible in the Hooks pane.
-    pub fn with_model(
-        mut self,
-        settings: &Arc<inertia_store::Settings>,
-        reference: &str,
-    ) -> Self {
+    pub fn with_model(mut self, settings: &Arc<inertia_store::Settings>, reference: &str) -> Self {
         if let Ok((provider, model)) = crate::state::provider_for(settings, reference) {
             self.ask = Some(Arc::new(AskModel { provider, model }));
         }
@@ -278,7 +282,12 @@ impl TurnHooks {
         self
     }
 
-    async fn fire(&self, event: &str, subject: Option<&str>, input: Value) -> inertia_core::Reaction {
+    async fn fire(
+        &self,
+        event: &str,
+        subject: Option<&str>,
+        input: Value,
+    ) -> inertia_core::Reaction {
         let (outcome, runs) = inertia_hooks::fire(
             event,
             subject,

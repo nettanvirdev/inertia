@@ -12,9 +12,9 @@
 
 use inertia_composio::api::Composio;
 use inertia_composio::provider::ConnectionRecord;
-use serde::Deserialize;
 use inertia_mcp::client::ServerRecord;
 use inertia_openapi::provider::ImportRecord;
+use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
 
@@ -28,10 +28,7 @@ fn err(e: impl std::fmt::Display) -> String {
 
 /// Connects one stored server.
 #[tauri::command]
-pub async fn mcp_connect(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<ServerRecord, String> {
+pub async fn mcp_connect(state: State<'_, AppState>, id: String) -> Result<ServerRecord, String> {
     let workspace = state.workspace()?;
     let mut record = workspace
         .mcp_records()
@@ -85,10 +82,7 @@ pub fn mcp_disconnect(state: State<'_, AppState>, id: String) -> Result<ServerRe
 /// in the middle of editing, and a half-configured server left connected would
 /// offer its tools to the next turn.
 #[tauri::command]
-pub async fn mcp_test(
-    state: State<'_, AppState>,
-    record: ServerRecord,
-) -> Result<Value, String> {
+pub async fn mcp_test(state: State<'_, AppState>, record: ServerRecord) -> Result<Value, String> {
     let workspace = state.workspace()?;
 
     // A draft is tested under a name nothing else uses, so testing an edit
@@ -211,7 +205,11 @@ pub fn openapi_operations(state: State<'_, AppState>, id: String) -> Result<Vec<
         .into_iter()
         .find(|r| r.id == id)
         .ok_or_else(|| format!("No OpenAPI import called `{id}`."))?;
-    let namespace = if record.name.is_empty() { &record.id } else { &record.name };
+    let namespace = if record.name.is_empty() {
+        &record.id
+    } else {
+        &record.name
+    };
     let enabled = &record.operations;
 
     Ok(inertia_openapi::operation::extract(&document, namespace)
@@ -304,7 +302,11 @@ pub fn openapi_details(state: State<'_, AppState>, id: String) -> Result<Value, 
         .into_iter()
         .find(|r| r.id == id)
         .ok_or_else(|| format!("No OpenAPI import called `{id}`."))?;
-    let namespace = if record.name.is_empty() { &record.id } else { &record.name };
+    let namespace = if record.name.is_empty() {
+        &record.id
+    } else {
+        &record.name
+    };
 
     Ok(json!({
         "title": inertia_openapi::spec::title(&document),
@@ -375,9 +377,7 @@ pub fn composio_configured_for(state: &AppState) -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub fn composio_connections(
-    state: State<'_, AppState>,
-) -> Result<Vec<ConnectionRecord>, String> {
+pub fn composio_connections(state: State<'_, AppState>) -> Result<Vec<ConnectionRecord>, String> {
     let workspace = state.workspace()?;
     Ok(workspace.composio_records())
 }
@@ -401,13 +401,9 @@ pub fn composio_set_permissions(
 ) -> Result<ConnectionRecord, String> {
     let workspace = state.workspace()?;
     let layout = workspace.layout.clone();
-    let saved = inertia_store::collections::patch(
-        &layout,
-        inertia_store::Collection::Composio,
-        &id,
-        patch,
-    )
-    .map_err(err)?;
+    let saved =
+        inertia_store::collections::patch(&layout, inertia_store::Collection::Composio, &id, patch)
+            .map_err(err)?;
     serde_json::from_value(saved).map_err(err)
 }
 
@@ -628,7 +624,9 @@ pub async fn composio_connection_status(
         announce_connection(&app, &record.id);
     }
 
-    Ok(json!({ "id": record.id, "status": status, "active": status.eq_ignore_ascii_case("ACTIVE") }))
+    Ok(
+        json!({ "id": record.id, "status": status, "active": status.eq_ignore_ascii_case("ACTIVE") }),
+    )
 }
 
 /// The channel the Integrations screen listens on.

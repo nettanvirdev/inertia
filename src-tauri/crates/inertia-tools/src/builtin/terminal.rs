@@ -318,7 +318,9 @@ mod tests {
         let tool = TerminalReadTool(fake.clone());
         let out = tool.execute(json!({}), &ctx("t1")).await.expect("ran");
 
-        assert!(out.output.contains("<terminal tab=\"chat:t1:sh:2\" front=\"true\">"));
+        assert!(out
+            .output
+            .contains("<terminal tab=\"chat:t1:sh:2\" front=\"true\">"));
         assert!(out.output.contains("<terminal tab=\"chat:t1:job:8123\">"));
         assert!(out.output.contains("Currently running: npm run dev"));
         assert!(out.output.contains("cargo test"));

@@ -175,11 +175,7 @@ fn read_tree(store: &Path, id: &str) -> Option<Tree> {
 /// Ids and blob keys are ours, and they end up in a path. A renderer that
 /// sends `../../settings.json` as a snapshot id must read nothing.
 fn is_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.len() <= 64
-        && id
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+    !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
 }
 
 fn read_blob(store: &Path, key: &str) -> Option<Vec<u8>> {
@@ -344,9 +340,7 @@ pub fn changes(root: &Path, cwd: &Path, from: &str, to: Option<&str>) -> Value {
     for (path, blob) in &before {
         match after.get(path) {
             None => files.push(entry(&store, path, "D", Some(blob), None)),
-            Some(now) if now != blob => {
-                files.push(entry(&store, path, "M", Some(blob), Some(now)))
-            }
+            Some(now) if now != blob => files.push(entry(&store, path, "M", Some(blob), Some(now))),
             Some(_) => {}
         }
     }
@@ -365,7 +359,13 @@ pub fn changes(root: &Path, cwd: &Path, from: &str, to: Option<&str>) -> Value {
 /// One row of the strip. `from` is always null: renames are reported as an
 /// add and a delete, because detecting one means comparing every added file
 /// against every deleted one and the strip reads correctly without it.
-fn entry(store: &Path, path: &str, status: &str, before: Option<&str>, after: Option<&str>) -> Value {
+fn entry(
+    store: &Path,
+    path: &str,
+    status: &str,
+    before: Option<&str>,
+    after: Option<&str>,
+) -> Value {
     let old = before.and_then(|key| text_of(store, key));
     let new = after.and_then(|key| text_of(store, key));
 
@@ -714,9 +714,8 @@ mod tests {
         let result = revert(&root, &cwd, &before, Some(&after));
         assert_eq!(result["reverted"], true);
 
-        let read = |relative: &str| {
-            std::fs::read_to_string(absolute_of(&cwd, relative).unwrap()).ok()
-        };
+        let read =
+            |relative: &str| std::fs::read_to_string(absolute_of(&cwd, relative).unwrap()).ok();
         assert_eq!(read("edited.txt").as_deref(), Some("original\n"));
         assert_eq!(read("gone.txt").as_deref(), Some("keep me\n"));
         assert_eq!(read("nested/made.txt"), None, "a created file must go");
@@ -732,7 +731,10 @@ mod tests {
         write(&cwd, "a.txt", "hello\n");
         let result = revert(&root, &cwd, "not-a-snapshot", None);
         assert_eq!(result["reverted"], false);
-        assert!(result["reason"].as_str().unwrap_or_default().contains("no snapshot"));
+        assert!(result["reason"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("no snapshot"));
         assert_eq!(
             std::fs::read_to_string(absolute_of(&cwd, "a.txt").unwrap()).unwrap(),
             "hello\n"
@@ -754,13 +756,21 @@ mod tests {
     fn the_noisy_folders_are_never_walked() {
         let (_dir, root, cwd) = places();
         write(&cwd, "src/main.rs", "fn main() {}\n");
-        write(&cwd, "node_modules/left-pad/index.js", "module.exports = 1;\n");
+        write(
+            &cwd,
+            "node_modules/left-pad/index.js",
+            "module.exports = 1;\n",
+        );
         write(&cwd, "target/debug/huge.bin", "binary-ish\n");
         write(&cwd, ".git/HEAD", "ref: refs/heads/master\n");
         let before = track(&root, &cwd).expect("a snapshot");
 
         // Touching them changes nothing, because they were never in the tree.
-        write(&cwd, "node_modules/left-pad/index.js", "module.exports = 2;\n");
+        write(
+            &cwd,
+            "node_modules/left-pad/index.js",
+            "module.exports = 2;\n",
+        );
         write(&cwd, "target/debug/huge.bin", "different\n");
         write(&cwd, ".git/HEAD", "ref: refs/heads/other\n");
         assert!(paths(&changes(&root, &cwd, &before, None)).is_empty());

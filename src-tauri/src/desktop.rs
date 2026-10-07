@@ -128,7 +128,10 @@ pub async fn app_fetch_image(url: String) -> Option<Value> {
 
     // Checked before reading as well as after: a server that declares a
     // gigabyte should not get a gigabyte of ours before we decline it.
-    if response.content_length().is_some_and(|n| n > MAX_IMAGE_BYTES as u64) {
+    if response
+        .content_length()
+        .is_some_and(|n| n > MAX_IMAGE_BYTES as u64)
+    {
         return None;
     }
     let bytes = response.bytes().await.ok()?;
@@ -256,7 +259,9 @@ fn decode_data_url(value: &str) -> Option<(String, Vec<u8>)> {
     if !meta.contains("base64") {
         return None;
     }
-    let bytes = base64::engine::general_purpose::STANDARD.decode(payload).ok()?;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(payload)
+        .ok()?;
     Some((mime, bytes))
 }
 
@@ -283,7 +288,11 @@ pub async fn app_save_image(app: AppHandle, request: SaveImage) -> Value {
 
     let stem = {
         let trimmed = request.name.trim();
-        let base = if trimmed.is_empty() { "picture" } else { trimmed };
+        let base = if trimmed.is_empty() {
+            "picture"
+        } else {
+            trimmed
+        };
         // The name comes out of a message, so it is the model's text, not a
         // filename. Anything a path separator could be built from goes.
         let cleaned: String = base
@@ -291,7 +300,11 @@ pub async fn app_save_image(app: AppHandle, request: SaveImage) -> Value {
             .map(|c| if "\\/:*?\"<>|".contains(c) { '-' } else { c })
             .collect();
         let cleaned = cleaned.trim_matches(['.', ' ']).to_string();
-        let cleaned = if cleaned.is_empty() { "picture".to_string() } else { cleaned };
+        let cleaned = if cleaned.is_empty() {
+            "picture".to_string()
+        } else {
+            cleaned
+        };
         match cleaned.rsplit_once('.') {
             Some((head, tail)) if tail.eq_ignore_ascii_case(extension) => head.to_string(),
             _ => cleaned,
@@ -338,7 +351,12 @@ const RUNNERS: &[(&str, &str, &[&str], &[&str])] = &[
     // (key, file extension, candidate programs, leading arguments)
     ("python", "py", &["python", "python3", "py"], &[]),
     ("javascript", "js", &["node"], &[]),
-    ("typescript", "ts", &["node"], &["--experimental-strip-types"]),
+    (
+        "typescript",
+        "ts",
+        &["node"],
+        &["--experimental-strip-types"],
+    ),
     ("ruby", "rb", &["ruby"], &[]),
     ("php", "php", &["php"], &[]),
     ("perl", "pl", &["perl"], &[]),
@@ -477,12 +495,16 @@ pub async fn app_run_snippet(
                 .unwrap_or_else(|_| std::env::temp_dir())
                 .join(format!("inertia-snippet-{}", uuid::Uuid::now_v7()));
             if let Err(error) = std::fs::create_dir_all(&dir) {
-                return Ok(json!({ "ok": false, "error": error.to_string(), "cwd": where_.to_string_lossy() }));
+                return Ok(
+                    json!({ "ok": false, "error": error.to_string(), "cwd": where_.to_string_lossy() }),
+                );
             }
             let file = dir.join(format!("snippet.{extension}"));
             if let Err(error) = std::fs::write(&file, &text) {
                 let _ = std::fs::remove_dir_all(&dir);
-                return Ok(json!({ "ok": false, "error": error.to_string(), "cwd": where_.to_string_lossy() }));
+                return Ok(
+                    json!({ "ok": false, "error": error.to_string(), "cwd": where_.to_string_lossy() }),
+                );
             }
             let mut command = tokio::process::Command::new(program);
             command.args(lead.iter()).arg(&file);
@@ -573,7 +595,13 @@ fn shell_command(command: &str) -> tokio::process::Command {
             "{command}\nif ($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}"
         );
         let mut shell = tokio::process::Command::new("powershell.exe");
-        shell.args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", &wrapped]);
+        shell.args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            &wrapped,
+        ]);
         shell
     } else {
         let mut shell = tokio::process::Command::new("/bin/sh");
@@ -600,14 +628,35 @@ mod tests {
     #[test]
     fn only_public_addresses_are_public() {
         for private in [
-            "127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1",
-            "0.0.0.0", "255.255.255.255", "224.0.0.1", "::1", "::", "fe80::1", "fc00::1", "fd12::1",
-            "ff02::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1", "::127.0.0.1", "64:ff9b::a9fe:a9fe",
+            "127.0.0.1",
+            "10.1.2.3",
+            "172.16.0.1",
+            "192.168.1.1",
+            "169.254.169.254",
+            "100.64.0.1",
+            "0.0.0.0",
+            "255.255.255.255",
+            "224.0.0.1",
+            "::1",
+            "::",
+            "fe80::1",
+            "fc00::1",
+            "fd12::1",
+            "ff02::1",
+            "::ffff:127.0.0.1",
+            "::ffff:10.0.0.1",
+            "::127.0.0.1",
+            "64:ff9b::a9fe:a9fe",
             "2002:c0a8:0101::1",
         ] {
             assert!(!is_public(private.parse().unwrap()), "{private}");
         }
-        for public in ["93.184.216.34", "1.1.1.1", "2606:4700::1111", "::ffff:93.184.216.34"] {
+        for public in [
+            "93.184.216.34",
+            "1.1.1.1",
+            "2606:4700::1111",
+            "::ffff:93.184.216.34",
+        ] {
             assert!(is_public(public.parse().unwrap()), "{public}");
         }
     }
@@ -634,9 +683,14 @@ mod tests {
     /// far as a connection.
     #[tokio::test]
     async fn a_name_that_resolves_to_this_machine_is_not_fetched() {
-        assert!(app_fetch_image("http://localhost:9/x.png".into()).await.is_none());
-        assert!(app_fetch_image("http://127.0.0.1:9/x.png".into()).await.is_none());
-        let resolved = reqwest::dns::Resolve::resolve(&PublicOnly, "localhost".parse().unwrap()).await;
+        assert!(app_fetch_image("http://localhost:9/x.png".into())
+            .await
+            .is_none());
+        assert!(app_fetch_image("http://127.0.0.1:9/x.png".into())
+            .await
+            .is_none());
+        let resolved =
+            reqwest::dns::Resolve::resolve(&PublicOnly, "localhost".parse().unwrap()).await;
         assert!(resolved.is_err());
     }
 

@@ -275,11 +275,7 @@ mod tests {
 
     #[test]
     fn empty_messages_are_skipped() {
-        let entries = to_entries(&[
-            user("   "),
-            agent(vec![]),
-            user("real"),
-        ]);
+        let entries = to_entries(&[user("   "), agent(vec![]), user("real")]);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].text(), "real");
     }

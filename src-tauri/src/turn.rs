@@ -332,7 +332,11 @@ struct Seated {
 /// rule for whose turn it is has to be one rule, and the window is the wrong
 /// place to keep it - a second window, a reload mid-chain or a routine would
 /// each have their own idea.
-fn seat_room(state: &AppState, workspace: &crate::state::Workspace, request: &RunRequest) -> Option<Seated> {
+fn seat_room(
+    state: &AppState,
+    workspace: &crate::state::Workspace,
+    request: &RunRequest,
+) -> Option<Seated> {
     let conversation = request.thread_id.trim().to_string();
     if conversation.is_empty() {
         return None;
@@ -362,7 +366,11 @@ fn seat_room(state: &AppState, workspace: &crate::state::Workspace, request: &Ru
     // the next link in a chain the last turn started, and the room already
     // knows who that is. Anything else is the person speaking, which is the
     // only one that resets the floor.
-    if let Some(again) = request.speaker.as_deref().filter(|id| !id.trim().is_empty()) {
+    if let Some(again) = request
+        .speaker
+        .as_deref()
+        .filter(|id| !id.trim().is_empty())
+    {
         state.rooms.resume(&conversation, again);
     } else if !request.continuation {
         state.rooms.asked(&conversation, &request.mentioned);
@@ -371,7 +379,8 @@ fn seat_room(state: &AppState, workspace: &crate::state::Workspace, request: &Ru
     let (active, roster, permissions) = state.rooms.seated(&conversation)?;
     let speaker = active.or_else(|| primary.map(str::to_string));
 
-    let agents = inertia_store::collections::list(&workspace.layout, inertia_store::Collection::Agents);
+    let agents =
+        inertia_store::collections::list(&workspace.layout, inertia_store::Collection::Agents);
     let text = |record: &Value, key: &str| {
         record
             .get(key)
@@ -468,10 +477,7 @@ fn seat_room(state: &AppState, workspace: &crate::state::Workspace, request: &Ru
                 .collect(),
             person,
         },
-        names: named
-            .into_iter()
-            .map(|(id, name, _)| (id, name))
-            .collect(),
+        names: named.into_iter().map(|(id, name, _)| (id, name)).collect(),
         permissions,
         speaker,
         conversation,
@@ -659,23 +665,25 @@ pub async fn agent_run(
     // needs them too now that it can end up in a room.
     let names_for_floor: Vec<(String, String)> = match &seated {
         Some(seat) => seat.names.clone(),
-        None => inertia_store::collections::list(&workspace.layout, inertia_store::Collection::Agents)
-            .into_iter()
-            .filter_map(|record| {
-                let id = record.get("id").and_then(Value::as_str)?.trim().to_string();
-                if id.is_empty() {
-                    return None;
-                }
-                let name = record
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .map(str::trim)
-                    .filter(|name| !name.is_empty())
-                    .unwrap_or(&id)
-                    .to_string();
-                Some((id, name))
-            })
-            .collect(),
+        None => {
+            inertia_store::collections::list(&workspace.layout, inertia_store::Collection::Agents)
+                .into_iter()
+                .filter_map(|record| {
+                    let id = record.get("id").and_then(Value::as_str)?.trim().to_string();
+                    if id.is_empty() {
+                        return None;
+                    }
+                    let name = record
+                        .get("name")
+                        .and_then(Value::as_str)
+                        .map(str::trim)
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or(&id)
+                        .to_string();
+                    Some((id, name))
+                })
+                .collect()
+        }
     };
 
     // The room tools. They hold the conversation and the seat they were built
@@ -779,7 +787,10 @@ pub async fn agent_run(
     // for everyone else, and for an agent pointing at a machine that has since
     // been removed - that agent carries on with `shell` rather than being
     // offered tools that can only fail.
-    extra.extend(crate::computers::tools_for_agent(&state, speaker.as_deref()));
+    extra.extend(crate::computers::tools_for_agent(
+        &state,
+        speaker.as_deref(),
+    ));
 
     // Asking the person a question mid-turn, and reading what has gone wrong
     // before. Neither changes anything, so both are offered in every mode.
@@ -793,8 +804,10 @@ pub async fn agent_run(
         state.questions.clone(),
         Arc::new(move |event| asking.emit(AGENT_EVENT, event).is_ok()),
     )) as Arc<dyn inertia_core::tool::Tool>);
-    extra.push(Arc::new(crate::failures::FailuresTool::new(workspace.layout.clone()))
-        as Arc<dyn inertia_core::tool::Tool>);
+    extra.push(
+        Arc::new(crate::failures::FailuresTool::new(workspace.layout.clone()))
+            as Arc<dyn inertia_core::tool::Tool>,
+    );
 
     // Scheduling a run for later, as the agent that asked. Built per turn
     // because `ToolContext` carries the conversation but not the seat, and a
@@ -824,13 +837,8 @@ pub async fn agent_run(
     // After the project is known, not before: the memory tools file a
     // project-scoped memory into that folder, and one built against the
     // previous turn's folder would write it where it can never be recalled.
-    let registry = crate::state::registry_with(
-        &workspace,
-        gate.clone(),
-        state.project(),
-        extra,
-        &withheld,
-    );
+    let registry =
+        crate::state::registry_with(&workspace, gate.clone(), state.project(), extra, &withheld);
 
     // What this turn can do, asked of the registry rather than assembled a
     // second time here: the mode withholds some, the permission rules deny
@@ -1123,8 +1131,7 @@ pub async fn agent_run(
         // What the turn failed with, if it did, for the banner.
         let mut failure: Option<String> = None;
         // The arguments of every call still in flight, by call id.
-        let mut asked: std::collections::HashMap<String, Value> =
-            std::collections::HashMap::new();
+        let mut asked: std::collections::HashMap<String, Value> = std::collections::HashMap::new();
         loop {
             // Read before the `select!` rather than inside it: the arms are
             // evaluated together, and a deadline read after the buffer has
@@ -1398,15 +1405,14 @@ pub fn agent_cancel_all(state: State<'_, AppState>) -> Value {
 /// with its id, which is all the silence check ever wanted.
 #[tauri::command]
 pub fn agent_active(state: State<'_, AppState>) -> Vec<Value> {
-    let mut records: std::collections::HashMap<String, Value> =
-        crate::records::Recorder::global()
-            .active()
-            .into_iter()
-            .filter_map(|record| {
-                let id = record.get("id")?.as_str()?.to_string();
-                Some((id, record))
-            })
-            .collect();
+    let mut records: std::collections::HashMap<String, Value> = crate::records::Recorder::global()
+        .active()
+        .into_iter()
+        .filter_map(|record| {
+            let id = record.get("id")?.as_str()?.to_string();
+            Some((id, record))
+        })
+        .collect();
     state
         .running_ids()
         .into_iter()
@@ -1481,9 +1487,10 @@ pub async fn tools_list(app: AppHandle, state: State<'_, AppState>) -> Result<Va
     extra.push(crate::skills::skill_tool(workspace.layout.clone()));
     extra.push(crate::terminal::terminal_tool());
     extra.extend(crate::preview::browser_tools(app.clone()));
-    extra.push(Arc::new(crate::failures::FailuresTool::new(
-        workspace.layout.clone(),
-    )) as Arc<dyn inertia_core::tool::Tool>);
+    extra.push(
+        Arc::new(crate::failures::FailuresTool::new(workspace.layout.clone()))
+            as Arc<dyn inertia_core::tool::Tool>,
+    );
     let emitting = app.clone();
     extra.push(Arc::new(crate::question::QuestionTool::new(
         state.questions.clone(),
@@ -1613,7 +1620,15 @@ mod tests {
     /// Opening one of these runs it, so it is shown in its folder instead.
     #[test]
     fn a_file_that_would_run_is_revealed_rather_than_opened() {
-        for name in ["setup.EXE", "build.cmd", "x.ps1", "run.sh", "Link.lnk", "a.AppImage", "s.url"] {
+        for name in [
+            "setup.EXE",
+            "build.cmd",
+            "x.ps1",
+            "run.sh",
+            "Link.lnk",
+            "a.AppImage",
+            "s.url",
+        ] {
             assert!(runs_when_opened(std::path::Path::new(name)), "{name}");
         }
         for name in ["report.pdf", "page.html", "notes", "photo.png", "data.json"] {
@@ -1629,9 +1644,8 @@ mod tests {
     #[tokio::test]
     async fn a_group_turn_hands_the_seated_agent_the_three_room_tools() {
         let dir = tempfile::tempdir().expect("a temp dir");
-        let workspace = Arc::new(
-            crate::state::Workspace::open(dir.path().to_path_buf()).expect("a workspace"),
-        );
+        let workspace =
+            Arc::new(crate::state::Workspace::open(dir.path().to_path_buf()).expect("a workspace"));
 
         for record in [
             json!({ "id": "agent-inertia-dev", "name": "Inertia Dev" }),
@@ -1653,7 +1667,12 @@ mod tests {
             }
         }));
         let rooms = std::sync::Arc::new(crate::group::Rooms::default());
-        rooms.open("thread-1", Some("agent-inertia-dev"), permissions.clone(), &[]);
+        rooms.open(
+            "thread-1",
+            Some("agent-inertia-dev"),
+            permissions.clone(),
+            &[],
+        );
         let (speaker, _roster, permissions) =
             rooms.seated("thread-1").expect("the room was seated");
         assert_eq!(speaker.as_deref(), Some("agent-inertia-dev"));
@@ -1670,8 +1689,7 @@ mod tests {
         let mode = inertia_agent::prompt::Mode::parse("group");
         let gate: Arc<dyn inertia_core::tool::PermissionGate> =
             Arc::new(inertia_mock::MockGate::allow_all());
-        let registry =
-            crate::state::registry_with(&workspace, gate, None, extra, &mode.withheld());
+        let registry = crate::state::registry_with(&workspace, gate, None, extra, &mode.withheld());
         let names: Vec<String> = registry
             .specs()
             .await
@@ -1691,20 +1709,22 @@ mod tests {
     #[test]
     fn the_start_event_is_not_forwarded() {
         // The window synthesises its own from the id the command returns.
-        let out = translate_for_test(&AgentEvent::Start {
-            model: "m".into(),
-        });
+        let out = translate_for_test(&AgentEvent::Start { model: "m".into() });
         assert!(out.is_empty());
     }
 
     #[test]
     fn prose_and_thinking_stay_apart() {
         assert_eq!(
-            types(&translate_for_test(&AgentEvent::Delta { text: "hi".into() })),
+            types(&translate_for_test(&AgentEvent::Delta {
+                text: "hi".into()
+            })),
             ["delta"]
         );
         assert_eq!(
-            types(&translate_for_test(&AgentEvent::Reasoning { text: "hm".into() })),
+            types(&translate_for_test(&AgentEvent::Reasoning {
+                text: "hm".into()
+            })),
             ["reasoning"]
         );
     }
@@ -1913,7 +1933,10 @@ mod tests {
 /// The merge happens in the store rather than here, so this and the gate that
 /// actually enforces the rules cannot disagree about precedence.
 #[tauri::command]
-pub fn agent_rules(state: State<'_, AppState>, agent_id: Option<String>) -> Result<Vec<Value>, String> {
+pub fn agent_rules(
+    state: State<'_, AppState>,
+    agent_id: Option<String>,
+) -> Result<Vec<Value>, String> {
     let workspace = state.workspace()?;
     Ok(workspace
         .settings
@@ -2011,7 +2034,9 @@ pub fn agent_open_path(app: AppHandle, target: String) -> Result<String, String>
     }
     let opener = app.opener();
     if runs_when_opened(&path) {
-        opener.reveal_item_in_dir(&path).map_err(|e| e.to_string())?;
+        opener
+            .reveal_item_in_dir(&path)
+            .map_err(|e| e.to_string())?;
     } else {
         opener
             .open_path(target.clone(), None::<&str>)
@@ -2062,7 +2087,9 @@ pub fn agent_forget(state: State<'_, AppState>, session_id: String) -> Result<Va
     state.rooms.forget(&session_id);
     // Anything this conversation still has running, stopped rather than left
     // to finish work nobody will ever read.
-    state.runs.cancel_conversation(&session_id, "The conversation was deleted.");
+    state
+        .runs
+        .cancel_conversation(&session_id, "The conversation was deleted.");
     // And any question it was holding the turn open for: the card is gone with
     // the conversation, so nothing can ever answer it.
     state.questions.abandon_session(&session_id);

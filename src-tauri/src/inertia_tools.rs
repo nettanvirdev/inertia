@@ -230,11 +230,26 @@ impl Kind {
                 "mode",
                 "approval",
             ],
-            Self::Skill => &["name", "description", "instructions", "enabled", "tags", "version"],
+            Self::Skill => &[
+                "name",
+                "description",
+                "instructions",
+                "enabled",
+                "tags",
+                "version",
+            ],
             Self::Memory => &["title", "body", "kind", "agentId", "tags", "pinned"],
             Self::Computer => &[],
             Self::Mcp => &[
-                "name", "type", "command", "args", "cwd", "env", "url", "headers", "enabled",
+                "name",
+                "type",
+                "command",
+                "args",
+                "cwd",
+                "env",
+                "url",
+                "headers",
+                "enabled",
                 "timeoutMs",
             ],
             Self::Api => &["name", "url", "text", "baseUrl", "enabled"],
@@ -416,10 +431,8 @@ pub trait Apps: Send + Sync {
     async fn remove_mcp(&self, id: &str) -> std::result::Result<(), String>;
 
     /// Fetches and imports an OpenAPI document. `(record, warnings)`.
-    async fn import_api(
-        &self,
-        fields: &Value,
-    ) -> std::result::Result<(Value, Vec<String>), String>;
+    async fn import_api(&self, fields: &Value)
+        -> std::result::Result<(Value, Vec<String>), String>;
 
     /// Forget what the running import was built from, after its record changed.
     fn invalidate_api(&self);
@@ -896,7 +909,9 @@ struct Setup {
 
 impl std::fmt::Debug for Setup {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Setup").field("layout", &self.layout).finish_non_exhaustive()
+        f.debug_struct("Setup")
+            .field("layout", &self.layout)
+            .finish_non_exhaustive()
     }
 }
 
@@ -921,9 +936,8 @@ impl Setup {
 
     /// The record, or the sentence saying there is no such thing.
     fn require(&self, kind: Kind, id: &str) -> Result<Value> {
-        self.get(kind, id)?.ok_or_else(|| {
-            Error::Other(format!("There is no {} with the id {id}.", kind.label()))
-        })
+        self.get(kind, id)?
+            .ok_or_else(|| Error::Other(format!("There is no {} with the id {id}.", kind.label())))
     }
 }
 
@@ -1222,9 +1236,9 @@ fn validate(kind: Kind, record: &Value) -> Option<String> {
                         .unwrap_or_default();
                     return Some(match reason {
                         Some(reason) => format!("That schedule was not usable: {reason}"),
-                        None => format!(
-                            "\"{expression}\" is not a usable {schedule_kind} expression."
-                        ),
+                        None => {
+                            format!("\"{expression}\" is not a usable {schedule_kind} expression.")
+                        }
                     });
                 }
             }
@@ -1272,7 +1286,11 @@ const MCP_LAUNCH: &[&str] = &["type", "command", "args", "cwd", "env", "url", "h
 /// - or the address, and the headers sent to it.
 fn launch_line(server: &Map<String, Value>) -> String {
     let record = Value::Object(server.clone());
-    let as_text = |value: &Value| value.as_str().map_or_else(|| value.to_string(), str::to_string);
+    let as_text = |value: &Value| {
+        value
+            .as_str()
+            .map_or_else(|| value.to_string(), str::to_string)
+    };
     let pairs = |key: &str, joiner: &str| -> Vec<String> {
         object(record.get(key).unwrap_or(&Value::Null))
             .iter()
@@ -1351,9 +1369,11 @@ fn rein_in(
         return false;
     };
     let loosened = matches!(text(previous, "approval").as_str(), "edits" | "auto");
-    let changed = ROUTINE_BEHAVIOUR
-        .iter()
-        .any(|key| incoming.get(*key).is_some_and(|value| previous.get(*key) != Some(value)));
+    let changed = ROUTINE_BEHAVIOUR.iter().any(|key| {
+        incoming
+            .get(*key)
+            .is_some_and(|value| previous.get(*key) != Some(value))
+    });
     if loosened && changed {
         merged.insert("approval".into(), json!(crate::routines::DEFAULT_APPROVAL));
         return true;
@@ -1458,7 +1478,9 @@ impl Tool for SaveTool {
             id => id,
         };
         let fields = object(args.get("fields").unwrap_or(&Value::Null));
-        if Kind::parse(&kind) == Some(Kind::Mcp) && MCP_LAUNCH.iter().any(|key| fields.contains_key(*key)) {
+        if Kind::parse(&kind) == Some(Kind::Mcp)
+            && MCP_LAUNCH.iter().any(|key| fields.contains_key(*key))
+        {
             let mut server = self
                 .0
                 .get(Kind::Mcp, &id)
@@ -1467,20 +1489,35 @@ impl Tool for SaveTool {
                 .map(|record| object(&record))
                 .unwrap_or_default();
             server.extend(fields);
-            return PermissionRequest::new(GUARDED_KEY, format!("mcp:{id}: {}", launch_line(&server)));
+            return PermissionRequest::new(
+                GUARDED_KEY,
+                format!("mcp:{id}: {}", launch_line(&server)),
+            );
         }
         PermissionRequest::new(PERMISSION_KEY, format!("{kind}:{id}"))
             .with_always(format!("{kind}:*"))
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        let verb = if text(args, "id").is_empty() { "create" } else { "update" };
+        let verb = if text(args, "id").is_empty() {
+            "create"
+        } else {
+            "update"
+        };
         let fields = args.get("fields").cloned().unwrap_or(Value::Null);
-        let what = [text(&fields, "name"), text(&fields, "title"), text(args, "id")]
-            .into_iter()
-            .find(|one| !one.is_empty())
-            .unwrap_or_default();
-        Some(format!("{verb} {} {what}", text(args, "kind")).trim().to_string())
+        let what = [
+            text(&fields, "name"),
+            text(&fields, "title"),
+            text(args, "id"),
+        ]
+        .into_iter()
+        .find(|one| !one.is_empty())
+        .unwrap_or_default();
+        Some(
+            format!("{verb} {} {what}", text(args, "kind"))
+                .trim()
+                .to_string(),
+        )
     }
 
     /// Models send `fields` as a JSON string about as often as they send an
@@ -1565,7 +1602,11 @@ impl Tool for SaveTool {
                     output: format!(
                         "{} the MCP server {name}. It is starting now; its tools appear as \
                          {saved_id}_* once it is up.",
-                        if previous.is_some() { "Updated" } else { "Added" }
+                        if previous.is_some() {
+                            "Updated"
+                        } else {
+                            "Added"
+                        }
                     ),
                     metadata: Some(json!({ "kind": kind.as_str(), "id": saved_id })),
                     images: Vec::new(),
@@ -1573,13 +1614,9 @@ impl Tool for SaveTool {
             }
             Some(Live::OpenApi) => {
                 if let Some(id) = &id {
-                    let saved = collections::patch(
-                        &self.0.layout,
-                        kind.collection(),
-                        id,
-                        incoming.clone(),
-                    )
-                    .map_err(|e| Error::Other(e.to_string()))?;
+                    let saved =
+                        collections::patch(&self.0.layout, kind.collection(), id, incoming.clone())
+                            .map_err(|e| Error::Other(e.to_string()))?;
                     self.0.apps.invalidate_api();
                     self.0.announce(kind.collection(), id, "patch");
                     let name = display_name(&saved, id);
@@ -1637,7 +1674,8 @@ impl Tool for SaveTool {
         }
 
         let mut merged = object(previous.as_ref().unwrap_or(&Value::Null));
-        let reined_in = kind == Kind::Routine && rein_in(previous.as_ref(), &incoming_map, &mut merged);
+        let reined_in =
+            kind == Kind::Routine && rein_in(previous.as_ref(), &incoming_map, &mut merged);
         for (key, value) in incoming_map {
             merged.insert(key, value);
         }
@@ -1661,7 +1699,11 @@ impl Tool for SaveTool {
         let name = display_name(&saved, &saved_id);
         let mut output = format!(
             "{} the {} {name} (id {saved_id}).",
-            if previous.is_some() { "Updated" } else { "Created" },
+            if previous.is_some() {
+                "Updated"
+            } else {
+                "Created"
+            },
             kind.label()
         );
         if previous.is_none() {
@@ -1740,7 +1782,11 @@ impl Tool for RemoveTool {
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        Some(format!("remove {} {}", text(args, "kind"), text(args, "id")))
+        Some(format!(
+            "remove {} {}",
+            text(args, "kind"),
+            text(args, "id")
+        ))
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
@@ -1883,9 +1929,10 @@ impl Tool for SetPictureTool {
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
         let agent_id = text(&args, "agentId");
-        let agent = self.0.get(Kind::Agent, &agent_id)?.ok_or_else(|| {
-            Error::Other(format!("There is no agent with the id {agent_id}."))
-        })?;
+        let agent = self
+            .0
+            .get(Kind::Agent, &agent_id)?
+            .ok_or_else(|| Error::Other(format!("There is no agent with the id {agent_id}.")))?;
         let id = text(&agent, "id");
         let name = display_name(&agent, &id);
         let now = jiff::Timestamp::now().as_millisecond();
@@ -1978,7 +2025,11 @@ impl Tool for SetPictureTool {
         let Some((_, extension)) = IMAGE_TYPES.iter().find(|(kind, _)| *kind == mime) else {
             return Err(Error::Other(format!(
                 "That is a {}, and a picture has to be a PNG, JPEG, WebP or GIF.",
-                if mime.is_empty() { "file of unknown type" } else { &mime }
+                if mime.is_empty() {
+                    "file of unknown type"
+                } else {
+                    &mime
+                }
             )));
         };
         if bytes.len() > MAX_PICTURE_BYTES {
@@ -1998,9 +2049,8 @@ impl Tool for SetPictureTool {
         if let Some(parent) = target.parent() {
             inertia_store::fsx::ensure_dir(parent).map_err(|e| Error::Other(e.to_string()))?;
         }
-        std::fs::write(&target, &bytes).map_err(|e| {
-            Error::Other(format!("The picture could not be saved: {e}."))
-        })?;
+        std::fs::write(&target, &bytes)
+            .map_err(|e| Error::Other(format!("The picture could not be saved: {e}.")))?;
 
         let reference = picture_reference(&id, extension);
         collections::patch(
@@ -2089,28 +2139,24 @@ impl Tool for ConnectAppTool {
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
         let status_id = text(&args, "status");
         if !status_id.is_empty() {
-            let row = self
-                .0
-                .apps
-                .status(&status_id)
-                .await
-                .map_err(Error::Other)?;
+            let row = self.0.apps.status(&status_id).await.map_err(Error::Other)?;
             let state = text(&row, "status").to_uppercase();
             let name = display_name(&row, &status_id);
             let label = text(&row, "label");
-            let output = if state == "ACTIVE" {
-                format!(
+            let output =
+                if state == "ACTIVE" {
+                    format!(
                     "{name} is connected{}. Its tools are {}_* and they are available from your \
                      next turn.",
                     if label.is_empty() { String::new() } else { format!(" as {label}") },
                     text(&row, "toolkitSlug").to_lowercase()
                 )
-            } else {
-                format!(
-                    "{name} is still {}. The user has not finished signing in yet.",
-                    if state.is_empty() { "pending" } else { &state }
-                )
-            };
+                } else {
+                    format!(
+                        "{name} is still {}. The user has not finished signing in yet.",
+                        if state.is_empty() { "pending" } else { &state }
+                    )
+                };
             return Ok(ToolOutcome {
                 title: Some(name),
                 output,
@@ -2125,7 +2171,11 @@ impl Tool for ConnectAppTool {
             let rows = self
                 .0
                 .apps
-                .catalogue(if search.is_empty() { None } else { Some(&search) })
+                .catalogue(if search.is_empty() {
+                    None
+                } else {
+                    Some(&search)
+                })
                 .await
                 .map_err(Error::Other)?;
             let rows: Vec<Value> = rows.into_iter().take(40).collect();
@@ -2360,7 +2410,10 @@ impl Tool for SetRulesTool {
         let mut doc = object(&doc);
 
         let current: Vec<Value> = if agent_id.is_empty() {
-            doc.get("workspace").and_then(Value::as_array).cloned().unwrap_or_default()
+            doc.get("workspace")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default()
         } else {
             doc.get("agents")
                 .and_then(|agents| agents.get(&agent_id))
@@ -2499,7 +2552,12 @@ mod tests {
             let sink = events.clone();
             let emit: Emitter = Arc::new(move |payload| sink.lock().push(payload));
             let tools = inertia_tools(layout.clone(), emit, Arc::new(NoApps));
-            Self { _dir: dir, layout, events, tools }
+            Self {
+                _dir: dir,
+                layout,
+                events,
+                tools,
+            }
         }
 
         fn tool(&self, id: &str) -> Arc<dyn Tool> {
@@ -2558,11 +2616,20 @@ mod tests {
             .expect("the agent was written");
         }
 
-        let out = bench.call("inertia_list", json!({ "kind": "agent" })).await.expect("listed");
+        let out = bench
+            .call("inertia_list", json!({ "kind": "agent" }))
+            .await
+            .expect("listed");
         assert_eq!(out.title.as_deref(), Some("2 agents"));
         let rows: Vec<Value> = serde_json::from_str(&out.output).expect("rows");
-        let names: Vec<&str> = rows.iter().map(|r| r["name"].as_str().unwrap_or("")).collect();
-        assert!(names.contains(&"Mercury") && names.contains(&"Iris"), "{names:?}");
+        let names: Vec<&str> = rows
+            .iter()
+            .map(|r| r["name"].as_str().unwrap_or(""))
+            .collect();
+        assert!(
+            names.contains(&"Mercury") && names.contains(&"Iris"),
+            "{names:?}"
+        );
         // A model that asked what agents there are did not ask for the system
         // prompt of each one.
         assert_eq!(rows[0]["model"], json!("workspace default"));
@@ -2571,16 +2638,26 @@ mod tests {
     #[tokio::test]
     async fn an_empty_kind_says_so_plainly_rather_than_answering_an_empty_array() {
         let bench = Bench::new();
-        let out = bench.call("inertia_list", json!({ "kind": "routine" })).await.expect("listed");
+        let out = bench
+            .call("inertia_list", json!({ "kind": "routine" }))
+            .await
+            .expect("listed");
         assert_eq!(out.output, "There are no routines yet.");
     }
 
     #[tokio::test]
     async fn no_kind_counts_everything_under_the_names_the_model_writes() {
         let bench = Bench::new();
-        collections::put(&bench.layout, Collection::Agents, json!({ "name": "Mercury" }))
-            .expect("an agent");
-        let out = bench.call("inertia_list", json!({})).await.expect("counted");
+        collections::put(
+            &bench.layout,
+            Collection::Agents,
+            json!({ "name": "Mercury" }),
+        )
+        .expect("an agent");
+        let out = bench
+            .call("inertia_list", json!({}))
+            .await
+            .expect("counted");
         let counts = &out.metadata.expect("metadata")["counts"];
         assert_eq!(counts["agent"], json!(1));
         assert_eq!(counts["routine"], json!(0));
@@ -2597,7 +2674,10 @@ mod tests {
             .call("inertia_list", json!({ "kind": "widget" }))
             .await
             .expect_err("a refusal");
-        assert!(message.contains("not something Inertia is made of"), "{message}");
+        assert!(
+            message.contains("not something Inertia is made of"),
+            "{message}"
+        );
         assert!(message.contains("agent, routine, skill"), "{message}");
     }
 
@@ -2631,7 +2711,10 @@ mod tests {
     async fn the_id_a_record_gets_is_built_from_its_name() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         assert_eq!(id_of(&made), "mercury");
@@ -2647,7 +2730,10 @@ mod tests {
     async fn reading_something_that_is_not_there_says_so_rather_than_answering_null() {
         let bench = Bench::new();
         let message = bench
-            .call("inertia_get", json!({ "kind": "agent", "id": "agent-nope" }))
+            .call(
+                "inertia_get",
+                json!({ "kind": "agent", "id": "agent-nope" }),
+            )
             .await
             .expect_err("a refusal");
         assert_eq!(message, "There is no agent with the id agent-nope.");
@@ -2677,13 +2763,19 @@ mod tests {
         assert_eq!(agent["name"], json!("Mercury"));
         assert_eq!(agent["handle"], json!("@mercury"));
         assert_eq!(agent["status"], json!("idle"));
-        assert_eq!(agent["stats"], json!({ "messages": 0, "routinesRun": 0, "tokensUsed": 0 }));
+        assert_eq!(
+            agent["stats"],
+            json!({ "messages": 0, "routinesRun": 0, "tokensUsed": 0 })
+        );
 
         // And the window heard about it, on the channel it is already listening
         // on, with the collection key the renderer matches against.
         let events = bench.events.lock().clone();
         assert_eq!(events.len(), 1, "{events:?}");
-        assert_eq!(events[0], json!({ "collection": "agents", "id": id, "op": "put" }));
+        assert_eq!(
+            events[0],
+            json!({ "collection": "agents", "id": id, "op": "put" })
+        );
     }
 
     #[tokio::test]
@@ -2713,14 +2805,20 @@ mod tests {
         assert_eq!(agent["role"], json!("Triage and drafting"));
         assert_eq!(agent["systemPrompt"], json!("Be brief."));
         // An update is a patch to the window, not a create.
-        assert_eq!(bench.events.lock().last().expect("an event")["op"], json!("patch"));
+        assert_eq!(
+            bench.events.lock().last().expect("an event")["op"],
+            json!("patch")
+        );
     }
 
     #[tokio::test]
     async fn an_agent_with_no_name_is_refused_in_the_electron_builds_own_words() {
         let bench = Bench::new();
         let message = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "role": "Nobody" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "role": "Nobody" } }),
+            )
             .await
             .expect_err("a refusal");
         assert_eq!(message, "An agent needs a name.");
@@ -2755,7 +2853,10 @@ mod tests {
             )
             .await
             .expect_err("a refusal");
-        assert!(message.contains("There is no agent with the id agent-nope"), "{message}");
+        assert!(
+            message.contains("There is no agent with the id agent-nope"),
+            "{message}"
+        );
         assert!(message.contains("Leave the id out"), "{message}");
     }
 
@@ -2776,14 +2877,19 @@ mod tests {
                 "inertia_save",
                 json!({ "kind": "agent", "id": "agent-inertia-dev", "fields": { "role": "Mine now" } }),
             ),
-            ("inertia_remove", json!({ "kind": "agent", "id": "agent-inertia-dev" })),
+            (
+                "inertia_remove",
+                json!({ "kind": "agent", "id": "agent-inertia-dev" }),
+            ),
         ] {
             let message = bench.call(tool, args).await.expect_err("a refusal");
             assert!(message.contains("Inertia Dev is protected"), "{message}");
         }
-        assert!(collections::get(&bench.layout, Collection::Agents, "agent-inertia-dev")
-            .expect("readable")
-            .is_some());
+        assert!(
+            collections::get(&bench.layout, Collection::Agents, "agent-inertia-dev")
+                .expect("readable")
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -2796,7 +2902,10 @@ mod tests {
             )
             .await
             .expect("saved");
-        assert_eq!(bench.record(Collection::Agents, &id_of(&out))["name"], json!("Mercury"));
+        assert_eq!(
+            bench.record(Collection::Agents, &id_of(&out))["name"],
+            json!("Mercury")
+        );
     }
 
     /* -- routines -------------------------------------------------------- */
@@ -2822,7 +2931,10 @@ mod tests {
 
         let saved = bench.record(Collection::Routines, &id_of(&out));
         assert_eq!(saved["name"], json!("Morning brief"));
-        assert_eq!(saved["schedule"]["humanLabel"], json!("On the schedule 0 9 * * 1-5"));
+        assert_eq!(
+            saved["schedule"]["humanLabel"],
+            json!("On the schedule 0 9 * * 1-5")
+        );
         // The scheduler decides when it next runs; a value here would be
         // invented for a clock the model cannot see.
         assert_eq!(saved["schedule"]["nextRunAt"], Value::Null);
@@ -2907,7 +3019,10 @@ mod tests {
             )
             .await
             .expect_err("a refusal");
-        assert!(message.contains("shortest interval is one minute"), "{message}");
+        assert!(
+            message.contains("shortest interval is one minute"),
+            "{message}"
+        );
     }
 
     #[tokio::test]
@@ -2925,7 +3040,10 @@ mod tests {
             )
             .await
             .expect_err("a refusal");
-        assert_eq!(message, "\"telepathy\" is not a mode. Use chat, plan or autonomous.");
+        assert_eq!(
+            message,
+            "\"telepathy\" is not a mode. Use chat, plan or autonomous."
+        );
     }
 
     /// The agent asking to run unattended is the one whose calls would go
@@ -2960,7 +3078,10 @@ mod tests {
             )
             .await
             .expect("saved");
-        assert_eq!(bench.record(Collection::Routines, &id_of(&held))["approval"], json!("ask"));
+        assert_eq!(
+            bench.record(Collection::Routines, &id_of(&held))["approval"],
+            json!("ask")
+        );
     }
 
     /// The person approved that playbook running unattended, not whatever an
@@ -2982,7 +3103,10 @@ mod tests {
             .call("inertia_save", json!({ "kind": "routine", "id": "nightly", "fields": { "name": "Nightly backup" } }))
             .await
             .expect("renamed");
-        assert_eq!(bench.record(Collection::Routines, "nightly")["approval"], json!("auto"));
+        assert_eq!(
+            bench.record(Collection::Routines, "nightly")["approval"],
+            json!("auto")
+        );
 
         let out = bench
             .call(
@@ -2992,7 +3116,10 @@ mod tests {
             .await
             .expect("rewritten");
         assert!(out.output.contains("asks again"), "{}", out.output);
-        assert_eq!(bench.record(Collection::Routines, "nightly")["approval"], json!("ask"));
+        assert_eq!(
+            bench.record(Collection::Routines, "nightly")["approval"],
+            json!("ask")
+        );
     }
 
     /// Saving a server starts a program, so the card is the command line,
@@ -3081,7 +3208,10 @@ mod tests {
         file.push("SKILL.md");
         let text = std::fs::read_to_string(&file).expect("a SKILL.md");
         assert!(text.contains("Run the pipeline."), "{text}");
-        assert!(text.contains("description: How to ship a release."), "{text}");
+        assert!(
+            text.contains("description: How to ship a release."),
+            "{text}"
+        );
     }
 
     #[tokio::test]
@@ -3097,7 +3227,10 @@ mod tests {
             )
             .await
             .expect_err("a refusal");
-        assert!(message.contains("only thing another agent sees"), "{message}");
+        assert!(
+            message.contains("only thing another agent sees"),
+            "{message}"
+        );
     }
 
     /* -- removing -------------------------------------------------------- */
@@ -3106,7 +3239,10 @@ mod tests {
     async fn removing_takes_the_record_off_disk_and_tells_the_window() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         let id = id_of(&made);
@@ -3128,7 +3264,10 @@ mod tests {
     async fn removing_something_that_is_not_there_says_so_rather_than_pretending() {
         let bench = Bench::new();
         let message = bench
-            .call("inertia_remove", json!({ "kind": "agent", "id": "agent-nope" }))
+            .call(
+                "inertia_remove",
+                json!({ "kind": "agent", "id": "agent-nope" }),
+            )
             .await
             .expect_err("a refusal");
         assert_eq!(message, "There is no agent with the id agent-nope.");
@@ -3141,7 +3280,9 @@ mod tests {
         let bench = Bench::new();
         let args = json!({ "kind": "agent", "id": "agent-a" });
 
-        let save = bench.tool("inertia_save").permission(&json!({ "kind": "agent" }));
+        let save = bench
+            .tool("inertia_save")
+            .permission(&json!({ "kind": "agent" }));
         assert_eq!(save.key, "inertia");
         assert_eq!(save.target, "agent:new");
         assert_eq!(save.always.as_deref(), Some("agent:*"));
@@ -3157,10 +3298,18 @@ mod tests {
             "agentId": "agent-1",
             "rules": [{ "tool": "shell", "action": "allow" }, { "tool": "read", "pattern": "*.env", "action": "deny" }]
         }));
-        assert_eq!(widening.target, "rules:agent-1: shell * allow; read *.env deny");
+        assert_eq!(
+            widening.target,
+            "rules:agent-1: shell * allow; read *.env deny"
+        );
         assert_eq!(widening.always, None);
 
-        for id in ["inertia_list", "inertia_get", "inertia_set_picture", "inertia_connect_app"] {
+        for id in [
+            "inertia_list",
+            "inertia_get",
+            "inertia_set_picture",
+            "inertia_connect_app",
+        ] {
             assert_eq!(bench.tool(id).permission(&args).key, "inertia", "{id}");
         }
     }
@@ -3175,7 +3324,10 @@ mod tests {
     async fn a_picture_is_copied_into_the_workspace_and_the_record_points_at_it() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         let id = id_of(&made);
@@ -3192,7 +3344,10 @@ mod tests {
             .expect("a picture");
 
         let agent = bench.record(Collection::Agents, &id);
-        assert_eq!(agent["avatarFile"], json!(format!("agents/pictures/{id}.png")));
+        assert_eq!(
+            agent["avatarFile"],
+            json!(format!("agents/pictures/{id}.png"))
+        );
         assert!(agent["avatarUpdatedAt"].as_i64().unwrap_or(0) > 0);
         assert!(picture_path(bench.layout.root(), &id, "png").is_file());
     }
@@ -3201,7 +3356,10 @@ mod tests {
     async fn something_that_is_not_an_image_is_refused_by_name() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         let source = bench.layout.root().join("notes.txt");
@@ -3221,7 +3379,10 @@ mod tests {
     async fn clearing_a_picture_takes_the_file_and_the_reference_both() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         let id = id_of(&made);
@@ -3236,11 +3397,17 @@ mod tests {
             .expect("a picture");
 
         bench
-            .call("inertia_set_picture", json!({ "agentId": id, "clear": true }))
+            .call(
+                "inertia_set_picture",
+                json!({ "agentId": id, "clear": true }),
+            )
             .await
             .expect("cleared");
 
-        assert_eq!(bench.record(Collection::Agents, &id)["avatarFile"], Value::Null);
+        assert_eq!(
+            bench.record(Collection::Agents, &id)["avatarFile"],
+            Value::Null
+        );
         assert!(!picture_path(bench.layout.root(), &id, "png").exists());
     }
 
@@ -3250,7 +3417,10 @@ mod tests {
     async fn removing_an_agent_takes_its_picture_with_it() {
         let bench = Bench::new();
         let made = bench
-            .call("inertia_save", json!({ "kind": "agent", "fields": { "name": "Mercury" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "agent", "fields": { "name": "Mercury" } }),
+            )
             .await
             .expect("saved");
         let id = id_of(&made);
@@ -3376,7 +3546,10 @@ mod tests {
             .call("inertia_set_rules", json!({ "rules": [] }))
             .await
             .expect_err("a refusal");
-        assert_eq!(message, "No rules were given, so there is nothing to change.");
+        assert_eq!(
+            message,
+            "No rules were given, so there is nothing to change."
+        );
     }
 
     /* -- the set --------------------------------------------------------- */
@@ -3417,7 +3590,10 @@ mod tests {
             );
         }
         for id in ["inertia_list", "inertia_get"] {
-            assert!(!inertia_agent::prompt::MUTATING.contains(&id), "{id} was withheld");
+            assert!(
+                !inertia_agent::prompt::MUTATING.contains(&id),
+                "{id} was withheld"
+            );
         }
     }
 
@@ -3438,13 +3614,19 @@ mod tests {
     async fn a_kind_that_cannot_be_created_says_what_to_do_instead() {
         let bench = Bench::new();
         let message = bench
-            .call("inertia_save", json!({ "kind": "computer", "fields": { "name": "box" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "computer", "fields": { "name": "box" } }),
+            )
             .await
             .expect_err("a refusal");
         assert!(message.contains("Computers screen"), "{message}");
 
         let message = bench
-            .call("inertia_save", json!({ "kind": "app", "fields": { "name": "gmail" } }))
+            .call(
+                "inertia_save",
+                json!({ "kind": "app", "fields": { "name": "gmail" } }),
+            )
             .await
             .expect_err("a refusal");
         assert!(message.contains("inertia_connect_app"), "{message}");
@@ -3456,11 +3638,15 @@ mod tests {
     fn a_schedule_in_words_is_what_the_routines_screen_shows() {
         assert_eq!(schedule::describe(&json!({})), "Runs when you ask");
         assert_eq!(
-            schedule::describe(&json!({ "schedule": { "kind": "interval", "expression": "PT2H" } })),
+            schedule::describe(
+                &json!({ "schedule": { "kind": "interval", "expression": "PT2H" } })
+            ),
             "Every 2 hour(s)"
         );
         assert_eq!(
-            schedule::describe(&json!({ "schedule": { "kind": "cron", "expression": "0 9 * * 1-5" } })),
+            schedule::describe(
+                &json!({ "schedule": { "kind": "cron", "expression": "0 9 * * 1-5" } })
+            ),
             "On the schedule 0 9 * * 1-5"
         );
     }

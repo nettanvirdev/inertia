@@ -87,9 +87,7 @@ impl Backoff {
     /// is the cap, not a panic or a wrap back round to five seconds.
     fn delay(failures: u32) -> Duration {
         let doublings = failures.saturating_sub(1).min(16);
-        RETRY_BASE
-            .saturating_mul(1u32 << doublings)
-            .min(RETRY_MAX)
+        RETRY_BASE.saturating_mul(1u32 << doublings).min(RETRY_MAX)
     }
 
     /// Forget a server, when its record is deleted or the workspace closes.
@@ -148,7 +146,10 @@ async fn tick(app: &AppHandle) {
 
         match workspace
             .mcp
-            .add(crate::integrations::with_secrets(&workspace.layout, &record))
+            .add(crate::integrations::with_secrets(
+                &workspace.layout,
+                &record,
+            ))
             .await
         {
             Ok(tool_count) => {

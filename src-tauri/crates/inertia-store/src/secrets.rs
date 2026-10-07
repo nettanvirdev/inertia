@@ -297,7 +297,9 @@ mod tests {
         let rows = list(&layout);
         assert_eq!(rows[0]["name"], "GITHUB_TOKEN");
         assert_eq!(rows[0]["hint"], "ghp…jkl");
-        assert!(!serde_json::to_string(&rows).unwrap().contains("abcdefghijkl"));
+        assert!(!serde_json::to_string(&rows)
+            .unwrap()
+            .contains("abcdefghijkl"));
     }
 
     #[test]
@@ -324,7 +326,10 @@ mod tests {
         let (_dir, layout) = workspace();
         set(&layout, "SHORT", "abcdef", "").unwrap();
         set(&layout, "LONG", "abcdef-ghijkl", "").unwrap();
-        assert_eq!(scrub("x abcdef-ghijkl y", &values(&layout)), "x [REDACTED] y");
+        assert_eq!(
+            scrub("x abcdef-ghijkl y", &values(&layout)),
+            "x [REDACTED] y"
+        );
     }
 
     #[test]
@@ -348,7 +353,10 @@ mod tests {
     fn a_name_that_is_not_an_identifier_is_refused() {
         let (_dir, layout) = workspace();
         for bad in ["", "1TOKEN", "my-token", "a b", "TOKEN!"] {
-            assert!(set(&layout, bad, "x", "").is_err(), "{bad} should be refused");
+            assert!(
+                set(&layout, bad, "x", "").is_err(),
+                "{bad} should be refused"
+            );
         }
         assert!(set(&layout, "_OK9", "x", "").is_ok());
     }
@@ -400,10 +408,7 @@ mod tests {
         let (_dir, layout) = workspace();
         set(&layout, "A", "1", "").unwrap();
         set(&layout, "B", "2", "").unwrap();
-        assert_eq!(
-            resolve(&layout, &json!("{secret:A}-{secret:B}")),
-            "1-2"
-        );
+        assert_eq!(resolve(&layout, &json!("{secret:A}-{secret:B}")), "1-2");
     }
 
     #[test]

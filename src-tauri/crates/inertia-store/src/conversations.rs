@@ -87,7 +87,11 @@ pub struct Thread {
 
 /// A piece of an assistant reply.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum Part {
     Text {
         text: String,
@@ -578,9 +582,11 @@ mod tests {
         let thread: Thread = serde_json::from_str(REAL_THREAD).unwrap();
         store.write_thread(&thread).unwrap();
 
-        let raw =
-            std::fs::read_to_string(dir.path().join("conversations/threads/thr-local-mta1b2c3-1.json"))
-                .unwrap();
+        let raw = std::fs::read_to_string(
+            dir.path()
+                .join("conversations/threads/thr-local-mta1b2c3-1.json"),
+        )
+        .unwrap();
         let written: serde_json::Value = serde_json::from_str(&raw).unwrap();
 
         assert_eq!(written["mode"], "group");

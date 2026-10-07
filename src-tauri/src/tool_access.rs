@@ -291,15 +291,24 @@ fn group_for(fact: &ToolFact) -> Option<(String, String)> {
     match fact.source {
         ToolSource::Composio => {
             let app = hint.unwrap_or_else(|| "composio".to_string());
-            Some((format!("app.{app}"), format!("{}, through Composio", title(&app))))
+            Some((
+                format!("app.{app}"),
+                format!("{}, through Composio", title(&app)),
+            ))
         }
         ToolSource::Mcp => {
             let server = hint.unwrap_or_else(|| "mcp".to_string());
-            Some((format!("mcp.{server}"), format!("{}, an MCP server", title(&server))))
+            Some((
+                format!("mcp.{server}"),
+                format!("{}, an MCP server", title(&server)),
+            ))
         }
         ToolSource::OpenApi => {
             let api = hint.unwrap_or_else(|| "api".to_string());
-            Some((format!("api.{api}"), format!("{}, an imported API", title(&api))))
+            Some((
+                format!("api.{api}"),
+                format!("{}, an imported API", title(&api)),
+            ))
         }
         ToolSource::Builtin => FAMILIES
             .iter()
@@ -367,8 +376,12 @@ fn describe(groups: &[Group]) -> String {
         ));
     }
     lines.push(String::new());
-    lines.push("If you already know the exact name of a tool in a group, you may simply call".to_string());
-    lines.push("it: it will be loaded and run in one step. Use this tool when you want to see".to_string());
+    lines.push(
+        "If you already know the exact name of a tool in a group, you may simply call".to_string(),
+    );
+    lines.push(
+        "it: it will be loaded and run in one step. Use this tool when you want to see".to_string(),
+    );
     lines.push("what a group contains first.".to_string());
     lines.join("\n")
 }
@@ -575,9 +588,11 @@ impl Deferred {
                 .and_then(|id| remaining.iter().position(|group| group.id == id))
             else {
                 let wanted = name.trim().to_lowercase();
-                let seen = self.loaded.lock().iter().any(|id| {
-                    id == &wanted || id.rsplit('.').next() == Some(wanted.as_str())
-                });
+                let seen = self
+                    .loaded
+                    .lock()
+                    .iter()
+                    .any(|id| id == &wanted || id.rsplit('.').next() == Some(wanted.as_str()));
                 (if seen { &mut already } else { &mut unknown }).push(name.clone());
                 continue;
             };
@@ -717,7 +732,8 @@ impl ToolRegistry for Deferred {
                 have.join(", ")
             );
             if !cut.deferred.is_empty() {
-                let groups: Vec<&str> = cut.deferred.iter().map(|group| group.id.as_str()).collect();
+                let groups: Vec<&str> =
+                    cut.deferred.iter().map(|group| group.id.as_str()).collect();
                 result.output.push_str(&format!(
                     " You can also load more tools with {GATE}; the groups are: {}.",
                     groups.join(", ")
@@ -769,7 +785,11 @@ mod tests {
         fn render(&self, _args: &Value) -> Option<String> {
             Some(format!("{} · search", self.server))
         }
-        async fn execute(&self, _args: Value, _ctx: &ToolContext) -> inertia_core::Result<ToolOutcome> {
+        async fn execute(
+            &self,
+            _args: Value,
+            _ctx: &ToolContext,
+        ) -> inertia_core::Result<ToolOutcome> {
             Ok(ToolOutcome::text("found"))
         }
     }
@@ -786,7 +806,11 @@ mod tests {
         async fn specs(&self) -> Vec<ToolSpec> {
             self.registry.specs().await
         }
-        async fn run(&self, call: &ToolCall, ctx: &ToolContext) -> inertia_core::Result<ToolResult> {
+        async fn run(
+            &self,
+            call: &ToolCall,
+            ctx: &ToolContext,
+        ) -> inertia_core::Result<ToolResult> {
             self.registry.run(call, ctx).await
         }
         async fn problems(&self) -> Vec<ProviderProblem> {
@@ -797,7 +821,10 @@ mod tests {
     #[async_trait]
     impl Facts for Fake {
         async fn facts(&self) -> Vec<ToolFact> {
-            self.tools.iter().map(|tool| ToolFact::of(tool.as_ref())).collect()
+            self.tools
+                .iter()
+                .map(|tool| ToolFact::of(tool.as_ref()))
+                .collect()
         }
     }
 
@@ -851,7 +878,12 @@ mod tests {
     }
 
     async fn names(deferred: &Deferred) -> Vec<String> {
-        deferred.specs().await.into_iter().map(|spec| spec.name).collect()
+        deferred
+            .specs()
+            .await
+            .into_iter()
+            .map(|spec| spec.name)
+            .collect()
     }
 
     #[tokio::test]
@@ -875,12 +907,30 @@ mod tests {
         let rig = rig();
         let specs = rig.deferred.specs().await;
         let gate = specs.iter().find(|spec| spec.name == GATE).expect("a gate");
-        assert!(gate.description.contains("- crew (Working alongside other agents)"), "{}", gate.description);
-        assert!(gate.description.contains("Tools: spawn."), "{}", gate.description);
+        assert!(
+            gate.description
+                .contains("- crew (Working alongside other agents)"),
+            "{}",
+            gate.description
+        );
+        assert!(
+            gate.description.contains("Tools: spawn."),
+            "{}",
+            gate.description
+        );
         // The browser family's own summary names its tools, so they are not
         // printed a second time.
-        assert!(gate.description.contains("- browser (Driving the browser pane)"), "{}", gate.description);
-        assert!(gate.description.contains("browser_click"), "{}", gate.description);
+        assert!(
+            gate.description
+                .contains("- browser (Driving the browser pane)"),
+            "{}",
+            gate.description
+        );
+        assert!(
+            gate.description.contains("browser_click"),
+            "{}",
+            gate.description
+        );
         assert_eq!(gate.parameters["required"], json!(["groups"]));
     }
 
@@ -890,13 +940,19 @@ mod tests {
         let specs = rig.deferred.specs().await;
         let gate = specs.iter().find(|spec| spec.name == GATE).expect("a gate");
         assert!(
-            gate.description.contains("- mcp.my-server (My server, an MCP server): 1 action: my_server_search."),
+            gate.description.contains(
+                "- mcp.my-server (My server, an MCP server): 1 action: my_server_search."
+            ),
             "{}",
             gate.description
         );
         // The runtime group's summary already lists the names, so they are
         // not printed twice.
-        assert!(!gate.description.contains("Tools: my_server_search"), "{}", gate.description);
+        assert!(
+            !gate.description.contains("Tools: my_server_search"),
+            "{}",
+            gate.description
+        );
     }
 
     #[tokio::test]
@@ -909,8 +965,17 @@ mod tests {
             .expect("not cancelled");
         assert!(result.ok, "{}", result.output);
         assert_eq!(result.title.as_deref(), Some("Loaded 2 tools"));
-        assert!(result.output.contains("browser (Driving the browser pane): browser_click, browser_type"), "{}", result.output);
-        assert_eq!(result.metadata.as_ref().and_then(|m| m.get("groups")), Some(&json!(["browser"])));
+        assert!(
+            result
+                .output
+                .contains("browser (Driving the browser pane): browser_click, browser_type"),
+            "{}",
+            result.output
+        );
+        assert_eq!(
+            result.metadata.as_ref().and_then(|m| m.get("groups")),
+            Some(&json!(["browser"]))
+        );
 
         let have = names(&rig.deferred).await;
         assert!(have.contains(&"browser_click".to_string()), "{have:?}");
@@ -928,7 +993,10 @@ mod tests {
         let rig = rig();
         let result = rig
             .deferred
-            .run(&call(GATE, json!({ "groups": ["Browser", "mcp/my-server"] })), &ctx())
+            .run(
+                &call(GATE, json!({ "groups": ["Browser", "mcp/my-server"] })),
+                &ctx(),
+            )
             .await
             .expect("not cancelled");
         assert!(result.ok);
@@ -949,7 +1017,9 @@ mod tests {
         assert_eq!(rig.browser_click.call_count(), 1);
         assert_eq!(rig.browser_click.calls()[0]["input"], "a.txt");
         // And its group is in the next request, so a second call needs nothing.
-        assert!(names(&rig.deferred).await.contains(&"browser_type".to_string()));
+        assert!(names(&rig.deferred)
+            .await
+            .contains(&"browser_type".to_string()));
     }
 
     #[tokio::test]
@@ -974,9 +1044,15 @@ mod tests {
             .expect("not cancelled");
         assert!(result.ok);
         assert_eq!(result.title.as_deref(), Some("Nothing to load"));
-        assert!(result.output.contains("No group called email."), "{}", result.output);
         assert!(
-            result.output.contains("The groups are: browser, crew, mcp.my-server."),
+            result.output.contains("No group called email."),
+            "{}",
+            result.output
+        );
+        assert!(
+            result
+                .output
+                .contains("The groups are: browser, crew, mcp.my-server."),
             "{}",
             result.output
         );
@@ -994,7 +1070,11 @@ mod tests {
             .run(&call(GATE, json!({ "groups": ["browser"] })), &ctx())
             .await
             .expect("not cancelled");
-        assert!(again.output.contains("Already loaded: browser."), "{}", again.output);
+        assert!(
+            again.output.contains("Already loaded: browser."),
+            "{}",
+            again.output
+        );
     }
 
     #[tokio::test]
@@ -1025,7 +1105,9 @@ mod tests {
     #[test]
     fn the_preference_is_read_the_way_the_renderer_writes_it() {
         assert!(wanted(&json!({ "toolAccess": "on-demand" })));
-        assert!(wanted(&json!({ "user": { "preferences": { "toolAccess": "on-demand" } } })));
+        assert!(wanted(
+            &json!({ "user": { "preferences": { "toolAccess": "on-demand" } } })
+        ));
         assert!(!wanted(&json!({ "toolAccess": "all" })));
         assert!(!wanted(&json!({})));
         assert!(!wanted(&Value::Null));

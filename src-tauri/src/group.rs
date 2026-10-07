@@ -64,8 +64,10 @@ impl Permissions {
         let Some(map) = settings.get("permissions") else {
             return base;
         };
-        let flag = |key: &str, fallback: bool| map.get(key).and_then(Value::as_bool).unwrap_or(fallback);
-        let count = |key: &str, fallback: u64| map.get(key).and_then(Value::as_u64).unwrap_or(fallback);
+        let flag =
+            |key: &str, fallback: bool| map.get(key).and_then(Value::as_bool).unwrap_or(fallback);
+        let count =
+            |key: &str, fallback: u64| map.get(key).and_then(Value::as_u64).unwrap_or(fallback);
         Self {
             can_invite: flag("canInvite", base.can_invite),
             can_handover: flag("canHandover", base.can_handover),
@@ -246,7 +248,10 @@ impl Rooms {
     }
 
     /// Who the room says should speak, and who is in it.
-    pub fn seated(&self, conversation_id: &str) -> Option<(Option<String>, Vec<String>, Permissions)> {
+    pub fn seated(
+        &self,
+        conversation_id: &str,
+    ) -> Option<(Option<String>, Vec<String>, Permissions)> {
         self.lock().get(conversation_id).map(|room| {
             (
                 room.floor.active.clone(),
@@ -257,7 +262,13 @@ impl Rooms {
     }
 
     /// Bring an agent in.
-    pub fn invite(&self, conversation_id: &str, agent_id: &str, by: Option<&str>, why: Option<&str>) -> Moved {
+    pub fn invite(
+        &self,
+        conversation_id: &str,
+        agent_id: &str,
+        by: Option<&str>,
+        why: Option<&str>,
+    ) -> Moved {
         let mut rooms = self.lock();
         let Some(room) = rooms.get_mut(conversation_id) else {
             return Moved::No("This conversation is not a group.".into());
@@ -299,7 +310,13 @@ impl Rooms {
     /// agent whose name and face the conversation carries changes. The one
     /// handing over stays in the room - it has not finished being useful, it
     /// has finished being in charge.
-    pub fn handover(&self, conversation_id: &str, agent_id: &str, by: Option<&str>, why: Option<&str>) -> Moved {
+    pub fn handover(
+        &self,
+        conversation_id: &str,
+        agent_id: &str,
+        by: Option<&str>,
+        why: Option<&str>,
+    ) -> Moved {
         // Checked and released before `invite` is called: it takes the same
         // lock, and holding one across the call is the deadlock.
         let seated = {
@@ -336,7 +353,13 @@ impl Rooms {
     }
 
     /// Step out, having said what there was to say.
-    pub fn leave(&self, conversation_id: &str, agent_id: &str, to: Option<&str>, why: Option<&str>) -> Moved {
+    pub fn leave(
+        &self,
+        conversation_id: &str,
+        agent_id: &str,
+        to: Option<&str>,
+        why: Option<&str>,
+    ) -> Moved {
         let mut rooms = self.lock();
         let Some(room) = rooms.get_mut(conversation_id) else {
             return Moved::No("This conversation is not a group.".into());
@@ -470,7 +493,9 @@ impl Rooms {
     /// whose roster is half-updated, and a conversation that has to be started
     /// again is a far worse answer than one whose panel is a line out of date.
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, Room>> {
-        self.rooms.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.rooms
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
@@ -493,7 +518,10 @@ mod tests {
     }
 
     fn roster(rooms: &Rooms) -> Vec<String> {
-        rooms.seated("t1").map(|(_, roster, _)| roster).unwrap_or_default()
+        rooms
+            .seated("t1")
+            .map(|(_, roster, _)| roster)
+            .unwrap_or_default()
     }
 
     #[test]
@@ -505,7 +533,10 @@ mod tests {
         let rooms = opened();
         assert_eq!(rooms.snapshot("t1").unwrap()["primary"], json!("a"));
 
-        assert!(matches!(rooms.handover("t1", "b", Some("a"), None), Moved::Yes { .. }));
+        assert!(matches!(
+            rooms.handover("t1", "b", Some("a"), None),
+            Moved::Yes { .. }
+        ));
 
         let room = rooms.snapshot("t1").unwrap();
         assert_eq!(room["primary"], json!("b"));
@@ -524,7 +555,10 @@ mod tests {
         // conversation it no longer ran.
         let rooms = opened();
         rooms.handover("t1", "b", Some("a"), None);
-        assert!(matches!(rooms.leave("t1", "a", None, None), Moved::Yes { .. }));
+        assert!(matches!(
+            rooms.leave("t1", "a", None, None),
+            Moved::Yes { .. }
+        ));
         assert_eq!(roster(&rooms), ids(&["b"]));
 
         // And the new one cannot leave, because somebody has to be here.
@@ -544,7 +578,10 @@ mod tests {
         ));
 
         rooms.open("solo", Some("a"), Permissions::default(), &[]);
-        assert!(matches!(rooms.handover("solo", "b", Some("a"), None), Moved::Yes { .. }));
+        assert!(matches!(
+            rooms.handover("solo", "b", Some("a"), None),
+            Moved::Yes { .. }
+        ));
         rooms.spoke("solo", "a", &[]);
         let room = rooms.snapshot("solo").unwrap();
         assert_eq!(room["active"], json!("b"));
@@ -569,7 +606,10 @@ mod tests {
     #[test]
     fn an_invited_agent_speaks_next_when_the_turn_ends() {
         let rooms = opened();
-        assert_eq!(rooms.invite("t1", "b", Some("a"), Some("second opinion")), Moved::Yes { already: false });
+        assert_eq!(
+            rooms.invite("t1", "b", Some("a"), Some("second opinion")),
+            Moved::Yes { already: false }
+        );
         // Still "a": the floor settles at the end of the turn, not mid-sentence.
         assert_eq!(active(&rooms).as_deref(), Some("a"));
 
@@ -587,13 +627,19 @@ mod tests {
         // "a" asks for "b" again. Refusing this is what stalls a real
         // conversation: the invite fails, the agent says "over to you" in
         // words, and words move nothing.
-        assert_eq!(rooms.invite("t1", "b", Some("a"), None), Moved::Yes { already: true });
+        assert_eq!(
+            rooms.invite("t1", "b", Some("a"), None),
+            Moved::Yes { already: true }
+        );
     }
 
     #[test]
     fn a_handover_brings_the_agent_in_if_it_was_not_here() {
         let rooms = opened();
-        assert_eq!(rooms.handover("t1", "b", Some("a"), Some("your area now")), Moved::Yes { already: false });
+        assert_eq!(
+            rooms.handover("t1", "b", Some("a"), Some("your area now")),
+            Moved::Yes { already: false }
+        );
         assert_eq!(roster(&rooms), ids(&["a", "b"]));
         rooms.spoke("t1", "a", &[]);
         assert_eq!(active(&rooms).as_deref(), Some("b"));
@@ -638,7 +684,10 @@ mod tests {
             &[],
         );
         // `by: None` is the person, and the person decides who is in their room.
-        assert_eq!(rooms.invite("t1", "b", None, None), Moved::Yes { already: false });
+        assert_eq!(
+            rooms.invite("t1", "b", None, None),
+            Moved::Yes { already: false }
+        );
     }
 
     #[test]
@@ -669,7 +718,10 @@ mod tests {
     fn leaving_hands_the_conversation_back() {
         let rooms = opened();
         rooms.invite("t1", "b", None, None);
-        assert_eq!(rooms.leave("t1", "b", None, Some("done")), Moved::Yes { already: false });
+        assert_eq!(
+            rooms.leave("t1", "b", None, Some("done")),
+            Moved::Yes { already: false }
+        );
         rooms.spoke("t1", "b", &[]);
         assert_eq!(active(&rooms).as_deref(), Some("a"));
         assert_eq!(roster(&rooms), ids(&["a"]));

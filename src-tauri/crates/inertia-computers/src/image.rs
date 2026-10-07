@@ -54,7 +54,10 @@ const CONTEXT: &[(&str, &str)] = &[
     ("Dockerfile", include_str!("../sandbox/Dockerfile")),
     ("image.json", IMAGE_JSON),
     ("start.sh", include_str!("../sandbox/start.sh")),
-    ("inertia-browser", include_str!("../sandbox/inertia-browser")),
+    (
+        "inertia-browser",
+        include_str!("../sandbox/inertia-browser"),
+    ),
     (
         "inertia-browser.desktop",
         include_str!("../sandbox/inertia-browser.desktop"),

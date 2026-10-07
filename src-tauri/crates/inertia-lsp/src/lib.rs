@@ -368,7 +368,9 @@ impl Lsp {
         // told its error is in `c:\users\...` will go looking for a second file.
         let here = diagnostic::report(
             &absolute,
-            all.get(&key).map(|entry| entry.items.as_slice()).unwrap_or(&[]),
+            all.get(&key)
+                .map(|entry| entry.items.as_slice())
+                .unwrap_or(&[]),
         );
         if !here.is_empty() {
             out.push_str("\n\nLSP errors detected in this file, please fix:\n");
@@ -385,7 +387,9 @@ impl Lsp {
                 if other == &key {
                     continue;
                 }
-                let Some(entry) = all.get(other) else { continue };
+                let Some(entry) = all.get(other) else {
+                    continue;
+                };
                 if !diagnostic::interesting(&entry.items) {
                     continue;
                 }
@@ -682,7 +686,8 @@ mod tests {
         let dir = project(&[("notes.txt", "hello\n")]);
         let lsp = Lsp::with_launcher(fake_launcher());
         assert_eq!(
-            lsp.report(&at(&dir, "notes.txt"), Some(dir.path()), 0).await,
+            lsp.report(&at(&dir, "notes.txt"), Some(dir.path()), 0)
+                .await,
             ""
         );
         lsp.reset().await;
@@ -717,7 +722,10 @@ mod tests {
         let loud = lsp
             .report(&at(&dir, "a.demo"), Some(dir.path()), MAX_OTHER_FILES)
             .await;
-        assert!(loud.contains("LSP errors detected in other files"), "got {loud:?}");
+        assert!(
+            loud.contains("LSP errors detected in other files"),
+            "got {loud:?}"
+        );
         assert!(loud.contains("importer is broken now"), "got {loud:?}");
         lsp.reset().await;
     }
@@ -728,9 +736,15 @@ mod tests {
     async fn a_server_that_will_not_start_is_silence() {
         let dir = project(&[("a.demo", "@@error still broken\n")]);
         let lsp = Lsp::with_launcher(Arc::new(DeadLauncher));
-        assert_eq!(lsp.report(&at(&dir, "a.demo"), Some(dir.path()), 0).await, "");
+        assert_eq!(
+            lsp.report(&at(&dir, "a.demo"), Some(dir.path()), 0).await,
+            ""
+        );
         // ...and it is not tried again for the rest of the session.
-        assert_eq!(lsp.report(&at(&dir, "a.demo"), Some(dir.path()), 0).await, "");
+        assert_eq!(
+            lsp.report(&at(&dir, "a.demo"), Some(dir.path()), 0).await,
+            ""
+        );
         assert!(lsp.broken.lock().len() == 1);
         lsp.reset().await;
     }
@@ -802,7 +816,11 @@ mod tests {
         let dir = project(&[("a.demo", "@@hover const x: number\n")]);
         let lsp = Lsp::with_launcher(fake_launcher());
         let answer = lsp
-            .query(&at(&dir, "a.demo"), Some(dir.path()), &Question::new("hover"))
+            .query(
+                &at(&dir, "a.demo"),
+                Some(dir.path()),
+                &Question::new("hover"),
+            )
             .await
             .expect("a server");
         match answer {
@@ -928,7 +946,13 @@ mod tests {
             assert!(operation(name).is_some(), "{name}");
         }
         assert!(operation("nonsense").is_none());
-        assert_eq!(operation("references").unwrap().0, "textDocument/references");
-        assert!(!operation("symbols").unwrap().1, "symbols needs no position");
+        assert_eq!(
+            operation("references").unwrap().0,
+            "textDocument/references"
+        );
+        assert!(
+            !operation("symbols").unwrap().1,
+            "symbols needs no position"
+        );
     }
 }

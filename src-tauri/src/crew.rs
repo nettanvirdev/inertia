@@ -506,10 +506,7 @@ impl Runs {
         prompt: &str,
         model: &str,
     ) -> Run {
-        let id = format!(
-            "run-{}",
-            &uuid::Uuid::new_v4().simple().to_string()[..8]
-        );
+        let id = format!("run-{}", &uuid::Uuid::new_v4().simple().to_string()[..8]);
         let mut table = self.table.lock();
         table.seq += 1;
         let mut run = Run {
@@ -565,7 +562,11 @@ impl Runs {
     fn began(&self, id: &str, generation: u64) {
         let conversation = {
             let mut table = self.table.lock();
-            let Some(run) = table.runs.get_mut(id).filter(|run| Self::current(run, generation)) else {
+            let Some(run) = table
+                .runs
+                .get_mut(id)
+                .filter(|run| Self::current(run, generation))
+            else {
                 return;
             };
             run.status = Status::Running;
@@ -579,7 +580,11 @@ impl Runs {
     fn observe_tool(&self, id: &str, generation: u64, tool: &str, title: Option<&str>) {
         let conversation = {
             let mut table = self.table.lock();
-            let Some(run) = table.runs.get_mut(id).filter(|run| Self::current(run, generation)) else {
+            let Some(run) = table
+                .runs
+                .get_mut(id)
+                .filter(|run| Self::current(run, generation))
+            else {
                 return;
             };
             let title = title.unwrap_or(tool).to_string();
@@ -598,7 +603,11 @@ impl Runs {
     fn observe_text(&self, id: &str, generation: u64, text: &str) {
         let conversation = {
             let mut table = self.table.lock();
-            let Some(run) = table.runs.get_mut(id).filter(|run| Self::current(run, generation)) else {
+            let Some(run) = table
+                .runs
+                .get_mut(id)
+                .filter(|run| Self::current(run, generation))
+            else {
                 return;
             };
             run.text.push_str(text);
@@ -623,7 +632,11 @@ impl Runs {
             return;
         }
         let mut table = self.table.lock();
-        if table.runs.get(id).is_some_and(|run| Self::current(run, generation)) {
+        if table
+            .runs
+            .get(id)
+            .is_some_and(|run| Self::current(run, generation))
+        {
             table.transcripts.insert(id.to_string(), transcript);
         }
     }
@@ -639,7 +652,11 @@ impl Runs {
         self.keep(id, generation, transcript);
         let conversation = {
             let mut table = self.table.lock();
-            let Some(run) = table.runs.get_mut(id).filter(|run| Self::current(run, generation)) else {
+            let Some(run) = table
+                .runs
+                .get_mut(id)
+                .filter(|run| Self::current(run, generation))
+            else {
                 return;
             };
             // Already settled by an interrupt or a cancel that got here first.
@@ -662,15 +679,30 @@ impl Runs {
         self.notify(&conversation);
     }
 
-    fn fail(&self, id: &str, generation: u64, message: &str, cancelled: bool, transcript: Vec<Entry>) {
+    fn fail(
+        &self,
+        id: &str,
+        generation: u64,
+        message: &str,
+        cancelled: bool,
+        transcript: Vec<Entry>,
+    ) {
         self.keep(id, generation, transcript);
         let conversation = {
             let mut table = self.table.lock();
-            let Some(run) = table.runs.get_mut(id).filter(|run| Self::current(run, generation)) else {
+            let Some(run) = table
+                .runs
+                .get_mut(id)
+                .filter(|run| Self::current(run, generation))
+            else {
                 return;
             };
             if run.status.is_active() {
-                run.status = if cancelled { Status::Cancelled } else { Status::Failed };
+                run.status = if cancelled {
+                    Status::Cancelled
+                } else {
+                    Status::Failed
+                };
                 run.activity = if cancelled { "Cancelled" } else { "Failed" }.to_string();
                 run.ended_at = Some(now_ms());
                 run.error = Some(message.to_string());
@@ -720,7 +752,9 @@ impl Runs {
     /// whose parent has been cancelled has nobody left to report to, and it
     /// would keep spending money to produce an answer no one will read.
     pub fn cancel(&self, id: &str, descendants: bool, reason: &str) -> bool {
-        let Some(run) = self.get(id) else { return false };
+        let Some(run) = self.get(id) else {
+            return false;
+        };
         if descendants {
             for child in self.children_of(id) {
                 self.cancel(&child.id, true, reason);
@@ -901,7 +935,9 @@ impl Runs {
                     conversation.to_string()
                 }
                 Some(id) => {
-                    let Some(run) = table.runs.get_mut(id) else { return false };
+                    let Some(run) = table.runs.get_mut(id) else {
+                        return false;
+                    };
                     let shown: String = message.text.chars().take(120).collect();
                     log(run, "message", format!("{}: {shown}", message.from_name));
                     run.inbox.push(message);
@@ -919,7 +955,9 @@ impl Runs {
         match run {
             None => table.mailboxes.remove(conversation).unwrap_or_default(),
             Some(id) => {
-                let Some(run) = table.runs.get_mut(id) else { return Vec::new() };
+                let Some(run) = table.runs.get_mut(id) else {
+                    return Vec::new();
+                };
                 let mut out = Vec::new();
                 for message in run.inbox.iter_mut().filter(|message| !message.read) {
                     message.read = true;
@@ -1105,7 +1143,9 @@ struct Core {
 
 impl std::fmt::Debug for Core {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Core").field("caller", &self.caller).finish_non_exhaustive()
+        f.debug_struct("Core")
+            .field("caller", &self.caller)
+            .finish_non_exhaustive()
     }
 }
 
@@ -1129,7 +1169,12 @@ struct Brief {
 fn temporary_agent(role: &str, parent: Option<&Agent>) -> Agent {
     let name = {
         let trimmed = role.trim();
-        if trimmed.is_empty() { "Helper" } else { trimmed }.to_string()
+        if trimmed.is_empty() {
+            "Helper"
+        } else {
+            trimmed
+        }
+        .to_string()
     };
     Agent {
         id: String::new(),
@@ -1286,8 +1331,15 @@ impl Core {
                     .reopen(&id, &prompt)
                     .ok_or_else(|| format!("There is no run called {id}."))?;
                 history.push(Entry::user(prompt));
-                core.launch(agent.clone(), brief.clone(), Some(reopened), history, &root, None)
-                    .map(|_| ())
+                core.launch(
+                    agent.clone(),
+                    brief.clone(),
+                    Some(reopened),
+                    history,
+                    &root,
+                    None,
+                )
+                .map(|_| ())
             })
         };
 
@@ -1484,7 +1536,9 @@ fn report(run: &Run) -> String {
         }
         Status::Failed => format!("It failed: {}", run.error.as_deref().unwrap_or("")),
         Status::Cancelled => format!("It was cancelled: {}", run.error.as_deref().unwrap_or("")),
-        Status::Interrupted => format!("It was interrupted: {}", run.error.as_deref().unwrap_or("")),
+        Status::Interrupted => {
+            format!("It was interrupted: {}", run.error.as_deref().unwrap_or(""))
+        }
         Status::Queued | Status::Running => format!(
             "Still {} - {} steps so far. Not finished.",
             run.activity.to_lowercase(),
@@ -1508,7 +1562,11 @@ async fn until_settled(runs: &Runs, ids: &[String], all: bool, deadline: Instant
             .filter(|id| runs.get(id).is_some_and(|run| run.status.is_active()))
             .cloned()
             .collect();
-        let satisfied = if all { active.is_empty() } else { active.len() < ids.len() };
+        let satisfied = if all {
+            active.is_empty()
+        } else {
+            active.len() < ids.len()
+        };
         if satisfied || Instant::now() >= deadline {
             return active;
         }
@@ -1599,11 +1657,17 @@ impl Tool for Spawn {
         let core = &self.0;
         let description = text_arg(&args, "description").unwrap_or_else(|| "work".to_string());
         let Some(prompt) = text_arg(&args, "prompt") else {
-            return refuse("`prompt` is required: the run sees nothing else, so it needs a full brief.");
+            return refuse(
+                "`prompt` is required: the run sees nothing else, so it needs a full brief.",
+            );
         };
         let wanted = text_arg(&args, "agent");
 
-        if let Some(why) = spawn_refusal(&core.record(), &core.name(), core.load(wanted.is_some(), true)) {
+        if let Some(why) = spawn_refusal(
+            &core.record(),
+            &core.name(),
+            core.load(wanted.is_some(), true),
+        ) {
             return refuse(why);
         }
 
@@ -1641,9 +1705,15 @@ impl Tool for Spawn {
 
         // What the run starts from: its brief alone by default, preceded by a
         // digest of the parent's recent work when asked and when there is one.
-        let share = args.get("share_context").and_then(Value::as_bool).unwrap_or(false);
+        let share = args
+            .get("share_context")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let shared = if share {
-            core.caller.recent_context.as_ref().map(|recent| recent(SHARED_CONTEXT_CHARS))
+            core.caller
+                .recent_context
+                .as_ref()
+                .map(|recent| recent(SHARED_CONTEXT_CHARS))
         } else {
             None
         };
@@ -1772,7 +1842,11 @@ impl Tool for Collect {
                 .map(|run| format!("{} ({})", run.id, run.description))
                 .collect::<Vec<_>>()
                 .join(", ");
-            let names = unknown.iter().map(|id| id.as_str()).collect::<Vec<_>>().join(", ");
+            let names = unknown
+                .iter()
+                .map(|id| id.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
             return refuse(format!(
                 "No run in this conversation called {names}. {}",
                 if known.is_empty() {
@@ -1786,14 +1860,25 @@ impl Tool for Collect {
         let seconds = seconds_arg(&args, DEFAULT_COLLECT_SECONDS);
         // All of them at once. Waiting on the slowest is the point; waiting on
         // each in turn would be the sequential delegation this tool replaces.
-        until_settled(&core.runs, &ids, true, Instant::now() + Duration::from_secs(seconds)).await;
+        until_settled(
+            &core.runs,
+            &ids,
+            true,
+            Instant::now() + Duration::from_secs(seconds),
+        )
+        .await;
         core.runs.mark_collected(&ids);
 
         let runs: Vec<Run> = ids.iter().filter_map(|id| core.runs.get(id)).collect();
         let waiting: Vec<&Run> = runs.iter().filter(|run| run.status.is_active()).collect();
         let failed = runs
             .iter()
-            .filter(|run| matches!(run.status, Status::Failed | Status::Cancelled | Status::Interrupted))
+            .filter(|run| {
+                matches!(
+                    run.status,
+                    Status::Failed | Status::Cancelled | Status::Interrupted
+                )
+            })
             .count();
 
         let mut note = Vec::new();
@@ -1802,7 +1887,11 @@ impl Tool for Collect {
                 "{} still running after {seconds}s ({}). They have not been stopped - collect \
                  them again, or carry on without them.",
                 waiting.len(),
-                waiting.iter().map(|run| run.id.as_str()).collect::<Vec<_>>().join(", ")
+                waiting
+                    .iter()
+                    .map(|run| run.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ));
         }
         if failed > 0 {
@@ -1820,7 +1909,11 @@ impl Tool for Collect {
         }
 
         Ok(ToolOutcome {
-            title: Some(format!("Collected {}/{}", runs.len() - waiting.len(), runs.len())),
+            title: Some(format!(
+                "Collected {}/{}",
+                runs.len() - waiting.len(),
+                runs.len()
+            )),
             output: parts.join("\n\n"),
             metadata: Some(json!({
                 "crew": true,
@@ -1970,10 +2063,12 @@ impl Tool for Wait {
 
         let mut body = vec![described];
         body.extend(settled.iter().map(report));
-        if settled
-            .iter()
-            .any(|run| matches!(run.status, Status::Failed | Status::Cancelled | Status::Interrupted))
-        {
+        if settled.iter().any(|run| {
+            matches!(
+                run.status,
+                Status::Failed | Status::Cancelled | Status::Interrupted
+            )
+        }) {
             body.push(
                 "One of them did not finish successfully. Decide what to do about it rather than \
                  reporting the failure as your result."
@@ -2040,7 +2135,10 @@ impl Tool for Interrupt {
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        Some(format!("Interrupt {}", text_arg(args, "run_id").unwrap_or_default()))
+        Some(format!(
+            "Interrupt {}",
+            text_arg(args, "run_id").unwrap_or_default()
+        ))
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
@@ -2117,7 +2215,10 @@ impl Tool for Followup {
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        Some(format!("Follow up with {}", text_arg(args, "run_id").unwrap_or_default()))
+        Some(format!(
+            "Follow up with {}",
+            text_arg(args, "run_id").unwrap_or_default()
+        ))
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
@@ -2150,7 +2251,9 @@ impl Tool for Followup {
                  You are not waiting for it. `collect` or `wait` when you need the answer.",
                 run.agent_name
             ),
-            metadata: Some(json!({ "runId": id, "agent": run.agent_name, "state": "running", "crew": true })),
+            metadata: Some(
+                json!({ "runId": id, "agent": run.agent_name, "state": "running", "crew": true }),
+            ),
             images: Vec::new(),
         })
     }
@@ -2198,7 +2301,9 @@ impl Tool for Team {
             .drain(&core.caller.conversation, core.caller.run_id.as_deref());
 
         if all.is_empty() && messages.is_empty() {
-            return Ok(ToolOutcome::text("You have not started any runs.").with_title("Nobody is running"));
+            return Ok(
+                ToolOutcome::text("You have not started any runs.").with_title("Nobody is running")
+            );
         }
 
         let lines: Vec<String> = all
@@ -2210,11 +2315,19 @@ impl Tool for Team {
                     .map(|parent| format!(" (under {parent})"))
                     .unwrap_or_default();
                 let state = if run.status.is_active() {
-                    format!("{} - {}, {} steps", run.status.as_str(), run.activity, run.steps.len())
+                    format!(
+                        "{} - {}, {} steps",
+                        run.status.as_str(),
+                        run.activity,
+                        run.steps.len()
+                    )
                 } else {
                     run.status.as_str().to_string()
                 };
-                format!("{}{owner}  {}  {state}  \"{}\"", run.id, run.agent_name, run.description)
+                format!(
+                    "{}{owner}  {}  {state}  \"{}\"",
+                    run.id, run.agent_name, run.description
+                )
             })
             .collect();
 
@@ -2289,7 +2402,10 @@ impl Tool for AgentSend {
     }
 
     fn render(&self, args: &Value) -> Option<String> {
-        Some(format!("Message {}", text_arg(args, "to").unwrap_or_default()))
+        Some(format!(
+            "Message {}",
+            text_arg(args, "to").unwrap_or_default()
+        ))
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
@@ -2361,10 +2477,10 @@ mod tests {
     use futures::stream::BoxStream;
     use inertia_core::id::ToolCallId;
     use inertia_core::provider::{ChatRequest, ModelInfo, Provider, StreamEvent};
-    use std::path::PathBuf;
     use inertia_mock::{MockGate, MockProvider};
     use inertia_store::Layout;
     use inertia_tools::Registry;
+    use std::path::PathBuf;
 
     /// A provider whose first call never answers, and whose later calls reply
     /// from a script. The shape an interrupt is for.
@@ -2417,7 +2533,10 @@ mod tests {
             &self.layout
         }
 
-        fn provider(&self, reference: &str) -> std::result::Result<(Arc<dyn Provider>, String), String> {
+        fn provider(
+            &self,
+            reference: &str,
+        ) -> std::result::Result<(Arc<dyn Provider>, String), String> {
             Ok((self.provider.clone(), format!("resolved:{reference}")))
         }
 
@@ -2453,7 +2572,10 @@ mod tests {
                 extra.iter().map(|tool| tool.id().to_string()).collect(),
             ));
             let gate: Arc<dyn PermissionGate> = Arc::new(MockGate::allow_all());
-            (Arc::new(Registry::new(gate.clone()).with_tools(extra)), gate)
+            (
+                Arc::new(Registry::new(gate.clone()).with_tools(extra)),
+                gate,
+            )
         }
     }
 
@@ -2520,7 +2642,12 @@ mod tests {
         }
     }
 
-    fn bench_with(provider: Arc<dyn Provider>, agent: Option<Agent>, depth: u32, run_id: Option<&str>) -> Bench {
+    fn bench_with(
+        provider: Arc<dyn Provider>,
+        agent: Option<Agent>,
+        depth: u32,
+        run_id: Option<&str>,
+    ) -> Bench {
         let (dir, layout) = workspace();
         let fake = Arc::new(Fake {
             layout,
@@ -2567,12 +2694,22 @@ mod tests {
 
     #[tokio::test]
     async fn spawn_returns_before_the_work_is_done_and_collect_brings_both_answers_back() {
-        let bench = bench(MockProvider::new().replying("routes: a, b").replying("tests: 12 pass"));
+        let bench = bench(
+            MockProvider::new()
+                .replying("routes: a, b")
+                .replying("tests: 12 pass"),
+        );
 
-        let first = bench.call("spawn", brief("survey the routes", "Surveyor")).await;
+        let first = bench
+            .call("spawn", brief("survey the routes", "Surveyor"))
+            .await;
         let second = bench.call("spawn", brief("run the tests", "Tester")).await;
         // This is the whole feature: the tool call is over, the session is not.
-        assert!(first.output.contains("not waiting for it"), "{}", first.output);
+        assert!(
+            first.output.contains("not waiting for it"),
+            "{}",
+            first.output
+        );
         assert_eq!(first.title.as_deref(), Some("Surveyor: survey the routes"));
         let a = Bench::run_id(&first);
         let b = Bench::run_id(&second);
@@ -2580,12 +2717,24 @@ mod tests {
 
         let team = bench.call("team", json!({})).await;
         assert_eq!(team.title.as_deref(), Some("2 running"));
-        assert!(team.output.contains(&format!("{a}  Surveyor  running")), "{}", team.output);
+        assert!(
+            team.output.contains(&format!("{a}  Surveyor  running")),
+            "{}",
+            team.output
+        );
 
         let collected = bench.call("collect", json!({ "run_ids": [a, b] })).await;
         assert_eq!(collected.title.as_deref(), Some("Collected 2/2"));
-        assert!(collected.output.contains("routes: a, b"), "{}", collected.output);
-        assert!(collected.output.contains("tests: 12 pass"), "{}", collected.output);
+        assert!(
+            collected.output.contains("routes: a, b"),
+            "{}",
+            collected.output
+        );
+        assert!(
+            collected.output.contains("tests: 12 pass"),
+            "{}",
+            collected.output
+        );
         assert!(collected.output.contains("status=\"done\""));
 
         let team = bench.call("team", json!({})).await;
@@ -2594,7 +2743,9 @@ mod tests {
 
         // Both really ran, each with its own brief and the coordinator's model.
         let progress = bench.fake.progress.lock();
-        assert!(progress.iter().any(|p| p["state"] == "running" && p["crew"] == true));
+        assert!(progress
+            .iter()
+            .any(|p| p["state"] == "running" && p["crew"] == true));
         assert!(progress.iter().any(|p| p["state"] == "done"));
         let built = bench.fake.built.lock();
         assert_eq!(built.len(), 2);
@@ -2610,7 +2761,10 @@ mod tests {
 
         let waited = bench.call("wait", json!({})).await;
         assert_eq!(waited.title.as_deref(), Some("1 finished"));
-        assert_eq!(waited.metadata.as_ref().expect("metadata")["reason"], "settled");
+        assert_eq!(
+            waited.metadata.as_ref().expect("metadata")["reason"],
+            "settled"
+        );
         assert!(waited.output.contains("done"), "{}", waited.output);
         assert!(bench.runs.get(&id).expect("run").collected);
 
@@ -2626,11 +2780,21 @@ mod tests {
             then: MockProvider::new(),
         });
         let bench = bench_with(provider, Some(coordinator()), 0, None);
-        let id = Bench::run_id(&bench.call("spawn", brief("think for ever", "Dreamer")).await);
+        let id = Bench::run_id(
+            &bench
+                .call("spawn", brief("think for ever", "Dreamer"))
+                .await,
+        );
 
-        let out = bench.call("collect", json!({ "run_ids": [id], "timeout_seconds": 1 })).await;
+        let out = bench
+            .call("collect", json!({ "run_ids": [id], "timeout_seconds": 1 }))
+            .await;
         assert_eq!(out.title.as_deref(), Some("Collected 0/1"));
-        assert!(out.output.contains("still running after 1s"), "{}", out.output);
+        assert!(
+            out.output.contains("still running after 1s"),
+            "{}",
+            out.output
+        );
         assert!(bench.runs.get(&id).expect("run").status.is_active());
     }
 
@@ -2641,7 +2805,11 @@ mod tests {
             then: MockProvider::new().replying("Picked up where I left off."),
         });
         let bench = bench_with(provider.clone(), Some(coordinator()), 0, None);
-        let id = Bench::run_id(&bench.call("spawn", brief("read the module", "Reader")).await);
+        let id = Bench::run_id(
+            &bench
+                .call("spawn", brief("read the module", "Reader"))
+                .await,
+        );
 
         // Let the loop reach the provider, so what is interrupted is a request in flight.
         for _ in 0..4 {
@@ -2650,9 +2818,16 @@ mod tests {
         assert_eq!(*provider.calls.lock(), 1);
 
         let stopped = bench
-            .call("interrupt", json!({ "run_id": id, "reason": "the file changed" }))
+            .call(
+                "interrupt",
+                json!({ "run_id": id, "reason": "the file changed" }),
+            )
             .await;
-        assert!(stopped.output.contains("Its transcript is kept"), "{}", stopped.output);
+        assert!(
+            stopped.output.contains("Its transcript is kept"),
+            "{}",
+            stopped.output
+        );
         let run = bench.runs.get(&id).expect("run");
         assert_eq!(run.status, Status::Interrupted);
         assert_eq!(run.error.as_deref(), Some("Interrupted: the file changed"));
@@ -2662,13 +2837,20 @@ mod tests {
         assert!(again.output.contains("is not running"), "{}", again.output);
 
         let followed = bench
-            .call("followup", json!({ "run_id": id, "prompt": "Read the new version instead." }))
+            .call(
+                "followup",
+                json!({ "run_id": id, "prompt": "Read the new version instead." }),
+            )
             .await;
         assert_eq!(followed.title.as_deref(), Some("Reader: follow-up"));
         assert_eq!(Bench::run_id(&followed), id, "a follow-up keeps the id");
 
         let collected = bench.call("collect", json!({ "run_ids": [id] })).await;
-        assert!(collected.output.contains("Picked up where I left off."), "{}", collected.output);
+        assert!(
+            collected.output.contains("Picked up where I left off."),
+            "{}",
+            collected.output
+        );
         let run = bench.runs.get(&id).expect("run");
         assert_eq!(run.status, Status::Done);
         assert_eq!(run.follow_ups, 1);
@@ -2680,7 +2862,12 @@ mod tests {
         assert_eq!(requests.len(), 1);
         assert!(requests[0].history.len() >= 2, "{:?}", requests[0].history);
         assert!(requests[0].history[0].text().contains("read the module"));
-        assert!(requests[0].history.last().expect("the new brief").text().contains("new version"));
+        assert!(requests[0]
+            .history
+            .last()
+            .expect("the new brief")
+            .text()
+            .contains("new version"));
     }
 
     #[tokio::test]
@@ -2694,17 +2881,38 @@ mod tests {
         bench.call("collect", json!({ "run_ids": [id] })).await;
 
         // Still running is the wrong moment; that is what `agent_send` is for.
-        let running = bench_with(Arc::new(Stalling { calls: Mutex::new(0), then: MockProvider::new() }), Some(coordinator()), 0, None);
+        let running = bench_with(
+            Arc::new(Stalling {
+                calls: Mutex::new(0),
+                then: MockProvider::new(),
+            }),
+            Some(coordinator()),
+            0,
+            None,
+        );
         let busy = Bench::run_id(&running.call("spawn", brief("keep going", "Busy")).await);
-        let refused = running.call("followup", json!({ "run_id": busy, "prompt": "x" })).await;
-        assert!(refused.output.contains("is still running"), "{}", refused.output);
+        let refused = running
+            .call("followup", json!({ "run_id": busy, "prompt": "x" }))
+            .await;
+        assert!(
+            refused.output.contains("is still running"),
+            "{}",
+            refused.output
+        );
 
         let followed = bench
-            .call("followup", json!({ "run_id": id, "prompt": "Does it ship as a binary?" }))
+            .call(
+                "followup",
+                json!({ "run_id": id, "prompt": "Does it ship as a binary?" }),
+            )
             .await;
         assert_eq!(Bench::run_id(&followed), id);
         let collected = bench.call("collect", json!({ "run_ids": [id] })).await;
-        assert!(collected.output.contains("desktop binary"), "{}", collected.output);
+        assert!(
+            collected.output.contains("desktop binary"),
+            "{}",
+            collected.output
+        );
 
         let mock = bench.mock.clone().expect("the bench uses a MockProvider");
         let requests = mock.requests();
@@ -2715,29 +2923,58 @@ mod tests {
     #[tokio::test]
     async fn messages_land_in_an_inbox_and_team_reads_them() {
         let bench = bench_with(
-            Arc::new(Stalling { calls: Mutex::new(0), then: MockProvider::new() }),
+            Arc::new(Stalling {
+                calls: Mutex::new(0),
+                then: MockProvider::new(),
+            }),
             Some(coordinator()),
             0,
             None,
         );
-        let id = Bench::run_id(&bench.call("spawn", brief("watch the build", "Watcher")).await);
+        let id = Bench::run_id(
+            &bench
+                .call("spawn", brief("watch the build", "Watcher"))
+                .await,
+        );
 
         let sent = bench
-            .call("agent_send", json!({ "to": id, "message": "The build is green now." }))
+            .call(
+                "agent_send",
+                json!({ "to": id, "message": "The build is green now." }),
+            )
             .await;
         assert_eq!(sent.title.as_deref(), Some(&format!("Sent to {id}")[..]));
         let inbox = bench.runs.drain("thread-1", Some(&id));
         assert_eq!(inbox.len(), 1);
         assert_eq!(inbox[0].from_name, "Nova");
-        assert!(bench.runs.drain("thread-1", Some(&id)).is_empty(), "read once");
+        assert!(
+            bench.runs.drain("thread-1", Some(&id)).is_empty(),
+            "read once"
+        );
 
         // From the top-level turn, "parent" is the person's own mailbox.
-        bench.call("agent_send", json!({ "to": "parent", "message": "Note to self." })).await;
+        bench
+            .call(
+                "agent_send",
+                json!({ "to": "parent", "message": "Note to self." }),
+            )
+            .await;
         let team = bench.call("team", json!({})).await;
-        assert!(team.output.contains("Messages for you:\nNova: Note to self."), "{}", team.output);
+        assert!(
+            team.output
+                .contains("Messages for you:\nNova: Note to self."),
+            "{}",
+            team.output
+        );
 
-        let nobody = bench.call("agent_send", json!({ "to": "run-nope", "message": "x" })).await;
-        assert!(nobody.output.contains("No run called run-nope"), "{}", nobody.output);
+        let nobody = bench
+            .call("agent_send", json!({ "to": "run-nope", "message": "x" }))
+            .await;
+        assert!(
+            nobody.output.contains("No run called run-nope"),
+            "{}",
+            nobody.output
+        );
     }
 
     #[tokio::test]
@@ -2749,13 +2986,24 @@ mod tests {
         };
         let bench = bench_with(Arc::new(MockProvider::new()), Some(forbidden), 0, None);
         let out = bench.call("spawn", brief("anything", "Helper")).await;
-        assert!(out.output.contains("not allowed to delegate"), "{}", out.output);
-        assert!(bench.runs.for_conversation("thread-1").is_empty(), "nothing was started");
+        assert!(
+            out.output.contains("not allowed to delegate"),
+            "{}",
+            out.output
+        );
+        assert!(
+            bench.runs.for_conversation("thread-1").is_empty(),
+            "nothing was started"
+        );
 
         // Nesting is off by default.
         let nested = bench_with(
             Arc::new(MockProvider::new()),
-            Some(Agent { id: "a".into(), name: "Nova".into(), record: json!({}) }),
+            Some(Agent {
+                id: "a".into(),
+                name: "Nova".into(),
+                record: json!({}),
+            }),
             1,
             Some("run-parent"),
         );
@@ -2765,18 +3013,32 @@ mod tests {
         // Helpers yes, peers no.
         let helpers_only = bench_with(
             Arc::new(MockProvider::new()),
-            Some(Agent { id: "a".into(), name: "Nova".into(), record: json!({}) }),
+            Some(Agent {
+                id: "a".into(),
+                name: "Nova".into(),
+                record: json!({}),
+            }),
             0,
             None,
         );
         let out = helpers_only
-            .call("spawn", json!({ "description": "scrape", "prompt": "go", "agent": "Scraper" }))
+            .call(
+                "spawn",
+                json!({ "description": "scrape", "prompt": "go", "agent": "Scraper" }),
+            )
             .await;
-        assert!(out.output.contains("may spawn helpers but not full agents"), "{}", out.output);
+        assert!(
+            out.output.contains("may spawn helpers but not full agents"),
+            "{}",
+            out.output
+        );
 
         // A ceiling counts only this agent's own live children.
         let capped = bench_with(
-            Arc::new(Stalling { calls: Mutex::new(0), then: MockProvider::new() }),
+            Arc::new(Stalling {
+                calls: Mutex::new(0),
+                then: MockProvider::new(),
+            }),
             Some(Agent {
                 id: "a".into(),
                 name: "Nova".into(),
@@ -2794,18 +3056,35 @@ mod tests {
     async fn a_named_agent_resolves_and_a_paused_or_unknown_one_is_reported() {
         let bench = bench(MockProvider::new().replying("scraped"));
         let out = bench
-            .call("spawn", json!({ "description": "scrape", "prompt": "go", "agent": "Scraper" }))
+            .call(
+                "spawn",
+                json!({ "description": "scrape", "prompt": "go", "agent": "Scraper" }),
+            )
             .await;
         assert_eq!(out.metadata.as_ref().expect("metadata")["peer"], true);
-        assert_eq!(bench.runs.get(&Bench::run_id(&out)).expect("run").agent_id.as_deref(), Some("agent-scraper"));
+        assert_eq!(
+            bench
+                .runs
+                .get(&Bench::run_id(&out))
+                .expect("run")
+                .agent_id
+                .as_deref(),
+            Some("agent-scraper")
+        );
 
         let asleep = bench
-            .call("spawn", json!({ "description": "x", "prompt": "go", "agent": "Asleep" }))
+            .call(
+                "spawn",
+                json!({ "description": "x", "prompt": "go", "agent": "Asleep" }),
+            )
             .await;
         assert!(asleep.output.contains("is paused"), "{}", asleep.output);
 
         let nobody = bench
-            .call("spawn", json!({ "description": "x", "prompt": "go", "agent": "Designer" }))
+            .call(
+                "spawn",
+                json!({ "description": "x", "prompt": "go", "agent": "Designer" }),
+            )
             .await;
         assert!(nobody.output.contains("Scraper"), "{}", nobody.output);
         assert!(nobody.output.contains("pass `role`"), "{}", nobody.output);
@@ -2816,7 +3095,10 @@ mod tests {
         let bench = bench(MockProvider::new().replying("a").replying("b"));
         // A temporary helper inherits the coordinator's policy, which does not nest.
         bench.call("spawn", brief("plain", "Plain")).await;
-        assert!(bench.fake.built.lock()[0].2.is_empty(), "a helper that may not nest holds no team tools");
+        assert!(
+            bench.fake.built.lock()[0].2.is_empty(),
+            "a helper that may not nest holds no team tools"
+        );
 
         let nesting = bench_with(
             Arc::new(MockProvider::new().replying("a")),
@@ -2830,8 +3112,19 @@ mod tests {
         );
         nesting.call("spawn", brief("nested", "Nester")).await;
         let extras = nesting.fake.built.lock()[0].2.clone();
-        for tool in ["spawn", "collect", "wait", "team", "agent_send", "interrupt", "followup"] {
-            assert!(extras.contains(&tool.to_string()), "{tool} missing from a nesting child");
+        for tool in [
+            "spawn",
+            "collect",
+            "wait",
+            "team",
+            "agent_send",
+            "interrupt",
+            "followup",
+        ] {
+            assert!(
+                extras.contains(&tool.to_string()),
+                "{tool} missing from a nesting child"
+            );
         }
     }
 
@@ -2855,10 +3148,31 @@ mod tests {
         assert_eq!(snapshot.len(), 1);
         let run = &snapshot[0];
         for key in [
-            "id", "parentId", "depth", "agentId", "agentName", "description", "prompt", "model",
-            "status", "activity", "startedAt", "endedAt", "steps", "text", "result", "error",
-            "usage", "collected", "restartedAs", "restartOf", "followUps", "canFollowUp", "inbox",
-            "events", "message",
+            "id",
+            "parentId",
+            "depth",
+            "agentId",
+            "agentName",
+            "description",
+            "prompt",
+            "model",
+            "status",
+            "activity",
+            "startedAt",
+            "endedAt",
+            "steps",
+            "text",
+            "result",
+            "error",
+            "usage",
+            "collected",
+            "restartedAs",
+            "restartOf",
+            "followUps",
+            "canFollowUp",
+            "inbox",
+            "events",
+            "message",
         ] {
             assert!(run.get(key).is_some(), "snapshot is missing {key}");
         }
@@ -2883,10 +3197,19 @@ mod tests {
         // Defaults: one level deep, and no further.
         assert!(may_delegate(&json!({}), 0));
         assert!(!may_delegate(&json!({}), 1));
-        assert!(!may_delegate(&json!({ "spawn": { "subagents": false, "recursive": true } }), 0));
+        assert!(!may_delegate(
+            &json!({ "spawn": { "subagents": false, "recursive": true } }),
+            0
+        ));
         // Odd shapes read as the defaults rather than as a panic.
-        assert_eq!(spawn_policy(&json!({ "spawn": "yes" })), SpawnPolicy::default());
-        assert_eq!(spawn_policy(&json!({ "spawn": { "maxConcurrent": -3 } })).max_concurrent, 0);
+        assert_eq!(
+            spawn_policy(&json!({ "spawn": "yes" })),
+            SpawnPolicy::default()
+        );
+        assert_eq!(
+            spawn_policy(&json!({ "spawn": { "maxConcurrent": -3 } })).max_concurrent,
+            0
+        );
     }
 
     #[test]

@@ -425,7 +425,13 @@ pub fn part(roster: &[String], agent_id: &str, primary: Option<&str>) -> Parted 
     if !roster.iter().any(|id| id == agent_id) {
         return Parted::No(format!("{agent_id} is not here."));
     }
-    Parted::Yes(roster.iter().filter(|id| *id != agent_id).cloned().collect())
+    Parted::Yes(
+        roster
+            .iter()
+            .filter(|id| *id != agent_id)
+            .cloned()
+            .collect(),
+    )
 }
 
 #[cfg(test)]

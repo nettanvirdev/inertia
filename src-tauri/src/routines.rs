@@ -109,11 +109,31 @@ struct Field {
 }
 
 const FIELDS: [Field; 5] = [
-    Field { name: "minute", min: 0, max: 59 },
-    Field { name: "hour", min: 0, max: 23 },
-    Field { name: "day", min: 1, max: 31 },
-    Field { name: "month", min: 1, max: 12 },
-    Field { name: "weekday", min: 0, max: 6 },
+    Field {
+        name: "minute",
+        min: 0,
+        max: 59,
+    },
+    Field {
+        name: "hour",
+        min: 0,
+        max: 23,
+    },
+    Field {
+        name: "day",
+        min: 1,
+        max: 31,
+    },
+    Field {
+        name: "month",
+        min: 1,
+        max: 12,
+    },
+    Field {
+        name: "weekday",
+        min: 0,
+        max: 6,
+    },
 ];
 
 /// Names, because `0 9 * * mon-fri` is what people write.
@@ -190,7 +210,11 @@ fn parse_field(source: &str, field: &Field) -> std::result::Result<BTreeSet<i64>
             (named(field, a), named(field, b))
         } else {
             let from = named(field, range);
-            let to = if step_text.is_none() { from } else { Some(field.max) };
+            let to = if step_text.is_none() {
+                from
+            } else {
+                Some(field.max)
+            };
             (from, to)
         };
 
@@ -317,8 +341,8 @@ pub fn parse_duration(expression: &str) -> std::result::Result<i64, String> {
         return Err(bad());
     }
 
-    let ms = ((parts[0] * 7 + parts[1]) * 24 * 3600 + parts[2] * 3600 + parts[3] * 60 + parts[4])
-        * 1000;
+    let ms =
+        ((parts[0] * 7 + parts[1]) * 24 * 3600 + parts[2] * 3600 + parts[3] * 60 + parts[4]) * 1000;
     if ms <= 0 {
         return Err("An interval has to be longer than nothing.".to_string());
     }
@@ -340,10 +364,7 @@ pub fn parse_duration(expression: &str) -> std::result::Result<i64, String> {
 /// which is cron's own rule and surprises everyone exactly once: `0 0 1 * mon`
 /// means the first of the month AND every Monday, not Mondays that fall on the
 /// first.
-pub fn next_cron(
-    expression: &str,
-    from: &Zoned,
-) -> std::result::Result<Option<Zoned>, String> {
+pub fn next_cron(expression: &str, from: &Zoned) -> std::result::Result<Option<Zoned>, String> {
     let sets = parse_cron(expression)?;
     let written: Vec<&str> = expression.split_whitespace().collect();
     let restricted_day = written.get(2).copied() != Some("*");
@@ -518,7 +539,11 @@ pub fn describe(routine: &Value) -> String {
         "manual" => "Runs when you ask".to_string(),
         "trigger" => format!(
             "Runs on {}",
-            if expression.is_empty() { "a trigger" } else { expression.as_str() }
+            if expression.is_empty() {
+                "a trigger"
+            } else {
+                expression.as_str()
+            }
         ),
         "once" => match parse_moment(&expression) {
             Err(reason) => reason,
@@ -793,7 +818,11 @@ impl Scheduler {
                 continue;
             };
             let schedule = with_field(routine.get("schedule"), "nextRunAt", json!(planned));
-            self.patch(&layout, &id_of(routine), json!({ "schedule": schedule.clone() }));
+            self.patch(
+                &layout,
+                &id_of(routine),
+                json!({ "schedule": schedule.clone() }),
+            );
             if let Value::Object(map) = routine {
                 map.insert("schedule".into(), schedule);
             }
@@ -1110,7 +1139,11 @@ impl Scheduler {
             history.insert(0, run.clone());
             history.truncate(MAX_HISTORY);
 
-            self.patch(layout, &id, json!({ "lastRun": run, "runHistory": history }));
+            self.patch(
+                layout,
+                &id,
+                json!({ "lastRun": run, "runHistory": history }),
+            );
             settled += 1;
         }
         settled
@@ -1121,7 +1154,8 @@ impl Scheduler {
     /// A routine deleted mid-run, or a folder that went away. Neither is worth
     /// taking the scheduler down for.
     fn patch(&self, layout: &Layout, id: &str, changes: Value) {
-        if let Err(error) = inertia_store::collections::patch(layout, Collection::Routines, id, changes)
+        if let Err(error) =
+            inertia_store::collections::patch(layout, Collection::Routines, id, changes)
         {
             tracing::debug!(routine = %id, error = %error, "the routine could not be updated");
         }
@@ -1526,7 +1560,9 @@ fn when(args: &Value, at_ms: i64) -> std::result::Result<Timestamp, String> {
     {
         let at = parse_moment(text)?;
         if at.as_millisecond() <= at_ms {
-            return Err(format!("{text} has already passed. Give a time in the future."));
+            return Err(format!(
+                "{text} has already passed. Give a time in the future."
+            ));
         }
         if at.as_millisecond() - at_ms > MAX_AHEAD_MS {
             return Err("That is more than a year away. Give a nearer time.".to_string());
@@ -1647,7 +1683,11 @@ impl Tool for LaterTool {
             .unwrap_or_else(|| {
                 format!(
                     "Later: {}",
-                    brief.split_whitespace().take(6).collect::<Vec<_>>().join(" ")
+                    brief
+                        .split_whitespace()
+                        .take(6)
+                        .collect::<Vec<_>>()
+                        .join(" ")
                 )
             });
 
@@ -1740,7 +1780,9 @@ mod tests {
     fn a_schedule_takes_the_five_fields_and_nothing_else() {
         assert!(parse_cron("0 9 * * *").is_ok());
         assert!(parse_cron("0 9 * *").unwrap_err().contains("five fields"));
-        assert!(parse_cron("0 9 * * * *").unwrap_err().contains("five fields"));
+        assert!(parse_cron("0 9 * * * *")
+            .unwrap_err()
+            .contains("five fields"));
     }
 
     #[test]
@@ -1838,7 +1880,9 @@ mod tests {
 
     #[test]
     fn months_and_years_are_refused_rather_than_guessed_at() {
-        assert!(parse_duration("P1M").unwrap_err().contains("not an interval"));
+        assert!(parse_duration("P1M")
+            .unwrap_err()
+            .contains("not an interval"));
         assert!(parse_duration("every hour")
             .unwrap_err()
             .contains("not an interval"));
@@ -1848,7 +1892,10 @@ mod tests {
 
     #[test]
     fn a_routine_that_is_not_on_a_clock_is_never_next() {
-        assert_eq!(next_run(&routine(json!({ "kind": "manual" })), now()).at, None);
+        assert_eq!(
+            next_run(&routine(json!({ "kind": "manual" })), now()).at,
+            None
+        );
         assert_eq!(
             next_run(
                 &routine(json!({ "kind": "trigger", "expression": "push" })),
@@ -1875,7 +1922,9 @@ mod tests {
         let next = next_run(&record, stamp(2026, 9, 3, 12, 0))
             .at
             .expect("a next run");
-        let next = parse_moment(&next).expect("a time").to_zoned(TimeZone::system());
+        let next = parse_moment(&next)
+            .expect("a time")
+            .to_zoned(TimeZone::system());
         assert_eq!(next.hour(), 13);
     }
 
@@ -1944,19 +1993,22 @@ mod tests {
     #[test]
     fn a_schedule_is_described_in_words_a_person_would_use() {
         assert!(describe(&routine(json!({ "kind": "manual" }))).contains("when you ask"));
+        assert!(describe(&routine(
+            json!({ "kind": "interval", "expression": "PT2H" })
+        ))
+        .contains("2 hour"));
         assert!(
-            describe(&routine(json!({ "kind": "interval", "expression": "PT2H" })))
-                .contains("2 hour")
-        );
-        assert!(
-            describe(&routine(json!({ "kind": "interval", "expression": "P1D" }))).contains("1 day")
+            describe(&routine(json!({ "kind": "interval", "expression": "P1D" })))
+                .contains("1 day")
         );
     }
 
     #[test]
     fn a_broken_schedule_says_what_is_wrong_rather_than_pretending_it_is_fine() {
-        assert!(describe(&routine(json!({ "kind": "cron", "expression": "0 99 * * *" })))
-            .contains("hour"));
+        assert!(describe(&routine(
+            json!({ "kind": "cron", "expression": "0 99 * * *" })
+        ))
+        .contains("hour"));
     }
 
     // -- a schedule that runs once -----------------------------------------
@@ -2155,14 +2207,14 @@ mod tests {
         assert!(started[0].text.contains("nobody can answer"));
 
         // The conversation exists and says whose it is.
-        let thread = inertia_store::collections::get(
-            &bench.layout,
-            Collection::Threads,
-            "routine-morning",
-        )
-        .expect("the folder")
-        .expect("the thread");
-        assert_eq!(text_of(&thread, "title").as_deref(), Some("Routine: Morning sweep"));
+        let thread =
+            inertia_store::collections::get(&bench.layout, Collection::Threads, "routine-morning")
+                .expect("the folder")
+                .expect("the thread");
+        assert_eq!(
+            text_of(&thread, "title").as_deref(),
+            Some("Routine: Morning sweep")
+        );
         assert_eq!(text_of(&thread, "routineId").as_deref(), Some("morning"));
 
         let events = bench.events.0.lock().clone();
@@ -2193,7 +2245,10 @@ mod tests {
 
         let after = read(&bench.layout, "hourly");
         assert!(schedule_text(&after, "nextRunAt").is_some());
-        assert!(after.get("lastRun").is_none(), "it should not have run: {after}");
+        assert!(
+            after.get("lastRun").is_none(),
+            "it should not have run: {after}"
+        );
         assert!(bench.runner.started.lock().is_empty());
     }
 
@@ -2205,9 +2260,8 @@ mod tests {
             Collection::Agents,
             json!({ "id": "agent-1", "name": "Atlas", "status": "paused" }),
         );
-        let due = iso(
-            Timestamp::from_millisecond(now().as_millisecond() - 60_000).expect("a time"),
-        );
+        let due =
+            iso(Timestamp::from_millisecond(now().as_millisecond() - 60_000).expect("a time"));
         write(
             &bench.layout,
             Collection::Routines,
@@ -2226,7 +2280,10 @@ mod tests {
         // The plan is left where it is: the pause postpones the run rather than
         // quietly deleting the schedule.
         let after = read(&bench.layout, "swept");
-        assert_eq!(schedule_text(&after, "nextRunAt").as_deref(), Some(due.as_str()));
+        assert_eq!(
+            schedule_text(&after, "nextRunAt").as_deref(),
+            Some(due.as_str())
+        );
     }
 
     #[tokio::test]
@@ -2283,7 +2340,10 @@ mod tests {
 
         let run = bench.scheduler.run_now("hangs").await.expect("a run");
         assert_eq!(run["status"], json!("warning"));
-        assert_eq!(bench.runner.cancelled.lock().clone(), vec!["turn-routine-hangs"]);
+        assert_eq!(
+            bench.runner.cancelled.lock().clone(),
+            vec!["turn-routine-hangs"]
+        );
         // And the routine is no longer in flight, so it can be run again.
         assert!(bench.scheduler.run_now("hangs").await.is_ok());
     }
@@ -2396,9 +2456,14 @@ mod tests {
             Some(expression.clone())
         );
         let mut ran = record.clone();
-        ran["lastRun"] = json!({ "at": iso(Timestamp::from_millisecond(at + 1000).expect("a time")) });
+        ran["lastRun"] =
+            json!({ "at": iso(Timestamp::from_millisecond(at + 1000).expect("a time")) });
         assert_eq!(
-            next_run(&ran, Timestamp::from_millisecond(at + 2000).expect("a time")).at,
+            next_run(
+                &ran,
+                Timestamp::from_millisecond(at + 2000).expect("a time")
+            )
+            .at,
             None
         );
     }
@@ -2408,11 +2473,15 @@ mod tests {
         let dir = tempfile::tempdir().expect("a temp dir");
         let layout = Layout::new(dir.path());
 
-        let soon = iso(Timestamp::from_millisecond(now().as_millisecond() + 5 * 60_000)
-            .expect("a time"));
-        let ok = schedule_later(&layout, json!({ "brief": "Look at the inbox.", "at": soon }), "auto")
-            .await
-            .expect("it was scheduled");
+        let soon =
+            iso(Timestamp::from_millisecond(now().as_millisecond() + 5 * 60_000).expect("a time"));
+        let ok = schedule_later(
+            &layout,
+            json!({ "brief": "Look at the inbox.", "at": soon }),
+            "auto",
+        )
+        .await
+        .expect("it was scheduled");
         assert_eq!(ok.metadata.expect("metadata")["at"], json!(soon));
 
         let gone = schedule_later(
@@ -2428,19 +2497,24 @@ mod tests {
     async fn later_insists_on_knowing_when() {
         let dir = tempfile::tempdir().expect("a temp dir");
         let layout = Layout::new(dir.path());
-        let refusal = message(schedule_later(&layout, json!({ "brief": "Do the thing." }), "auto").await);
+        let refusal =
+            message(schedule_later(&layout, json!({ "brief": "Do the thing." }), "auto").await);
         assert!(refusal.contains("in_minutes"), "{refusal}");
         assert!(refusal.contains("`at`"), "{refusal}");
     }
 
     #[tokio::test]
-    async fn later_carries_the_conversations_approval_so_a_held_back_chat_schedules_a_held_back_run()
-    {
+    async fn later_carries_the_conversations_approval_so_a_held_back_chat_schedules_a_held_back_run(
+    ) {
         let dir = tempfile::tempdir().expect("a temp dir");
         let layout = Layout::new(dir.path());
-        schedule_later(&layout, json!({ "brief": "Tidy the folder.", "in_minutes": 1 }), "ask")
-            .await
-            .expect("it was scheduled");
+        schedule_later(
+            &layout,
+            json!({ "brief": "Tidy the folder.", "in_minutes": 1 }),
+            "ask",
+        )
+        .await
+        .expect("it was scheduled");
         let all = inertia_store::collections::list(&layout, Collection::Routines);
         assert_eq!(text_of(&all[0], "approval").as_deref(), Some("ask"));
         // And the playbook tells the future run what that means for it.
@@ -2452,9 +2526,15 @@ mod tests {
         let dir = tempfile::tempdir().expect("a temp dir");
         let layout = Layout::new(dir.path());
         let refusal = message(
-            later_tool(layout.clone(), None, None, None, std::sync::Arc::new(|_| {}))
-                .execute(json!({ "brief": "Do it.", "in_minutes": 5 }), &ctx(&layout))
-                .await,
+            later_tool(
+                layout.clone(),
+                None,
+                None,
+                None,
+                std::sync::Arc::new(|_| {}),
+            )
+            .execute(json!({ "brief": "Do it.", "in_minutes": 5 }), &ctx(&layout))
+            .await,
         );
         assert!(refusal.contains("no agent"), "{refusal}");
     }

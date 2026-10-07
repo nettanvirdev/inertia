@@ -93,7 +93,10 @@ fn relaunch_from_temp() -> bool {
     // the temp copy the wrong path points the entire uninstall at it.
     let dir = install_dir();
 
-    let temp = std::env::temp_dir().join(format!("{PRODUCT_NAME}-uninstall-{}.exe", std::process::id()));
+    let temp = std::env::temp_dir().join(format!(
+        "{PRODUCT_NAME}-uninstall-{}.exe",
+        std::process::id()
+    ));
     if std::fs::copy(&exe, &temp).is_err() {
         // Could not stage a copy - carry on in place rather than refusing to
         // uninstall at all. The directory removal will leave this one file

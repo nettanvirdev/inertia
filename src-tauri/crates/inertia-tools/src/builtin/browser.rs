@@ -230,7 +230,12 @@ pub fn filter_network(
     let matched: Vec<Value> = entries
         .iter()
         .filter(|entry| {
-            if only_failed && !entry.get("failed").and_then(Value::as_bool).unwrap_or(false) {
+            if only_failed
+                && !entry
+                    .get("failed")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false)
+            {
                 return false;
             }
             match &needle {
@@ -636,7 +641,11 @@ macro_rules! browser_tool {
 /// The page, read. Split out because five tools end by doing exactly this and
 /// each one doing it slightly differently is five shapes of output for one
 /// thing.
-async fn read_outline(pane: &dyn Pane, id: &str, budget: i64) -> std::result::Result<Value, String> {
+async fn read_outline(
+    pane: &dyn Pane,
+    id: &str,
+    budget: i64,
+) -> std::result::Result<Value, String> {
     pane.evaluate(id, &read_page_script(budget, false)).await
 }
 
@@ -690,7 +699,9 @@ browser_tool!(
         // Read after the load rather than making the model ask twice. A
         // navigation whose only answer is "ok" costs a second round trip to
         // find out what arrived, every single time.
-        let page = read_outline(pane.as_ref(), &id, 12_000).await.unwrap_or(Value::Null);
+        let page = read_outline(pane.as_ref(), &id, 12_000)
+            .await
+            .unwrap_or(Value::Null);
         let title = page
             .get("title")
             .and_then(Value::as_str)
@@ -913,7 +924,9 @@ browser_tool!(
             return refused(error);
         }
         tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-        let page = read_outline(pane.as_ref(), &id, 12_000).await.unwrap_or(Value::Null);
+        let page = read_outline(pane.as_ref(), &id, 12_000)
+            .await
+            .unwrap_or(Value::Null);
         let url = page.get("url").and_then(Value::as_str).unwrap_or("");
         let outline = page.get("outline").and_then(Value::as_str).unwrap_or("");
         ToolOutcome::text(format!("{url}\n\n{outline}")).with_title(keys.to_string())
@@ -945,8 +958,9 @@ browser_tool!(
                 let text = match &value {
                     Value::Null => "undefined".to_string(),
                     Value::String(text) => text.clone(),
-                    other => serde_json::to_string_pretty(other)
-                        .unwrap_or_else(|_| other.to_string()),
+                    other => {
+                        serde_json::to_string_pretty(other).unwrap_or_else(|_| other.to_string())
+                    }
                 };
                 ToolOutcome::text(text).with_title("the open page")
             }
@@ -1148,7 +1162,12 @@ mod tests {
         let pane: Arc<dyn Pane> = Arc::new(FakePane::new());
         for tool in browser_tools(pane) {
             let asked = tool.permission(&json!({}));
-            assert_eq!(asked.key, "browser", "{} asked under another key", tool.id());
+            assert_eq!(
+                asked.key,
+                "browser",
+                "{} asked under another key",
+                tool.id()
+            );
             assert_eq!(asked.always.as_deref(), Some("*"));
         }
     }
@@ -1164,7 +1183,9 @@ mod tests {
             "http://localhost:5173"
         );
         assert_eq!(
-            tool(pane, "browser_read_page").permission(&json!({})).target,
+            tool(pane, "browser_read_page")
+                .permission(&json!({}))
+                .target,
             "the open page"
         );
     }
@@ -1194,7 +1215,11 @@ mod tests {
             .map(|n| json!({ "level": if n % 2 == 0 { "error" } else { "info" }, "message": format!("line {n}") }))
             .collect();
         let kept = filter_console(&entries, true, None, 3);
-        assert_eq!(kept.len(), 3, "three errors, not three lines of which one is");
+        assert_eq!(
+            kept.len(),
+            3,
+            "three errors, not three lines of which one is"
+        );
         assert_eq!(
             kept[2].get("message").and_then(Value::as_str),
             Some("line 8"),
@@ -1236,7 +1261,9 @@ mod tests {
             "[error] boom"
         );
         assert_eq!(
-            console_line(&json!({ "level": "error", "message": "boom", "source": "app.js", "line": 12 })),
+            console_line(
+                &json!({ "level": "error", "message": "boom", "source": "app.js", "line": 12 })
+            ),
             "[error] boom (app.js:12)"
         );
     }
@@ -1278,7 +1305,10 @@ mod tests {
         // The quote that would have closed the argument arrives escaped, so
         // the whole thing is still one string literal and the injection is
         // just a ref that will not be found.
-        assert!(script.contains(r#"refs.get("ref_1\"); alert(1); //")"#), "{script}");
+        assert!(
+            script.contains(r#"refs.get("ref_1\"); alert(1); //")"#),
+            "{script}"
+        );
     }
 
     #[test]
@@ -1304,12 +1334,10 @@ mod tests {
 
     #[tokio::test]
     async fn navigating_opens_the_tab_and_reads_what_arrived() {
-        let pane = Arc::new(
-            FakePane::new().answering(vec![Ok(FakePane::page(
-                "http://localhost:5173/",
-                "main \"Dashboard\"",
-            ))]),
-        );
+        let pane = Arc::new(FakePane::new().answering(vec![Ok(FakePane::page(
+            "http://localhost:5173/",
+            "main \"Dashboard\"",
+        ))]));
         let outcome = tool(pane.clone(), "browser_navigate")
             .execute(json!({ "url": "http://localhost:5173" }), &context("t1"))
             .await
@@ -1357,11 +1385,15 @@ mod tests {
 
     #[tokio::test]
     async fn reading_the_page_reports_how_many_refs_it_left_behind() {
-        let pane = Arc::new(
-            FakePane::new().answering(vec![Ok(FakePane::page("https://x.test/", "link \"Docs\" [ref_1]"))]),
-        );
+        let pane = Arc::new(FakePane::new().answering(vec![Ok(FakePane::page(
+            "https://x.test/",
+            "link \"Docs\" [ref_1]",
+        ))]));
         let outcome = tool(pane.clone(), "browser_read_page")
-            .execute(json!({ "maxChars": 4000, "interactiveOnly": true }), &context("t1"))
+            .execute(
+                json!({ "maxChars": 4000, "interactiveOnly": true }),
+                &context("t1"),
+            )
             .await
             .expect("the tool ran");
 
@@ -1460,7 +1492,10 @@ mod tests {
     async fn evaluate_prints_a_structure_rather_than_rust_s_debug() {
         let pane = Arc::new(FakePane::new().answering(vec![Ok(json!({ "width": 320 }))]));
         let outcome = tool(pane, "browser_evaluate")
-            .execute(json!({ "code": "getComputedStyle(document.body)" }), &context("t1"))
+            .execute(
+                json!({ "code": "getComputedStyle(document.body)" }),
+                &context("t1"),
+            )
             .await
             .expect("the tool ran");
         assert_eq!(outcome.output, "{\n  \"width\": 320\n}");

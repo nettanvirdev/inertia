@@ -29,15 +29,13 @@ pub mod tool;
 
 pub use clock::{Clock, FixedClock, SystemClock};
 pub use error::{Error, Result};
-pub use lifecycle::{Lifecycle, Reaction};
 pub use id::{MessageId, SessionId, ToolCallId, TurnId};
+pub use lifecycle::{Lifecycle, Reaction};
 pub use message::{
     AssistantEntry, Entry, ImageUrl, Part, ThinkingBlock, ToolCall, ToolEntry, UserEntry,
 };
 pub use permission::{Action, Rule, Shape, Verdict};
-pub use provider::{
-    ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, ToolSpec, Usage,
-};
+pub use provider::{ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, ToolSpec, Usage};
 pub use tool::{
     Decision, PermissionGate, PermissionRequest, ProviderProblem, Tool, ToolContext, ToolOutcome,
     ToolProvider, ToolRegistry, ToolResult, ToolSource,

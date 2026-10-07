@@ -114,9 +114,15 @@ fn same_site(value: i64) -> Option<String> {
 pub fn count(source: &Source) -> Option<i64> {
     let aside = Aside::new(&source.file, &source.browser).ok()?;
     let db = aside.open().ok()?;
-    let table = if source.family == "chromium" { "cookies" } else { "moz_cookies" };
-    db.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0))
-        .ok()
+    let table = if source.family == "chromium" {
+        "cookies"
+    } else {
+        "moz_cookies"
+    };
+    db.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+        row.get(0)
+    })
+    .ok()
 }
 
 /// Every usable cookie in a profile, with a tally of the ones that were not.
@@ -126,7 +132,11 @@ pub fn count(source: &Source) -> Option<i64> {
 /// nothing to a browser that was not part of that session.
 pub fn read_profile(source: &Source, domains: &[String], now_ms: i64) -> Result<Harvest> {
     let chromium = source.family == "chromium";
-    let key = if chromium { decrypt::key_for(source) } else { Key::None };
+    let key = if chromium {
+        decrypt::key_for(source)
+    } else {
+        Key::None
+    };
     let aside = Aside::new(&source.file, &source.browser)?;
     let db = aside.open()?;
 
@@ -143,7 +153,9 @@ pub fn read_profile(source: &Source, domains: &[String], now_ms: i64) -> Result<
     };
 
     let mut statement = db.prepare(sql).map_err(|error| {
-        failed(format!("That cookie file is not the shape this reads ({error})."))
+        failed(format!(
+            "That cookie file is not the shape this reads ({error})."
+        ))
     })?;
 
     let rows = statement
@@ -174,7 +186,11 @@ pub fn read_profile(source: &Source, domains: &[String], now_ms: i64) -> Result<
         } else {
             expires
         };
-        let persistent = if chromium { persistent == 1 } else { expires_at > 0 };
+        let persistent = if chromium {
+            persistent == 1
+        } else {
+            expires_at > 0
+        };
 
         if !persistent || expires_at == 0 {
             skipped.session += 1;
@@ -218,7 +234,11 @@ pub fn read_profile(source: &Source, domains: &[String], now_ms: i64) -> Result<
     // explains most of what was left behind.
     reasons.sort_by_key(|reason| std::cmp::Reverse(reason.count));
 
-    Ok(Harvest { cookies, skipped, reasons })
+    Ok(Harvest {
+        cookies,
+        skipped,
+        reasons,
+    })
 }
 
 #[cfg(test)]
@@ -258,7 +278,10 @@ mod tests {
     fn chromiums_epoch_converts_to_the_unix_one() {
         // 2026-09-04T20:00:00Z in Chromium's units.
         let chrome = (1_788_000_000 + CHROME_EPOCH_SECONDS) * 1_000_000;
-        assert_eq!(chrome.div_euclid(1_000_000) - CHROME_EPOCH_SECONDS, 1_788_000_000);
+        assert_eq!(
+            chrome.div_euclid(1_000_000) - CHROME_EPOCH_SECONDS,
+            1_788_000_000
+        );
     }
 
     #[test]
@@ -285,11 +308,61 @@ mod tests {
 
             let live = (1_788_000_000 + CHROME_EPOCH_SECONDS) * 1_000_000;
             let gone = (1_000_000_000 + CHROME_EPOCH_SECONDS) * 1_000_000;
-            let mut add = db.prepare("INSERT INTO cookies VALUES (?,?,?,?,?,?,?,?,?,?)").expect("insert");
-            add.execute(rusqlite::params![".example.com", "sid", "abc", Vec::<u8>::new(), "/", live, 1, 1, 1, 1]).expect("live");
-            add.execute(rusqlite::params!["old.example.com", "old", "x", Vec::<u8>::new(), "/", gone, 0, 0, -1, 1]).expect("expired");
-            add.execute(rusqlite::params!["other.net", "them", "y", Vec::<u8>::new(), "/", live, 0, 0, -1, 1]).expect("other");
-            add.execute(rusqlite::params!["s.example.com", "tmp", "z", Vec::<u8>::new(), "/", 0, 0, 0, -1, 0]).expect("session");
+            let mut add = db
+                .prepare("INSERT INTO cookies VALUES (?,?,?,?,?,?,?,?,?,?)")
+                .expect("insert");
+            add.execute(rusqlite::params![
+                ".example.com",
+                "sid",
+                "abc",
+                Vec::<u8>::new(),
+                "/",
+                live,
+                1,
+                1,
+                1,
+                1
+            ])
+            .expect("live");
+            add.execute(rusqlite::params![
+                "old.example.com",
+                "old",
+                "x",
+                Vec::<u8>::new(),
+                "/",
+                gone,
+                0,
+                0,
+                -1,
+                1
+            ])
+            .expect("expired");
+            add.execute(rusqlite::params![
+                "other.net",
+                "them",
+                "y",
+                Vec::<u8>::new(),
+                "/",
+                live,
+                0,
+                0,
+                -1,
+                1
+            ])
+            .expect("other");
+            add.execute(rusqlite::params![
+                "s.example.com",
+                "tmp",
+                "z",
+                Vec::<u8>::new(),
+                "/",
+                0,
+                0,
+                0,
+                -1,
+                0
+            ])
+            .expect("session");
         }
 
         let source = Source {
@@ -340,8 +413,30 @@ mod tests {
             let mut add = db
                 .prepare("INSERT INTO moz_cookies VALUES (?,?,?,?,?,?,?,?,?)")
                 .expect("insert");
-            add.execute(rusqlite::params!["example.com", "sid", "plain", "/", 1_788_000_000i64, 1, 0, 1, ""]).expect("ordinary");
-            add.execute(rusqlite::params!["example.com", "sid", "walled", "/", 1_788_000_000i64, 1, 0, 1, "^userContextId=2"]).expect("contained");
+            add.execute(rusqlite::params![
+                "example.com",
+                "sid",
+                "plain",
+                "/",
+                1_788_000_000i64,
+                1,
+                0,
+                1,
+                ""
+            ])
+            .expect("ordinary");
+            add.execute(rusqlite::params![
+                "example.com",
+                "sid",
+                "walled",
+                "/",
+                1_788_000_000i64,
+                1,
+                0,
+                1,
+                "^userContextId=2"
+            ])
+            .expect("contained");
         }
 
         let source = Source {

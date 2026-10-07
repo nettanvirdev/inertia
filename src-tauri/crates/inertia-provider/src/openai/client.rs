@@ -13,9 +13,7 @@ use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures_util::StreamExt;
 use inertia_core::message::ToolCall;
-use inertia_core::provider::{
-    ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, Usage,
-};
+use inertia_core::provider::{ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, Usage};
 use inertia_core::ToolCallId;
 use secrecy::ExposeSecret;
 use serde_json::{json, Value};

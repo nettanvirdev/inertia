@@ -85,7 +85,10 @@ pub async fn mcp_save(
 
     match workspace
         .mcp
-        .add(crate::integrations::with_secrets(&workspace.layout, &record))
+        .add(crate::integrations::with_secrets(
+            &workspace.layout,
+            &record,
+        ))
         .await
     {
         Ok(tool_count) => {
@@ -385,7 +388,9 @@ pub fn composio_disconnect(
 /// where this is called from. They do not depend on each other, so they should
 /// not queue behind each other.
 #[tauri::command]
-pub async fn composio_load_all(state: State<'_, AppState>) -> Result<Vec<ConnectionRecord>, String> {
+pub async fn composio_load_all(
+    state: State<'_, AppState>,
+) -> Result<Vec<ConnectionRecord>, String> {
     let workspace = state.workspace()?;
     let records = workspace.composio_records();
 

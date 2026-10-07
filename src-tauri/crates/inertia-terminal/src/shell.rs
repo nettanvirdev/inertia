@@ -224,7 +224,10 @@ mod tests {
             assert_eq!(shell.kind, Kind::Posix);
             assert!(shell.args.iter().any(|arg| arg == "-i"));
             // One line, because a shell echoes what is typed at it.
-            assert_eq!(shell.typed.as_deref().map(|line| line.lines().count()), Some(1));
+            assert_eq!(
+                shell.typed.as_deref().map(|line| line.lines().count()),
+                Some(1)
+            );
         }
     }
 }

@@ -8,13 +8,14 @@ fn main() {
     // here is the only answer that is true of the binary a person is actually
     // running. If it cannot be run, the variable is empty and the pane draws a
     // dash, which is what it does for every value it does not have.
-    let rustc = std::process::Command::new(std::env::var("RUSTC").unwrap_or_else(|_| "rustc".into()))
-        .arg("-V")
-        .output()
-        .ok()
-        .filter(|out| out.status.success())
-        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
-        .unwrap_or_default();
+    let rustc =
+        std::process::Command::new(std::env::var("RUSTC").unwrap_or_else(|_| "rustc".into()))
+            .arg("-V")
+            .output()
+            .ok()
+            .filter(|out| out.status.success())
+            .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+            .unwrap_or_default();
     println!("cargo:rustc-env=INERTIA_RUSTC={rustc}");
 
     tauri_build::build()

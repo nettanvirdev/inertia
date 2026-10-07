@@ -183,7 +183,14 @@ pub async fn fire(
     // cannot be made to depend on an order that is not promised.
     let results = futures::future::join_all(chosen.iter().map(|handler| {
         run_one(
-            handler, event, subject, &payload, cwd.as_deref(), &env, ask, recorder,
+            handler,
+            event,
+            subject,
+            &payload,
+            cwd.as_deref(),
+            &env,
+            ask,
+            recorder,
         )
     }))
     .await;
@@ -314,9 +321,7 @@ fn payload_for(event: &str, input: &Value, context: &Context) -> Value {
             .map(|p| Value::String(p.display().to_string()))
             .unwrap_or(Value::Null)
     };
-    let text = |t: &Option<String>| {
-        t.clone().map(Value::String).unwrap_or(Value::Null)
-    };
+    let text = |t: &Option<String>| t.clone().map(Value::String).unwrap_or(Value::Null);
 
     let mut payload = json!({
         "session_id": text(&context.session_id),

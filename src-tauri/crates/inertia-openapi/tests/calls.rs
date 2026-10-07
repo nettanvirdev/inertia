@@ -114,7 +114,12 @@ async fn a_post_sends_the_body_fields_as_json() {
         .await;
 
     let provider = provider_for(&server, Auth::None, "").await;
-    let outcome = call(&provider, "things_creatething", json!({ "name": "a thing" })).await;
+    let outcome = call(
+        &provider,
+        "things_creatething",
+        json!({ "name": "a thing" }),
+    )
+    .await;
 
     assert!(outcome.output.contains("201"), "got {}", outcome.output);
 }
@@ -196,8 +201,7 @@ async fn a_non_2xx_response_is_the_answer_not_a_failure() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .respond_with(
-            ResponseTemplate::new(422)
-                .set_body_json(json!({ "error": "id must be a number" })),
+            ResponseTemplate::new(422).set_body_json(json!({ "error": "id must be a number" })),
         )
         .mount(&server)
         .await;
@@ -221,7 +225,11 @@ async fn an_empty_response_body_says_so() {
 
     let provider = provider_for(&server, Auth::None, "").await;
     let outcome = call(&provider, "things_getthing", json!({ "id": "1" })).await;
-    assert!(outcome.output.contains("(no body)"), "got {}", outcome.output);
+    assert!(
+        outcome.output.contains("(no body)"),
+        "got {}",
+        outcome.output
+    );
 }
 
 /// Following a redirect would carry the credential to a host the user never

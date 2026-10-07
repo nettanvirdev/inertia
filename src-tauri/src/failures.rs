@@ -667,7 +667,10 @@ fn load(layout: &Layout, days: i64) -> Vec<Value> {
 }
 
 fn field(row: &Value, key: &str) -> String {
-    row.get(key).and_then(Value::as_str).unwrap_or_default().to_string()
+    row.get(key)
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string()
 }
 
 /// What a query asked for.
@@ -754,7 +757,10 @@ pub fn query(layout: &Layout, request: &Query) -> Matches {
         .take(limit)
         .map(|row| {
             let mut copy = row.clone();
-            let seen = signatures.get(&field(row, "signature")).copied().unwrap_or(1);
+            let seen = signatures
+                .get(&field(row, "signature"))
+                .copied()
+                .unwrap_or(1);
             if let Value::Object(map) = &mut copy {
                 map.insert("seen".into(), json!(seen));
             }
@@ -785,11 +791,12 @@ pub fn summary(layout: &Layout, days: i64) -> Summary {
     let mut by_tool: Vec<(String, usize)> = Vec::new();
     let mut by_signature: Vec<(String, usize, Value)> = Vec::new();
 
-    let bump = |list: &mut Vec<(String, usize)>, key: String| {
-        match list.iter_mut().find(|(name, _)| *name == key) {
-            Some(entry) => entry.1 += 1,
-            None => list.push((key, 1)),
-        }
+    let bump = |list: &mut Vec<(String, usize)>, key: String| match list
+        .iter_mut()
+        .find(|(name, _)| *name == key)
+    {
+        Some(entry) => entry.1 += 1,
+        None => list.push((key, 1)),
     };
 
     for row in &all {
@@ -799,7 +806,10 @@ pub fn summary(layout: &Layout, days: i64) -> Summary {
             bump(&mut by_tool, tool);
         }
         let signature = field(row, "signature");
-        match by_signature.iter_mut().find(|(key, _, _)| *key == signature) {
+        match by_signature
+            .iter_mut()
+            .find(|(key, _, _)| *key == signature)
+        {
             Some(entry) => entry.1 += 1,
             None => by_signature.push((signature, 1, row.clone())),
         }
@@ -923,7 +933,10 @@ fn render_row(row: &Value, verbose: bool) -> String {
     let output = field(row, "output");
     if !output.is_empty() {
         if verbose {
-            let indented: Vec<String> = output.split('\n').map(|line| format!("    {line}")).collect();
+            let indented: Vec<String> = output
+                .split('\n')
+                .map(|line| format!("    {line}"))
+                .collect();
             lines.push(format!("  output:\n{}", indented.join("\n")));
         } else {
             let trimmed = output.trim();
@@ -1327,8 +1340,11 @@ mod tests {
     fn the_tail_of_the_output_survives_because_that_is_where_the_error_is() {
         let (_dir, layout) = workspace();
         let output = format!("{}THE END", "a".repeat(6000));
-        let entry =
-            record(&layout, json!({ "kind": "tool", "error": "x", "output": output })).expect("kept");
+        let entry = record(
+            &layout,
+            json!({ "kind": "tool", "error": "x", "output": output }),
+        )
+        .expect("kept");
         let stored = entry["output"].as_str().unwrap_or_default();
         assert!(stored.ends_with("THE END"), "{}", &stored[..40]);
         assert!(stored.starts_with("..."));
@@ -1350,7 +1366,11 @@ mod tests {
 
     #[test]
     fn the_same_failure_with_different_paths_and_numbers_is_one_signature() {
-        let a = signature_of("tool", Some("shell"), "Exit code: 1\n\nCannot find /home/a/x.js");
+        let a = signature_of(
+            "tool",
+            Some("shell"),
+            "Exit code: 1\n\nCannot find /home/a/x.js",
+        );
         let b = signature_of(
             "tool",
             Some("shell"),
@@ -1533,8 +1553,13 @@ mod tests {
             .await
             .expect("the tool ran");
         assert_eq!(out.title.as_deref(), Some("No failures found"));
-        assert!(out.output.contains("Nothing has failed in the last 14 days"));
-        assert_eq!(out.metadata.and_then(|m| m.get("total").cloned()), Some(json!(0)));
+        assert!(out
+            .output
+            .contains("Nothing has failed in the last 14 days"));
+        assert_eq!(
+            out.metadata.and_then(|m| m.get("total").cloned()),
+            Some(json!(0))
+        );
     }
 
     #[tokio::test]
@@ -1554,7 +1579,10 @@ mod tests {
                 }),
             );
         }
-        record(&layout, json!({ "kind": "provider", "error": "500 from upstream" }));
+        record(
+            &layout,
+            json!({ "kind": "provider", "error": "500 from upstream" }),
+        );
 
         let out = FailuresTool::new(layout.clone())
             .execute(json!({}), &ctx())
@@ -1562,7 +1590,10 @@ mod tests {
             .expect("the tool ran");
 
         let text = out.output;
-        assert!(text.starts_with("4 failures in the last 14 days: tool 3, provider 1."), "{text}");
+        assert!(
+            text.starts_with("4 failures in the last 14 days: tool 3, provider 1."),
+            "{text}"
+        );
         assert!(text.contains("Repeats, most frequent first:"), "{text}");
         assert!(text.contains("- 3x  tool:shell  Exit code:"), "{text}");
         // The fact before the list, and then the list.
@@ -1574,7 +1605,10 @@ mod tests {
         assert!(text.contains("agent=Atlas"), "{text}");
         assert!(text.contains("  in /app"), "{text}");
         assert!(text.contains("args: {\"command\":\"npm test\"}"), "{text}");
-        assert!(text.contains("output ends: ERR! missing script: test"), "{text}");
+        assert!(
+            text.contains("output ends: ERR! missing script: test"),
+            "{text}"
+        );
         assert!(text.contains("one JSON line per failure"), "{text}");
 
         let metadata = out.metadata.expect("metadata");
@@ -1593,7 +1627,10 @@ mod tests {
             &layout,
             json!({ "kind": "tool", "tool": "shell", "error": "Exit code: 1\n\nvitest not found" }),
         );
-        record(&layout, json!({ "kind": "provider", "error": "500 from upstream" }));
+        record(
+            &layout,
+            json!({ "kind": "provider", "error": "500 from upstream" }),
+        );
 
         let out = FailuresTool::new(layout)
             .execute(json!({ "kind": "provider" }), &ctx())

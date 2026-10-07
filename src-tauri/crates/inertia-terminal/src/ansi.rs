@@ -120,8 +120,13 @@ fn normalize(value: &str) -> Option<String> {
         return None;
     }
     let bytes = text.as_bytes();
-    let drive = bytes.len() >= 3 && bytes[0] == b'/' && bytes[1].is_ascii_alphabetic() && bytes[2] == b':';
-    Some(if drive { text[1..].to_string() } else { text.to_string() })
+    let drive =
+        bytes.len() >= 3 && bytes[0] == b'/' && bytes[1].is_ascii_alphabetic() && bytes[2] == b':';
+    Some(if drive {
+        text[1..].to_string()
+    } else {
+        text.to_string()
+    })
 }
 
 #[cfg(test)]

@@ -138,7 +138,8 @@ impl Choices {
         let Some(map) = stored.get("notifications") else {
             return base;
         };
-        let flag = |key: &str, fallback: bool| map.get(key).and_then(Value::as_bool).unwrap_or(fallback);
+        let flag =
+            |key: &str, fallback: bool| map.get(key).and_then(Value::as_bool).unwrap_or(fallback);
         Self {
             finished: flag("finished", base.finished),
             failed: flag("failed", base.failed),
@@ -267,7 +268,12 @@ const MAX_BODY: usize = 180;
 
 /// The first line of something, trimmed and capped.
 fn first_line(text: &str, limit: usize) -> String {
-    let line = text.trim().lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
+    let line = text
+        .trim()
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .unwrap_or("")
+        .trim();
     if line.chars().count() <= limit {
         return line.to_string();
     }
@@ -803,17 +809,23 @@ mod tests {
         // The reply is on screen, streaming, in front of them. A banner about
         // it is the noise that gets notifications switched off for good.
         assert_eq!(
-            for_finished_turn(&finished(&Ending::Finished, true, "done"), Choices::default()),
+            for_finished_turn(
+                &finished(&Ending::Finished, true, "done"),
+                Choices::default()
+            ),
             None
         );
         assert_eq!(
-            for_finished_turn(&finished(
-                &Ending::Failed {
-                    error: "no key".into()
-                },
-                true,
-                ""
-            ), Choices::default()),
+            for_finished_turn(
+                &finished(
+                    &Ending::Failed {
+                        error: "no key".into()
+                    },
+                    true,
+                    ""
+                ),
+                Choices::default()
+            ),
             None
         );
     }
@@ -822,7 +834,10 @@ mod tests {
     fn cancelling_is_never_announced() {
         // Telling somebody they did the thing they just did.
         assert_eq!(
-            for_finished_turn(&finished(&Ending::Interrupted, false, "half a sentence"), Choices::default()),
+            for_finished_turn(
+                &finished(&Ending::Interrupted, false, "half a sentence"),
+                Choices::default()
+            ),
             None
         );
     }
@@ -832,7 +847,8 @@ mod tests {
         let ending = Ending::Failed {
             error: "The provider refused the key.".into(),
         };
-        let notice = for_finished_turn(&finished(&ending, false, ""), Choices::default()).expect("a notice");
+        let notice =
+            for_finished_turn(&finished(&ending, false, ""), Choices::default()).expect("a notice");
         assert_eq!(notice.title, "Doc writer failed");
         assert_eq!(notice.body, "The provider refused the key.");
         assert_eq!(notice.tone, Tone::Problem);
@@ -842,15 +858,18 @@ mod tests {
     #[test]
     fn a_turn_with_no_agent_still_gets_a_sentence() {
         let ending = Ending::Finished;
-        let notice = for_finished_turn(&Finished {
-            agent: None,
-            ending: &ending,
-            watching: false,
-            said: "",
-            thread_id: "t1",
-            turn_id: "r1",
-            chained: false,
-        }, Choices::default())
+        let notice = for_finished_turn(
+            &Finished {
+                agent: None,
+                ending: &ending,
+                watching: false,
+                said: "",
+                thread_id: "t1",
+                turn_id: "r1",
+                chained: false,
+            },
+            Choices::default(),
+        )
         .expect("a notice");
         assert_eq!(notice.title, "Your turn finished");
         // Never an empty banner: an OS banner with a blank body reads as a bug.
@@ -861,7 +880,8 @@ mod tests {
     fn the_body_is_one_line_and_fits_on_a_banner() {
         let ending = Ending::Finished;
         let said = format!("  \n{}\nand a second paragraph\n", "x".repeat(400));
-        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default()).expect("a notice");
+        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default())
+            .expect("a notice");
         assert_eq!(notice.body.chars().count(), MAX_BODY + 1); // the ellipsis
         assert!(!notice.body.contains('\n'));
     }
@@ -872,22 +892,33 @@ mod tests {
         // three bytes. Slicing by byte would panic here.
         let ending = Ending::Finished;
         let said = "\u{09AC}".repeat(400);
-        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default()).expect("a notice");
+        let notice = for_finished_turn(&finished(&ending, false, &said), Choices::default())
+            .expect("a notice");
         assert_eq!(notice.body.chars().count(), MAX_BODY + 1);
     }
 
     #[test]
     fn a_waiting_permission_is_only_announced_to_somebody_who_cannot_see_it() {
-        assert_eq!(for_waiting_permission(Some("Dev"), "shell", "rm -rf", true, Choices::default()), None);
-        let notice =
-            for_waiting_permission(Some("Dev"), "shell", "rm -rf /tmp/x", false, Choices::default()).expect("a notice");
+        assert_eq!(
+            for_waiting_permission(Some("Dev"), "shell", "rm -rf", true, Choices::default()),
+            None
+        );
+        let notice = for_waiting_permission(
+            Some("Dev"),
+            "shell",
+            "rm -rf /tmp/x",
+            false,
+            Choices::default(),
+        )
+        .expect("a notice");
         assert_eq!(notice.title, "Dev is waiting for you");
         assert_eq!(notice.body, "shell: rm -rf /tmp/x");
     }
 
     #[test]
     fn a_waiting_permission_with_no_target_still_reads_as_a_sentence() {
-        let notice = for_waiting_permission(None, "network", "  ", false, Choices::default()).expect("a notice");
+        let notice = for_waiting_permission(None, "network", "  ", false, Choices::default())
+            .expect("a notice");
         assert_eq!(notice.title, "Inertia is waiting for you");
         assert_eq!(notice.body, "It needs permission for network.");
     }
@@ -961,14 +992,20 @@ mod tests {
             ..Choices::default()
         };
         // The one people keep after turning the rest off still gets through.
-        assert_eq!(for_finished_turn(&finished(&done, false, "done"), quiet_finishes), None);
+        assert_eq!(
+            for_finished_turn(&finished(&done, false, "done"), quiet_finishes),
+            None
+        );
         assert!(for_finished_turn(&finished(&broke, false, ""), quiet_finishes).is_some());
 
         let quiet_failures = Choices {
             failed: false,
             ..Choices::default()
         };
-        assert_eq!(for_finished_turn(&finished(&broke, false, ""), quiet_failures), None);
+        assert_eq!(
+            for_finished_turn(&finished(&broke, false, ""), quiet_failures),
+            None
+        );
 
         let quiet_waiting = Choices {
             waiting: false,
@@ -1021,7 +1058,10 @@ mod tests {
         // And a half-written one keeps the fields it did not mention.
         let partial = Choices::from_settings(&json!({ "notifications": { "finished": false } }));
         assert!(!partial.finished);
-        assert!(partial.failed, "a settings file must not silence a failure by omission");
+        assert!(
+            partial.failed,
+            "a settings file must not silence a failure by omission"
+        );
         assert!(partial.waiting);
     }
 
@@ -1077,8 +1117,7 @@ mod tests {
         save_minimise_to_tray(&layout, false).expect("saved");
         assert!(!minimise_to_tray(&layout));
         // And is readable by anything else holding the same folder.
-        let stored =
-            inertia_store::collections::read_document(&layout, Document::App, json!(null));
+        let stored = inertia_store::collections::read_document(&layout, Document::App, json!(null));
         assert_eq!(stored["minimiseToTray"], json!(false));
 
         save_minimise_to_tray(&layout, true).expect("saved");

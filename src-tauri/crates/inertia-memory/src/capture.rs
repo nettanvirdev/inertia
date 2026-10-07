@@ -138,7 +138,11 @@ impl Capture {
         if entry.settings.capture == "off" || !entry.settings.enabled {
             return;
         }
-        let wait = if entry.settings.capture == "turn" { AFTER_TURN } else { IDLE };
+        let wait = if entry.settings.capture == "turn" {
+            AFTER_TURN
+        } else {
+            IDLE
+        };
 
         self.disarm(thread_id);
 
@@ -148,7 +152,10 @@ impl Capture {
             tokio::time::sleep(wait).await;
             let _ = held.run(&id).await;
         });
-        self.state.lock().armed.insert(thread_id.into(), (entry, timer));
+        self.state
+            .lock()
+            .armed
+            .insert(thread_id.into(), (entry, timer));
     }
 
     /// The conversation is alive again, so there is nothing to capture yet.
@@ -171,7 +178,12 @@ impl Capture {
     }
 
     pub fn covered_for(&self, thread_id: &str) -> usize {
-        self.state.lock().covered.get(thread_id).copied().unwrap_or(0)
+        self.state
+            .lock()
+            .covered
+            .get(thread_id)
+            .copied()
+            .unwrap_or(0)
     }
 
     /// Run the pass for one conversation.
@@ -207,7 +219,14 @@ impl Capture {
     }
 
     async fn pass(&self, entry: &Armed) -> Option<Captured> {
-        let Armed { store, settings, transcript, agent_id, model, .. } = entry;
+        let Armed {
+            store,
+            settings,
+            transcript,
+            agent_id,
+            model,
+            ..
+        } = entry;
 
         let existing = store.list();
         let folder = store.project().map(|p| p.to_string_lossy().to_string());
@@ -262,7 +281,11 @@ impl Capture {
             if let Ok(saved) = &written {
                 if let Some(tell) = &entry.announce {
                     let id = record::text(saved, "id");
-                    let id = if id.is_empty() { replaces.unwrap_or_default() } else { id };
+                    let id = if id.is_empty() {
+                        replaces.unwrap_or_default()
+                    } else {
+                        id
+                    };
                     if !id.is_empty() {
                         tell(&id, "put");
                     }
@@ -275,13 +298,16 @@ impl Capture {
             .as_deref()
             .and_then(|folder| extract::harvest_note(&parsed).map(|note| (folder, note)));
         let wrote_note = match note {
-            Some((folder, note)) => {
-                self.write_note(store, settings, previous.as_ref(), folder, &note).is_ok()
-            }
+            Some((folder, note)) => self
+                .write_note(store, settings, previous.as_ref(), folder, &note)
+                .is_ok(),
             None => false,
         };
 
-        Some(Captured { stored, note: wrote_note })
+        Some(Captured {
+            stored,
+            note: wrote_note,
+        })
     }
 
     /// Replace the folder's handover note, never append to it.
@@ -406,7 +432,10 @@ mod tests {
         count: usize,
         wrote: crate::tools::Wrote,
     ) -> Armed {
-        Armed { announce: Some(wrote), ..armed(dir, reply, count) }
+        Armed {
+            announce: Some(wrote),
+            ..armed(dir, reply, count)
+        }
     }
 
     #[tokio::test]
@@ -430,7 +459,9 @@ mod tests {
         // The memory and the handover note, both filed against the project.
         let rows = store.list();
         assert_eq!(rows.len(), 2);
-        assert!(rows.iter().any(|row| record::text(row, "kind") == "handover"));
+        assert!(rows
+            .iter()
+            .any(|row| record::text(row, "kind") == "handover"));
     }
 
     /// The pass writes memories nobody asked for, which is the point of it -
@@ -460,13 +491,18 @@ mod tests {
         let said = heard.lock();
         assert_eq!(said.len(), 1, "{said:?}");
         assert_eq!(said[0].1, "put");
-        assert!(!said[0].0.is_empty(), "the screen needs to know which record");
+        assert!(
+            !said[0].0.is_empty(),
+            "the screen needs to know which record"
+        );
     }
 
     #[tokio::test]
     async fn nothing_new_since_the_last_pass_costs_no_model_call() {
         let dir = tempfile::tempdir().expect("a temp dir");
-        let reply = Arc::new(Fixed(r#"{"memories":[{"title":"One","body":"fact"}]}"#.into()));
+        let reply = Arc::new(Fixed(
+            r#"{"memories":[{"title":"One","body":"fact"}]}"#.into(),
+        ));
         let capture = Arc::new(Capture::new());
 
         capture.arm("t1", armed(&dir, reply.clone(), 4));
@@ -504,7 +540,9 @@ mod tests {
     #[tokio::test]
     async fn review_writes_the_memory_but_does_not_believe_it() {
         let dir = tempfile::tempdir().expect("a temp dir");
-        let reply = Arc::new(Fixed(r#"{"memories":[{"title":"One","body":"fact"}]}"#.into()));
+        let reply = Arc::new(Fixed(
+            r#"{"memories":[{"title":"One","body":"fact"}]}"#.into(),
+        ));
         let mut entry = armed(&dir, reply, 4);
         entry.settings.review = true;
         let store = entry.store.clone();
@@ -523,7 +561,9 @@ mod tests {
     #[tokio::test]
     async fn capture_switched_off_arms_nothing() {
         let dir = tempfile::tempdir().expect("a temp dir");
-        let reply = Arc::new(Fixed(r#"{"memories":[{"title":"One","body":"fact"}]}"#.into()));
+        let reply = Arc::new(Fixed(
+            r#"{"memories":[{"title":"One","body":"fact"}]}"#.into(),
+        ));
         let mut entry = armed(&dir, reply, 4);
         entry.settings.capture = "off".into();
 
@@ -536,7 +576,9 @@ mod tests {
     #[tokio::test]
     async fn a_conversation_that_came_back_to_life_is_not_captured() {
         let dir = tempfile::tempdir().expect("a temp dir");
-        let reply = Arc::new(Fixed(r#"{"memories":[{"title":"One","body":"fact"}]}"#.into()));
+        let reply = Arc::new(Fixed(
+            r#"{"memories":[{"title":"One","body":"fact"}]}"#.into(),
+        ));
         let entry = armed(&dir, reply, 4);
         let store = entry.store.clone();
 
@@ -559,14 +601,22 @@ mod tests {
 
         // Both passes write against the same folder, so the second finds what
         // the first left.
-        let entry = armed(&dir, note("First: the project is a scraper and nothing is done."), 2);
+        let entry = armed(
+            &dir,
+            note("First: the project is a scraper and nothing is done."),
+            2,
+        );
         let store = entry.store.clone();
         capture.arm("t1", entry);
         capture.run("t1").await.expect("a pass ran");
 
         capture.arm(
             "t1",
-            armed(&dir, note("Second: the scraper works and the export is left."), 5),
+            armed(
+                &dir,
+                note("Second: the scraper works and the export is left."),
+                5,
+            ),
         );
         capture.run("t1").await.expect("a second pass ran");
 

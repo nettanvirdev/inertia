@@ -68,9 +68,7 @@ pub fn replace(
     replace_all: bool,
 ) -> Result<Replacement, String> {
     if old == new {
-        return Err(
-            "oldString and newString are identical, so there is nothing to change.".into(),
-        );
+        return Err("oldString and newString are identical, so there is nothing to change.".into());
     }
     if old.is_empty() {
         return Err("oldString is empty. Use the write tool to create a file.".into());
@@ -93,12 +91,17 @@ pub fn replace(
 
         // A rung that matched something wildly larger than what was asked for
         // has almost certainly anchored onto the wrong thing.
-        if let Some(span) = spans.iter().find(|span| disproportionate(content, **span, old)) {
+        if let Some(span) = spans
+            .iter()
+            .find(|span| disproportionate(content, **span, old))
+        {
             let _ = span;
-            return Err("The text matched a span much larger than what you asked to \
+            return Err(
+                "The text matched a span much larger than what you asked to \
                  replace. Read the file again and give the exact text, including \
                  whitespace."
-                .into());
+                    .into(),
+            );
         }
 
         if spans.len() > 1 && !replace_all {
@@ -109,11 +112,7 @@ pub fn replace(
             ));
         }
 
-        let spans = if replace_all {
-            spans
-        } else {
-            vec![spans[0]]
-        };
+        let spans = if replace_all { spans } else { vec![spans[0]] };
 
         let mut result = String::with_capacity(content.len());
         let mut cursor = 0;
@@ -131,9 +130,11 @@ pub fn replace(
         });
     }
 
-    Err("Could not find that text in the file. Read the file again - it may have \
+    Err(
+        "Could not find that text in the file. Read the file again - it may have \
          changed, and the text must match what is actually there."
-        .into())
+            .into(),
+    )
 }
 
 /// Rejects a match wildly larger than the needle.
@@ -216,10 +217,7 @@ fn find_line_trimmed(content: &str, old: &str) -> Vec<Span> {
     }
 
     let lines = line_spans(content);
-    let trimmed: Vec<&str> = lines
-        .iter()
-        .map(|(s, e)| content[*s..*e].trim())
-        .collect();
+    let trimmed: Vec<&str> = lines.iter().map(|(s, e)| content[*s..*e].trim()).collect();
 
     let mut spans = Vec::new();
     if needle.len() > trimmed.len() {
@@ -410,10 +408,7 @@ fn find_block_anchor(content: &str, old: &str) -> Vec<Span> {
     }
 
     let lines = line_spans(content);
-    let trimmed: Vec<&str> = lines
-        .iter()
-        .map(|(s, e)| content[*s..*e].trim())
-        .collect();
+    let trimmed: Vec<&str> = lines.iter().map(|(s, e)| content[*s..*e].trim()).collect();
 
     let starts: Vec<usize> = trimmed
         .iter()
@@ -524,7 +519,11 @@ mod tests {
         let content = "call(a,     b,\n     c);\n";
         let result = applied(content, "call(a, b, c);", "call(x);");
         assert_eq!(result.strategy, Strategy::WhitespaceNormalized);
-        assert!(result.content.contains("call(x);"), "got {:?}", result.content);
+        assert!(
+            result.content.contains("call(x);"),
+            "got {:?}",
+            result.content
+        );
     }
 
     // ── rung 4: indentation-flexible ────────────────────────────────────
@@ -664,6 +663,10 @@ mod tests {
     fn crlf_line_endings_do_not_break_line_matching() {
         let content = "a\r\n   target   \r\nb\r\n";
         let result = applied(content, "target", "replaced");
-        assert!(result.content.contains("replaced"), "got {:?}", result.content);
+        assert!(
+            result.content.contains("replaced"),
+            "got {:?}",
+            result.content
+        );
     }
 }

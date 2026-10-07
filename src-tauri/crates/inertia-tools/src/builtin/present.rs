@@ -320,7 +320,12 @@ mod tests {
             )
             .await
             .expect("the tool ran");
-        assert!(without.metadata.as_ref().expect("metadata").get("note").is_none());
+        assert!(without
+            .metadata
+            .as_ref()
+            .expect("metadata")
+            .get("note")
+            .is_none());
     }
 
     #[tokio::test]
@@ -397,7 +402,10 @@ mod tests {
         let dir = tree();
         let many: Vec<String> = (0..13).map(|_| joined(dir.path(), "page.tsx")).collect();
         let err = PresentTool
-            .execute(json!({ "paths": many }), &ctx(dir.path(), MockGate::allow_all()))
+            .execute(
+                json!({ "paths": many }),
+                &ctx(dir.path(), MockGate::allow_all()),
+            )
             .await
             .expect_err("too many");
         assert!(err.to_string().contains("at most 12"), "{err}");
@@ -431,7 +439,10 @@ mod tests {
             )
             .await
             .expect_err("refused");
-        assert!(err.to_string().contains("outside the working folder"), "{err}");
+        assert!(
+            err.to_string().contains("outside the working folder"),
+            "{err}"
+        );
     }
 
     #[test]

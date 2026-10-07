@@ -195,6 +195,11 @@ mod tests {
         let notice = result.output.find("[...").unwrap();
         let head = &result.output[..notice];
         let tail = &result.output[result.output.rfind("...]").unwrap()..];
-        assert!(tail.len() > head.len(), "head {} tail {}", head.len(), tail.len());
+        assert!(
+            tail.len() > head.len(),
+            "head {} tail {}",
+            head.len(),
+            tail.len()
+        );
     }
 }

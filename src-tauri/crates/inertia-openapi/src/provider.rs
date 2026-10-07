@@ -138,8 +138,10 @@ impl ApiTool {
         let parts = self.operation.build_request(&args);
         let url = format!("{}{}", self.base_url, parts.path);
 
-        let method = reqwest::Method::from_bytes(self.operation.method.as_bytes())
-            .map_err(|_| Error::InvalidInput(format!("{} is not an HTTP method.", self.operation.method)))?;
+        let method =
+            reqwest::Method::from_bytes(self.operation.method.as_bytes()).map_err(|_| {
+                Error::InvalidInput(format!("{} is not an HTTP method.", self.operation.method))
+            })?;
 
         let mut request = self.http.request(method, &url);
 
@@ -181,7 +183,11 @@ impl ApiTool {
         // A non-2xx is *the answer*, not a tool failure. A 404 or a 422 with a
         // validation message is exactly what the model needs to correct its
         // call, and burying it in an error envelope hides the body.
-        let mut output = format!("{} {}\n", status.as_u16(), status.canonical_reason().unwrap_or(""));
+        let mut output = format!(
+            "{} {}\n",
+            status.as_u16(),
+            status.canonical_reason().unwrap_or("")
+        );
         if body.trim().is_empty() {
             output.push_str("(no body)");
         } else {

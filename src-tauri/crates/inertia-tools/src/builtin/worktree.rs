@@ -50,13 +50,18 @@ pub const BRANCH_PREFIX: &str = "inertia/";
 
 async fn git(args: &[&str], cwd: &Path) -> std::result::Result<String, String> {
     let mut cmd = tokio::process::Command::new("git");
-    cmd.args(args).current_dir(cwd).stdin(std::process::Stdio::null());
+    cmd.args(args)
+        .current_dir(cwd)
+        .stdin(std::process::Stdio::null());
     #[cfg(windows)]
     {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
-    let output = cmd.output().await.map_err(|e| format!("git could not be run: {e}"))?;
+    let output = cmd
+        .output()
+        .await
+        .map_err(|e| format!("git could not be run: {e}"))?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(if stderr.is_empty() {
@@ -160,13 +165,22 @@ fn exclude_ours(common_dir: &Path) -> std::io::Result<()> {
     if let Some(parent) = file.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let glue = if !current.is_empty() && !current.ends_with('\n') { "\n" } else { "" };
+    let glue = if !current.is_empty() && !current.ends_with('\n') {
+        "\n"
+    } else {
+        ""
+    };
     std::fs::write(&file, format!("{current}{glue}{line}\n"))
 }
 
 async fn branch_exists(root: &Path, branch: &str) -> bool {
     git(
-        &["rev-parse", "--verify", "--quiet", &format!("refs/heads/{branch}")],
+        &[
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            &format!("refs/heads/{branch}"),
+        ],
         root,
     )
     .await
@@ -281,19 +295,31 @@ impl Tool for WorktreeEnterTool {
 
     fn permission(&self, args: &Value) -> PermissionRequest {
         let name = slug(args.get("name").and_then(Value::as_str).unwrap_or(""));
-        let name = if name.is_empty() { "worktree".to_string() } else { name };
-        PermissionRequest::new("shell", format!("git worktree add {name}")).with_always("git worktree *")
+        let name = if name.is_empty() {
+            "worktree".to_string()
+        } else {
+            name
+        };
+        PermissionRequest::new("shell", format!("git worktree add {name}"))
+            .with_always("git worktree *")
     }
 
     fn render(&self, args: &Value) -> Option<String> {
         let raw = args.get("name").and_then(Value::as_str).unwrap_or("");
         let name = slug(raw);
-        Some(format!("Enter worktree {}", if name.is_empty() { raw } else { &name }))
+        Some(format!(
+            "Enter worktree {}",
+            if name.is_empty() { raw } else { &name }
+        ))
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
         let raw = args.get("name").and_then(Value::as_str).unwrap_or("");
-        let base = args.get("base").and_then(Value::as_str).map(str::trim).filter(|b| !b.is_empty());
+        let base = args
+            .get("base")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|b| !b.is_empty());
         let made = ensure_worktree(&ctx.root, raw, base).await?;
 
         let dir = made.dir.to_string_lossy().to_string();
@@ -362,25 +388,36 @@ impl Tool for WorktreeExitTool {
         let remove = args.get("remove").and_then(Value::as_bool).unwrap_or(false);
         PermissionRequest::new(
             "shell",
-            if remove { "git worktree remove" } else { "git worktree exit" },
+            if remove {
+                "git worktree remove"
+            } else {
+                "git worktree exit"
+            },
         )
         .with_always("git worktree *")
     }
 
     fn render(&self, args: &Value) -> Option<String> {
         let remove = args.get("remove").and_then(Value::as_bool).unwrap_or(false);
-        Some(if remove { "Leave and remove the worktree" } else { "Leave the worktree" }.to_string())
+        Some(
+            if remove {
+                "Leave and remove the worktree"
+            } else {
+                "Leave the worktree"
+            }
+            .to_string(),
+        )
     }
 
     async fn execute(&self, args: Value, ctx: &ToolContext) -> Result<ToolOutcome> {
-        let repo = match repository_of(&ctx.root).await {
-            Some(repo) if repo.is_worktree => repo,
-            _ => {
-                return Err(Error::Other(
-                    "You are not in a worktree; the working folder is already the main checkout.".into(),
-                ))
-            }
-        };
+        let repo =
+            match repository_of(&ctx.root).await {
+                Some(repo) if repo.is_worktree => repo,
+                _ => return Err(Error::Other(
+                    "You are not in a worktree; the working folder is already the main checkout."
+                        .into(),
+                )),
+            };
         let remove = args.get("remove").and_then(Value::as_bool).unwrap_or(false);
         let force = args.get("force").and_then(Value::as_bool).unwrap_or(false);
         let here = repo.top.to_string_lossy().to_string();
@@ -443,7 +480,12 @@ mod tests {
             .current_dir(cwd)
             .output()
             .expect("git runs");
-        assert!(out.status.success(), "git {:?}: {}", args, String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "git {:?}: {}",
+            args,
+            String::from_utf8_lossy(&out.stderr)
+        );
         String::from_utf8_lossy(&out.stdout).trim().to_string()
     }
 
@@ -451,7 +493,11 @@ mod tests {
     /// second checkout, and a fake would be testing the fake. `None` when
     /// there is no git on this machine, and the test skips.
     fn repo() -> Option<(tempfile::TempDir, PathBuf)> {
-        if std::process::Command::new("git").arg("--version").output().is_err() {
+        if std::process::Command::new("git")
+            .arg("--version")
+            .output()
+            .is_err()
+        {
             eprintln!("git is not installed; skipping");
             return None;
         }
@@ -497,19 +543,26 @@ mod tests {
                 "name": "fix-login",
             })
         );
-        assert_eq!(git_sync(&["rev-parse", "--abbrev-ref", "HEAD"], &dir), "inertia/fix-login");
+        assert_eq!(
+            git_sync(&["rev-parse", "--abbrev-ref", "HEAD"], &dir),
+            "inertia/fix-login"
+        );
 
         // The main checkout is untouched, and does not report the copy as
         // untracked.
         assert_eq!(git_sync(&["status", "--porcelain"], &root), "");
-        let exclude = std::fs::read_to_string(root.join(".git").join("info").join("exclude")).unwrap();
+        let exclude =
+            std::fs::read_to_string(root.join(".git").join("info").join("exclude")).unwrap();
         assert!(exclude.contains("/.inertia/"));
     }
 
     #[tokio::test]
     async fn a_worktree_of_the_same_name_is_reused() {
         let Some((_keep, root)) = repo() else { return };
-        WorktreeEnterTool.execute(json!({ "name": "again" }), &ctx(&root)).await.unwrap();
+        WorktreeEnterTool
+            .execute(json!({ "name": "again" }), &ctx(&root))
+            .await
+            .unwrap();
         let second = WorktreeEnterTool
             .execute(json!({ "name": "again" }), &ctx(&root))
             .await
@@ -540,17 +593,26 @@ mod tests {
     #[tokio::test]
     async fn leaving_goes_back_and_keeps_the_worktree_unless_asked() {
         let Some((_keep, root)) = repo() else { return };
-        let entered = WorktreeEnterTool.execute(json!({ "name": "keep" }), &ctx(&root)).await.unwrap();
+        let entered = WorktreeEnterTool
+            .execute(json!({ "name": "keep" }), &ctx(&root))
+            .await
+            .unwrap();
         let dir = PathBuf::from(entered.metadata.unwrap()["cwd"].as_str().unwrap());
 
-        let left = WorktreeExitTool.execute(json!({}), &ctx(&dir)).await.unwrap();
+        let left = WorktreeExitTool
+            .execute(json!({}), &ctx(&dir))
+            .await
+            .unwrap();
         let meta = left.metadata.unwrap();
         assert_eq!(meta["cwd"], json!(root.to_string_lossy()));
         assert_eq!(meta["worktree"], Value::Null);
         assert_eq!(meta["removed"], false);
         assert!(dir.exists());
 
-        let left = WorktreeExitTool.execute(json!({ "remove": true }), &ctx(&dir)).await.unwrap();
+        let left = WorktreeExitTool
+            .execute(json!({ "remove": true }), &ctx(&dir))
+            .await
+            .unwrap();
         assert_eq!(left.metadata.unwrap()["removed"], true);
         assert!(!dir.exists());
         // The work is the branch, and the branch stays.
@@ -561,7 +623,10 @@ mod tests {
     #[tokio::test]
     async fn uncommitted_work_is_not_thrown_away_without_force() {
         let Some((_keep, root)) = repo() else { return };
-        let entered = WorktreeEnterTool.execute(json!({ "name": "dirty" }), &ctx(&root)).await.unwrap();
+        let entered = WorktreeEnterTool
+            .execute(json!({ "name": "dirty" }), &ctx(&root))
+            .await
+            .unwrap();
         let dir = PathBuf::from(entered.metadata.unwrap()["cwd"].as_str().unwrap());
         std::fs::write(dir.join("a.txt"), "changed\n").unwrap();
 
@@ -583,14 +648,21 @@ mod tests {
     #[tokio::test]
     async fn leaving_the_main_checkout_says_so() {
         let Some((_keep, root)) = repo() else { return };
-        let err = WorktreeExitTool.execute(json!({}), &ctx(&root)).await.unwrap_err().to_string();
+        let err = WorktreeExitTool
+            .execute(json!({}), &ctx(&root))
+            .await
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("already the main checkout"), "{err}");
     }
 
     #[tokio::test]
     async fn a_folder_knows_which_checkout_it_came_from() {
         let Some((_keep, root)) = repo() else { return };
-        let entered = WorktreeEnterTool.execute(json!({ "name": "which" }), &ctx(&root)).await.unwrap();
+        let entered = WorktreeEnterTool
+            .execute(json!({ "name": "which" }), &ctx(&root))
+            .await
+            .unwrap();
         let dir = PathBuf::from(entered.metadata.unwrap()["cwd"].as_str().unwrap());
         let inside = repository_of(&dir).await.unwrap();
         assert_eq!(inside.root, root);

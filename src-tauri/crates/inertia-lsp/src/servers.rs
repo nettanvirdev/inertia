@@ -468,7 +468,11 @@ pub fn resolve(file: &Path, cwd: Option<&Path>) -> Option<ServerSpec> {
         args: chosen.args.clone(),
         env: chosen.env.clone(),
         initialization: chosen.initialization.clone(),
-        root: find_root(&std::path::absolute(file).unwrap_or_else(|_| file.to_path_buf()), &chosen.root_files, cwd),
+        root: find_root(
+            &std::path::absolute(file).unwrap_or_else(|_| file.to_path_buf()),
+            &chosen.root_files,
+            cwd,
+        ),
     })
 }
 

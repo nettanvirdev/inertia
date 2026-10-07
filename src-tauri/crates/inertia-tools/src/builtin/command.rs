@@ -72,15 +72,16 @@ pub fn tokenize(command: &str) -> Tokens {
     let mut was_quoted = false;
     let mut mode = Mode::Bare;
 
-    let flush = |current: &mut String, started: &mut bool, was_quoted: &mut bool, out: &mut Tokens| {
-        if !*started {
-            return;
-        }
-        out.tokens.push(std::mem::take(current));
-        out.quoted.push(*was_quoted);
-        *started = false;
-        *was_quoted = false;
-    };
+    let flush =
+        |current: &mut String, started: &mut bool, was_quoted: &mut bool, out: &mut Tokens| {
+            if !*started {
+                return;
+            }
+            out.tokens.push(std::mem::take(current));
+            out.quoted.push(*was_quoted);
+            *started = false;
+            *was_quoted = false;
+        };
 
     let mut i = 0;
     while i < chars.len() {
@@ -202,7 +203,9 @@ fn scan(command: &str, posix: bool) -> (Vec<Segment>, bool) {
         // Looked for whatever the quoting, because both shells expand `$(`
         // and backticks inside double quotes, and a literal `$(` in single
         // quotes is rare enough that asking about one costs nothing.
-        if matches!(c, '`' | '\n' | '\r') || (matches!(c, '$' | '@' | '<' | '>') && next == Some('(')) {
+        if matches!(c, '`' | '\n' | '\r')
+            || (matches!(c, '$' | '@' | '<' | '>') && next == Some('('))
+        {
             hidden = true;
         }
         match mode {
@@ -269,7 +272,14 @@ fn is_redirection(chars: &[char], at: usize, op: &str) -> bool {
 }
 
 /// Where output may go without writing anything anyone would care about.
-const NULL_DEVICES: &[&str] = &["/dev/null", "/dev/stdout", "/dev/stderr", "$null", "nul", "nul:"];
+const NULL_DEVICES: &[&str] = &[
+    "/dev/null",
+    "/dev/stdout",
+    "/dev/stderr",
+    "$null",
+    "nul",
+    "nul:",
+];
 
 /// Does the `>` at `at` send output into a file?
 ///
@@ -474,28 +484,94 @@ pub struct Danger {
 /// occasionally wrong, and a guess that silently refuses work is a far worse
 /// failure than a guess that asks twice.
 const DANGEROUS: &[Danger] = &[
-    Danger { pattern: "rm -rf /", why: "Deletes everything on the filesystem." },
-    Danger { pattern: "rm -fr /", why: "Deletes everything on the filesystem." },
-    Danger { pattern: "rm -rf /*", why: "Deletes everything under the filesystem root." },
-    Danger { pattern: "rm -rf --no-preserve-root*", why: "Deliberately disables the root guard." },
-    Danger { pattern: "rm -rf ~", why: "Deletes the entire home directory." },
-    Danger { pattern: "rm -rf ~/*", why: "Deletes everything in the home directory." },
-    Danger { pattern: "mkfs*", why: "Formats a filesystem, destroying whatever was on it." },
-    Danger { pattern: "dd if=* of=/dev/*", why: "Writes raw data straight to a device." },
-    Danger { pattern: ":(){*};:", why: "Fork bomb. Hangs the machine until it is rebooted." },
-    Danger { pattern: "chmod -R 777 /", why: "Makes the whole filesystem world-writable." },
-    Danger { pattern: "chmod -R 777 /*", why: "Makes the whole filesystem world-writable." },
-    Danger { pattern: "curl * | sh", why: "Runs a script off the internet without reading it." },
-    Danger { pattern: "curl * | bash", why: "Runs a script off the internet without reading it." },
-    Danger { pattern: "wget * | sh", why: "Runs a script off the internet without reading it." },
-    Danger { pattern: "wget * | bash", why: "Runs a script off the internet without reading it." },
-    Danger { pattern: "git push --force*main*", why: "Force-pushes over a protected branch." },
-    Danger { pattern: "git push --force*master*", why: "Force-pushes over a protected branch." },
-    Danger { pattern: "git push -f *main*", why: "Force-pushes over a protected branch." },
-    Danger { pattern: "git push -f *master*", why: "Force-pushes over a protected branch." },
-    Danger { pattern: "*drop database*", why: "Drops a database." },
-    Danger { pattern: "format c:*", why: "Formats the system drive." },
-    Danger { pattern: "del /f /s /q c:\\*", why: "Recursively force-deletes the system drive." },
+    Danger {
+        pattern: "rm -rf /",
+        why: "Deletes everything on the filesystem.",
+    },
+    Danger {
+        pattern: "rm -fr /",
+        why: "Deletes everything on the filesystem.",
+    },
+    Danger {
+        pattern: "rm -rf /*",
+        why: "Deletes everything under the filesystem root.",
+    },
+    Danger {
+        pattern: "rm -rf --no-preserve-root*",
+        why: "Deliberately disables the root guard.",
+    },
+    Danger {
+        pattern: "rm -rf ~",
+        why: "Deletes the entire home directory.",
+    },
+    Danger {
+        pattern: "rm -rf ~/*",
+        why: "Deletes everything in the home directory.",
+    },
+    Danger {
+        pattern: "mkfs*",
+        why: "Formats a filesystem, destroying whatever was on it.",
+    },
+    Danger {
+        pattern: "dd if=* of=/dev/*",
+        why: "Writes raw data straight to a device.",
+    },
+    Danger {
+        pattern: ":(){*};:",
+        why: "Fork bomb. Hangs the machine until it is rebooted.",
+    },
+    Danger {
+        pattern: "chmod -R 777 /",
+        why: "Makes the whole filesystem world-writable.",
+    },
+    Danger {
+        pattern: "chmod -R 777 /*",
+        why: "Makes the whole filesystem world-writable.",
+    },
+    Danger {
+        pattern: "curl * | sh",
+        why: "Runs a script off the internet without reading it.",
+    },
+    Danger {
+        pattern: "curl * | bash",
+        why: "Runs a script off the internet without reading it.",
+    },
+    Danger {
+        pattern: "wget * | sh",
+        why: "Runs a script off the internet without reading it.",
+    },
+    Danger {
+        pattern: "wget * | bash",
+        why: "Runs a script off the internet without reading it.",
+    },
+    Danger {
+        pattern: "git push --force*main*",
+        why: "Force-pushes over a protected branch.",
+    },
+    Danger {
+        pattern: "git push --force*master*",
+        why: "Force-pushes over a protected branch.",
+    },
+    Danger {
+        pattern: "git push -f *main*",
+        why: "Force-pushes over a protected branch.",
+    },
+    Danger {
+        pattern: "git push -f *master*",
+        why: "Force-pushes over a protected branch.",
+    },
+    Danger {
+        pattern: "*drop database*",
+        why: "Drops a database.",
+    },
+    Danger {
+        pattern: "format c:*",
+        why: "Formats the system drive.",
+    },
+    Danger {
+        pattern: "del /f /s /q c:\\*",
+        why: "Recursively force-deletes the system drive.",
+    },
 ];
 
 /// Whitespace collapsed to single spaces, lowercased, trimmed.
@@ -547,26 +623,74 @@ pub struct Sweep {
 /// be turned off with an "always allow".
 const MASS_DELETE: &[Danger] = &[
     // rm, in every spelling of recursive-and-forced against a whole directory.
-    Danger { pattern: "rm -r* *", why: "Deletes a directory and everything in it." },
-    Danger { pattern: "rm -fr* *", why: "Deletes a directory and everything in it." },
+    Danger {
+        pattern: "rm -r* *",
+        why: "Deletes a directory and everything in it.",
+    },
+    Danger {
+        pattern: "rm -fr* *",
+        why: "Deletes a directory and everything in it.",
+    },
     // PowerShell.
-    Danger { pattern: "remove-item * -recurse*", why: "Deletes a directory and everything in it." },
-    Danger { pattern: "remove-item -recurse*", why: "Deletes a directory and everything in it." },
-    Danger { pattern: "ri * -recurse*", why: "Deletes a directory and everything in it." },
+    Danger {
+        pattern: "remove-item * -recurse*",
+        why: "Deletes a directory and everything in it.",
+    },
+    Danger {
+        pattern: "remove-item -recurse*",
+        why: "Deletes a directory and everything in it.",
+    },
+    Danger {
+        pattern: "ri * -recurse*",
+        why: "Deletes a directory and everything in it.",
+    },
     // cmd.
-    Danger { pattern: "rd /s*", why: "Deletes a directory tree." },
-    Danger { pattern: "rmdir /s*", why: "Deletes a directory tree." },
-    Danger { pattern: "del /s*", why: "Deletes files recursively." },
-    Danger { pattern: "del /q*", why: "Deletes files without confirming." },
+    Danger {
+        pattern: "rd /s*",
+        why: "Deletes a directory tree.",
+    },
+    Danger {
+        pattern: "rmdir /s*",
+        why: "Deletes a directory tree.",
+    },
+    Danger {
+        pattern: "del /s*",
+        why: "Deletes files recursively.",
+    },
+    Danger {
+        pattern: "del /q*",
+        why: "Deletes files without confirming.",
+    },
     // Everything that is not checked in, which is usually more than people think.
-    Danger { pattern: "git clean -*d*f*", why: "Deletes every untracked file, including ones never saved." },
-    Danger { pattern: "git clean -*f*d*", why: "Deletes every untracked file, including ones never saved." },
-    Danger { pattern: "git reset --hard*", why: "Throws away every uncommitted change." },
-    Danger { pattern: "git checkout -- .", why: "Throws away every uncommitted change." },
+    Danger {
+        pattern: "git clean -*d*f*",
+        why: "Deletes every untracked file, including ones never saved.",
+    },
+    Danger {
+        pattern: "git clean -*f*d*",
+        why: "Deletes every untracked file, including ones never saved.",
+    },
+    Danger {
+        pattern: "git reset --hard*",
+        why: "Throws away every uncommitted change.",
+    },
+    Danger {
+        pattern: "git checkout -- .",
+        why: "Throws away every uncommitted change.",
+    },
     // find, which is how a delete gets spelled when rm would have been noticed.
-    Danger { pattern: "find * -delete*", why: "Deletes every file the search matched." },
-    Danger { pattern: "find * -exec rm*", why: "Deletes every file the search matched." },
-    Danger { pattern: "*truncate table*", why: "Empties a table." },
+    Danger {
+        pattern: "find * -delete*",
+        why: "Deletes every file the search matched.",
+    },
+    Danger {
+        pattern: "find * -exec rm*",
+        why: "Deletes every file the search matched.",
+    },
+    Danger {
+        pattern: "*truncate table*",
+        why: "Empties a table.",
+    },
 ];
 
 /// Does this command empty something?
@@ -732,7 +856,9 @@ pub fn external_paths(command: &str, cwd: &Path) -> Vec<PathBuf> {
 
     for segment in split(command) {
         let Tokens { tokens, quoted } = tokenize(&segment.text);
-        let Some(first) = tokens.first() else { continue };
+        let Some(first) = tokens.first() else {
+            continue;
+        };
         if !FILES.contains(&command_name(first).as_str()) {
             continue;
         }
@@ -751,7 +877,10 @@ pub fn external_paths(command: &str, cwd: &Path) -> Vec<PathBuf> {
 
             let expanded = if token == "~" || token.starts_with("~/") || token.starts_with("~\\") {
                 match home_dir() {
-                    Some(home) => home.join(token[1..].trim_start_matches(['/', '\\'])).to_string_lossy().to_string(),
+                    Some(home) => home
+                        .join(token[1..].trim_start_matches(['/', '\\']))
+                        .to_string_lossy()
+                        .to_string(),
                     None => continue,
                 }
             } else {
@@ -797,8 +926,14 @@ mod tests {
             tokenize("git commit -m \"fix the thing\"").tokens,
             vec!["git", "commit", "-m", "fix the thing"]
         );
-        assert_eq!(tokenize("echo \"it's fine\"").tokens, vec!["echo", "it's fine"]);
-        assert_eq!(tokenize("echo 'say \"hi\"'").tokens, vec!["echo", "say \"hi\""]);
+        assert_eq!(
+            tokenize("echo \"it's fine\"").tokens,
+            vec!["echo", "it's fine"]
+        );
+        assert_eq!(
+            tokenize("echo 'say \"hi\"'").tokens,
+            vec!["echo", "say \"hi\""]
+        );
     }
 
     #[test]
@@ -806,8 +941,14 @@ mod tests {
         let t = tokenize("--message=\"a b\"");
         assert_eq!(t.tokens, vec!["--message=a b"]);
         assert_eq!(t.quoted, vec![true]);
-        assert_eq!(tokenize("git commit -m \"\"").tokens, vec!["git", "commit", "-m", ""]);
-        assert_eq!(tokenize("cat my\\ file.txt").tokens, vec!["cat", "my file.txt"]);
+        assert_eq!(
+            tokenize("git commit -m \"\"").tokens,
+            vec!["git", "commit", "-m", ""]
+        );
+        assert_eq!(
+            tokenize("cat my\\ file.txt").tokens,
+            vec!["cat", "my file.txt"]
+        );
     }
 
     /// The whole reason a backslash only escapes the characters that could
@@ -866,7 +1007,10 @@ mod tests {
             shape_as("git status; rm -rf /", false),
             Shape::Chain(parts(&["git status", "rm -rf /"]))
         );
-        assert_eq!(shape_as("git status | head", true), Shape::Chain(parts(&["git status", "head"])));
+        assert_eq!(
+            shape_as("git status | head", true),
+            Shape::Chain(parts(&["git status", "head"]))
+        );
         assert_eq!(shape_as("git commit -m \"a && b\"", true), Shape::Whole);
         assert_eq!(shape_as("npm test 2>&1", true), Shape::Whole);
         assert_eq!(shape_as("npm test 2>/dev/null", true), Shape::Whole);
@@ -906,8 +1050,14 @@ mod tests {
     #[test]
     fn always_pattern_remembers_the_shape_not_the_invocation() {
         assert_eq!(always_pattern("git push origin main"), "git push *");
-        assert_eq!(always_pattern("git config user.email a@b.c"), "git config user.email *");
-        assert_eq!(always_pattern("git remote add origin https://x"), "git remote add *");
+        assert_eq!(
+            always_pattern("git config user.email a@b.c"),
+            "git config user.email *"
+        );
+        assert_eq!(
+            always_pattern("git remote add origin https://x"),
+            "git remote add *"
+        );
         assert_eq!(always_pattern("npm run build"), "npm run build *");
         assert_eq!(always_pattern("npm install lodash"), "npm install *");
         assert_eq!(always_pattern("rm -rf foo"), "rm *");
@@ -940,7 +1090,13 @@ mod tests {
         assert_eq!(mass_delete("find . -name '*.tmp' -delete").len(), 1);
         assert_eq!(mass_delete("npm test && rm -rf src").len(), 1);
         assert_eq!(mass_delete("npm run build; rd /s /q dist").len(), 1);
-        for ok in ["ls -la", "rm file.txt", "npm run build", "git status", "echo hi"] {
+        for ok in [
+            "ls -la",
+            "rm file.txt",
+            "npm run build",
+            "git status",
+            "echo hi",
+        ] {
             assert!(mass_delete(ok).is_empty(), "{ok}");
         }
     }
@@ -963,9 +1119,15 @@ mod tests {
 
     #[test]
     fn external_paths_report_a_directory_outside_the_working_folder() {
-        assert_eq!(external_paths("rm ../other/notes.txt", &cwd()), vec![other()]);
+        assert_eq!(
+            external_paths("rm ../other/notes.txt", &cwd()),
+            vec![other()]
+        );
         assert_eq!(external_paths("rm ../other/*.log", &cwd()), vec![other()]);
-        assert_eq!(external_paths("npm test && rm ../other/x.txt", &cwd()), vec![other()]);
+        assert_eq!(
+            external_paths("npm test && rm ../other/x.txt", &cwd()),
+            vec![other()]
+        );
     }
 
     #[test]

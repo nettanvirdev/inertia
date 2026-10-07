@@ -47,7 +47,8 @@ pub trait Delegate: Send + Sync + std::fmt::Debug {
     fn layout(&self) -> &Layout;
 
     /// A provider and the model id to ask it for.
-    fn provider(&self, reference: &str) -> std::result::Result<(Arc<dyn Provider>, String), String>;
+    fn provider(&self, reference: &str)
+        -> std::result::Result<(Arc<dyn Provider>, String), String>;
 
     /// The subagent's own tools, and the gate they are checked against.
     ///
@@ -201,7 +202,10 @@ impl Tool for TaskTool {
 
     fn render(&self, args: &Value) -> Option<String> {
         let who = args.get("subagent_type").and_then(Value::as_str)?;
-        let what = args.get("description").and_then(Value::as_str).unwrap_or("");
+        let what = args
+            .get("description")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         Some(format!("{who}: {what}"))
     }
 
@@ -215,12 +219,14 @@ impl Tool for TaskTool {
         };
 
         let description = text("description").unwrap_or_else(|| "task".into());
-        let prompt = text("prompt")
-            .ok_or_else(|| Error::Other("`prompt` is required: the subagent sees nothing else.".into()))?;
+        let prompt = text("prompt").ok_or_else(|| {
+            Error::Other("`prompt` is required: the subagent sees nothing else.".into())
+        })?;
         let wanted = text("subagent_type")
             .ok_or_else(|| Error::Other("`subagent_type` is required.".into()))?;
 
-        let agent = crate::agents::resolve(self.delegate.layout(), &wanted).map_err(Error::Other)?;
+        let agent =
+            crate::agents::resolve(self.delegate.layout(), &wanted).map_err(Error::Other)?;
         if agent.is_paused() {
             return Err(Error::Other(format!(
                 "{} is paused, so it will not take work. Ask the person to turn it back \
@@ -232,11 +238,8 @@ impl Tool for TaskTool {
         // A follow-up continues that run; anything else starts a fresh one. The
         // id is namespaced by the conversation so deleting the conversation
         // forgets its subagents with it.
-        let previous = text("task_id").and_then(|id| {
-            self.sessions
-                .history(&id)
-                .map(|history| (id, history))
-        });
+        let previous =
+            text("task_id").and_then(|id| self.sessions.history(&id).map(|history| (id, history)));
         let (id, mut history) = match previous {
             Some((id, history)) => (id, history),
             None => (
@@ -247,10 +250,7 @@ impl Tool for TaskTool {
         history.push(Entry::user(prompt));
 
         let reference = model_for(&agent, &self.parent_model);
-        let (provider, model_id) = self
-            .delegate
-            .provider(&reference)
-            .map_err(Error::Other)?;
+        let (provider, model_id) = self.delegate.provider(&reference).map_err(Error::Other)?;
 
         let call_id = ctx.call_id.as_str().to_string();
         self.delegate.progress(
@@ -396,7 +396,10 @@ impl Delegate for AppDelegate {
         &self.workspace.layout
     }
 
-    fn provider(&self, reference: &str) -> std::result::Result<(Arc<dyn Provider>, String), String> {
+    fn provider(
+        &self,
+        reference: &str,
+    ) -> std::result::Result<(Arc<dyn Provider>, String), String> {
         crate::state::provider_for(&self.workspace.settings, reference)
     }
 
@@ -534,7 +537,10 @@ mod tests {
             &self.layout
         }
 
-        fn provider(&self, reference: &str) -> std::result::Result<(Arc<dyn Provider>, String), String> {
+        fn provider(
+            &self,
+            reference: &str,
+        ) -> std::result::Result<(Arc<dyn Provider>, String), String> {
             Ok((self.provider.clone(), format!("resolved:{reference}")))
         }
 
@@ -622,12 +628,21 @@ mod tests {
             .expect("the subagent ran");
 
         assert_eq!(out.title.as_deref(), Some("Scraper: check the docs"));
-        assert!(out.output.contains("It is a desktop agent app."), "{}", out.output);
-        assert!(out.output.starts_with("<task id=\"thread-1/task-1\" agent=\"Scraper\" state=\"complete\">"));
+        assert!(
+            out.output.contains("It is a desktop agent app."),
+            "{}",
+            out.output
+        );
+        assert!(out
+            .output
+            .starts_with("<task id=\"thread-1/task-1\" agent=\"Scraper\" state=\"complete\">"));
 
         // It really ran: the provider was asked, with the subagent's own prompt.
         assert_eq!(fake.provider.requests().len(), 1);
-        assert_eq!(fake.system.lock().first().map(String::as_str), Some("You are Scraper, on anthropic/claude-sonnet-5."));
+        assert_eq!(
+            fake.system.lock().first().map(String::as_str),
+            Some("You are Scraper, on anthropic/claude-sonnet-5.")
+        );
     }
 
     #[tokio::test]
@@ -637,13 +652,21 @@ mod tests {
             .await
             .expect("the subagent ran");
 
-        let (session, withheld) = fake.built.lock().first().cloned().expect("a registry was built");
+        let (session, withheld) = fake
+            .built
+            .lock()
+            .first()
+            .cloned()
+            .expect("a registry was built");
         assert_eq!(session, "thread-1/task-1");
         // Nested delegation multiplies cost and latency in a way nobody wanted.
         assert!(withheld.contains(&"task".to_string()));
         // And a subagent has no room to invite anybody into.
         for group in ["invite", "handover", "part"] {
-            assert!(withheld.contains(&group.to_string()), "{group} was not withheld");
+            assert!(
+                withheld.contains(&group.to_string()),
+                "{group} was not withheld"
+            );
         }
     }
 
@@ -651,10 +674,14 @@ mod tests {
     async fn an_agent_with_its_own_model_keeps_it_and_one_without_inherits() {
         let (dir, tool, fake) = tool(MockProvider::new().replying("a").replying("b"));
 
-        tool.execute(brief("Pinned"), &ctx(dir.path())).await.expect("ran");
+        tool.execute(brief("Pinned"), &ctx(dir.path()))
+            .await
+            .expect("ran");
         assert!(fake.system.lock()[0].contains("openai/gpt-5"));
 
-        tool.execute(brief("Scraper"), &ctx(dir.path())).await.expect("ran");
+        tool.execute(brief("Scraper"), &ctx(dir.path()))
+            .await
+            .expect("ran");
         assert!(fake.system.lock()[1].contains("anthropic/claude-sonnet-5"));
     }
 
@@ -666,7 +693,10 @@ mod tests {
                 .replying("Yes, and it ships as a desktop binary."),
         );
 
-        let first = tool.execute(brief("Scraper"), &ctx(dir.path())).await.expect("ran");
+        let first = tool
+            .execute(brief("Scraper"), &ctx(dir.path()))
+            .await
+            .expect("ran");
         let id = first.metadata.as_ref().expect("metadata")["taskId"]
             .as_str()
             .expect("a task id")
@@ -687,7 +717,10 @@ mod tests {
             .expect("ran");
 
         // Same run, not a second one.
-        assert_eq!(second.metadata.expect("metadata")["taskId"], json!("thread-1/task-1"));
+        assert_eq!(
+            second.metadata.expect("metadata")["taskId"],
+            json!("thread-1/task-1")
+        );
         // And it was asked knowing what it already said: the second request
         // carries the first exchange, which is the whole point of a follow-up.
         let requests = fake.provider.requests();
@@ -704,7 +737,11 @@ mod tests {
             .expect_err("a paused agent does not take work");
 
         assert!(error.to_string().contains("is paused"), "{error}");
-        assert_eq!(fake.provider.requests().len(), 0, "the paused agent was run anyway");
+        assert_eq!(
+            fake.provider.requests().len(),
+            0,
+            "the paused agent was run anyway"
+        );
     }
 
     #[tokio::test]
@@ -724,7 +761,10 @@ mod tests {
             .execute(brief("Scraper"), &ctx(dir.path()))
             .await
             .expect_err("an empty report is not an answer");
-        assert!(error.to_string().contains("without producing an answer"), "{error}");
+        assert!(
+            error.to_string().contains("without producing an answer"),
+            "{error}"
+        );
     }
 
     #[tokio::test]
@@ -732,7 +772,9 @@ mod tests {
         // A subagent can run for a minute, and a card that says nothing for a
         // minute reads as a hang.
         let (dir, tool, fake) = tool(MockProvider::new().replying("done"));
-        tool.execute(brief("Scraper"), &ctx(dir.path())).await.expect("ran");
+        tool.execute(brief("Scraper"), &ctx(dir.path()))
+            .await
+            .expect("ran");
 
         let progress = fake.progress.lock();
         assert!(!progress.is_empty());
@@ -749,9 +791,8 @@ mod tests {
         use inertia_agent::prompt::Mode;
 
         let dir = tempfile::tempdir().expect("a temp dir");
-        let workspace = Arc::new(
-            crate::state::Workspace::open(dir.path().to_path_buf()).expect("workspace"),
-        );
+        let workspace =
+            Arc::new(crate::state::Workspace::open(dir.path().to_path_buf()).expect("workspace"));
         let fake = Arc::new(Fake {
             layout: workspace.layout.clone(),
             provider: Arc::new(MockProvider::new()),

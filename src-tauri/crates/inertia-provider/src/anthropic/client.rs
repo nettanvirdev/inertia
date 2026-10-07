@@ -14,9 +14,7 @@ use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures_util::StreamExt;
 use inertia_core::message::{ThinkingBlock, ToolCall};
-use inertia_core::provider::{
-    ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, Usage,
-};
+use inertia_core::provider::{ChatRequest, FinishReason, ModelInfo, Provider, StreamEvent, Usage};
 use inertia_core::ToolCallId;
 use secrecy::ExposeSecret;
 use serde_json::Value;
@@ -76,10 +74,9 @@ impl AnthropicProvider {
         }
 
         for (name, value) in &self.config.headers {
-            if let (Ok(name), Ok(value)) = (
-                name.parse::<HeaderName>(),
-                HeaderValue::from_str(value),
-            ) {
+            if let (Ok(name), Ok(value)) =
+                (name.parse::<HeaderName>(), HeaderValue::from_str(value))
+            {
                 headers.insert(name, value);
             }
         }
@@ -104,8 +101,10 @@ impl AnthropicProvider {
 
         let thinking = (thinking_budget > 0).then(|| Thinking {
             kind: "enabled",
-            budget_tokens: thinking_budget
-                .clamp(MIN_TOKENS, max_tokens.saturating_sub(MIN_TOKENS).max(MIN_TOKENS)),
+            budget_tokens: thinking_budget.clamp(
+                MIN_TOKENS,
+                max_tokens.saturating_sub(MIN_TOKENS).max(MIN_TOKENS),
+            ),
         });
 
         // Both sampling controls are omitted entirely when thinking is on: the
@@ -540,9 +539,8 @@ mod tests {
     /// A gateway bringing its own auth must not end up with both headers.
     #[test]
     fn a_configured_auth_header_suppresses_ours() {
-        let provider = AnthropicProvider::new(
-            config().with_header("Authorization", "Bearer gateway-token"),
-        );
+        let provider =
+            AnthropicProvider::new(config().with_header("Authorization", "Bearer gateway-token"));
         let headers = provider.headers();
         assert!(!headers.contains_key("x-api-key"));
         assert_eq!(headers["authorization"], "Bearer gateway-token");

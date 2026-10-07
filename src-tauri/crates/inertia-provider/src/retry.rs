@@ -245,7 +245,11 @@ mod tests {
         fn stream_chat(&self, _request: ChatRequest) -> BoxStream<'static, StreamEvent> {
             *self.seen.lock() += 1;
             let mut runs = self.runs.lock();
-            let events = if runs.is_empty() { vec![] } else { runs.remove(0) };
+            let events = if runs.is_empty() {
+                vec![]
+            } else {
+                runs.remove(0)
+            };
             Box::pin(futures::stream::iter(events))
         }
     }
@@ -269,7 +273,10 @@ mod tests {
     }
 
     async fn drain(provider: &Resilient) -> Vec<StreamEvent> {
-        provider.stream_chat(ChatRequest::default()).collect::<Vec<_>>().await
+        provider
+            .stream_chat(ChatRequest::default())
+            .collect::<Vec<_>>()
+            .await
     }
 
     #[tokio::test]
@@ -286,7 +293,10 @@ mod tests {
 
         // One `Start`, both waits announced, and the reply that finally worked.
         assert_eq!(
-            events.iter().filter(|e| matches!(e, StreamEvent::Start { .. })).count(),
+            events
+                .iter()
+                .filter(|e| matches!(e, StreamEvent::Start { .. }))
+                .count(),
             1,
             "{events:?}"
         );
@@ -298,7 +308,10 @@ mod tests {
             })
             .collect();
         assert_eq!(retries, vec![(1, 10), (2, 10)]);
-        assert!(matches!(events.last(), Some(StreamEvent::Done { .. })), "{events:?}");
+        assert!(
+            matches!(events.last(), Some(StreamEvent::Done { .. })),
+            "{events:?}"
+        );
         assert_eq!(*inner.seen.lock(), 3);
         assert_eq!(
             *waits.waited.lock(),
@@ -314,7 +327,10 @@ mod tests {
 
         let events = drain(&provider).await;
 
-        assert!(matches!(events.last(), Some(StreamEvent::Error { .. })), "{events:?}");
+        assert!(
+            matches!(events.last(), Some(StreamEvent::Error { .. })),
+            "{events:?}"
+        );
         assert_eq!(*inner.seen.lock(), 1, "a 400 is malformed forever");
         assert!(waits.waited.lock().is_empty());
     }
@@ -322,7 +338,13 @@ mod tests {
     #[tokio::test]
     async fn a_stream_that_already_said_something_is_never_run_twice() {
         let inner = Scripted::new(vec![
-            vec![start(), StreamEvent::Delta { text: "half a ".into() }, fail(Some(529))],
+            vec![
+                start(),
+                StreamEvent::Delta {
+                    text: "half a ".into(),
+                },
+                fail(Some(529)),
+            ],
             vec![start(), done()],
         ]);
         let provider = Resilient::with(inner.clone(), 10, Arc::new(Recorder::default()));
@@ -331,7 +353,10 @@ mod tests {
 
         // The failure is reported as it stands. Retrying would print the
         // paragraph twice, which is worse than the error.
-        assert!(matches!(events.last(), Some(StreamEvent::Error { .. })), "{events:?}");
+        assert!(
+            matches!(events.last(), Some(StreamEvent::Error { .. })),
+            "{events:?}"
+        );
         assert_eq!(*inner.seen.lock(), 1);
     }
 
@@ -341,7 +366,10 @@ mod tests {
         let provider = Resilient::with(inner.clone(), 10, Arc::new(Recorder::default()));
 
         let events = drain(&provider).await;
-        assert!(matches!(events.last(), Some(StreamEvent::Done { .. })), "{events:?}");
+        assert!(
+            matches!(events.last(), Some(StreamEvent::Done { .. })),
+            "{events:?}"
+        );
         assert_eq!(*inner.seen.lock(), 2);
     }
 
@@ -354,7 +382,10 @@ mod tests {
         let provider = Resilient::with(inner.clone(), 2, Arc::new(Recorder::default()));
 
         let events = drain(&provider).await;
-        assert!(matches!(events.last(), Some(StreamEvent::Error { .. })), "{events:?}");
+        assert!(
+            matches!(events.last(), Some(StreamEvent::Error { .. })),
+            "{events:?}"
+        );
         assert_eq!(*inner.seen.lock(), 2);
     }
 

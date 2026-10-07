@@ -226,7 +226,8 @@ impl Tool for ReadTool {
 
         let text = String::from_utf8_lossy(&bytes);
         if text.is_empty() {
-            self.state.mark_read(&ctx.session, &path, modified_time(&path));
+            self.state
+                .mark_read(&ctx.session, &path, modified_time(&path));
             return Ok(ToolOutcome {
                 title: Some(path.display().to_string()),
                 output: "(Empty file)".into(),
@@ -283,7 +284,8 @@ impl Tool for ReadTool {
         }
 
         // The only thing that makes a file eligible for `edit`.
-        self.state.mark_read(&ctx.session, &path, modified_time(&path));
+        self.state
+            .mark_read(&ctx.session, &path, modified_time(&path));
 
         // Start the language server for this file now, in the background. The
         // first edit is otherwise spent waiting for a server to index the
@@ -329,7 +331,10 @@ fn read_directory(path: &Path, args: &Value) -> Result<ToolOutcome> {
     let total = entries.len();
     let shown: Vec<String> = entries.into_iter().skip(offset - 1).take(limit).collect();
 
-    let mut output = format!("{} is a directory containing {total} entries:\n", path.display());
+    let mut output = format!(
+        "{} is a directory containing {total} entries:\n",
+        path.display()
+    );
     for entry in &shown {
         output.push_str(&format!("  {entry}\n"));
     }
@@ -454,7 +459,8 @@ impl Tool for WriteTool {
 
         // A file just written is known-current, so `edit`'s read-before-write
         // gate is satisfied without a redundant read.
-        self.state.mark_read(&ctx.session, &path, modified_time(&path));
+        self.state
+            .mark_read(&ctx.session, &path, modified_time(&path));
 
         let lines = content.lines().count();
         // What the write broke, here and in the files that depend on this one.
@@ -614,7 +620,10 @@ impl Tool for EditTool {
                 path.display()
             )));
         }
-        if self.state.is_stale(&ctx.session, &path, modified_time(&path)) {
+        if self
+            .state
+            .is_stale(&ctx.session, &path, modified_time(&path))
+        {
             return Err(Error::InvalidInput(format!(
                 "File {} has changed on disk since it was read. Read it again before \
                  editing.",
@@ -639,8 +648,7 @@ impl Tool for EditTool {
         let new = new.replace("\r\n", "\n");
 
         // The ladder's messages are already written for the model to act on.
-        let result = replace(&normalized, &old, &new, replace_all)
-            .map_err(Error::InvalidInput)?;
+        let result = replace(&normalized, &old, &new, replace_all).map_err(Error::InvalidInput)?;
 
         let mut updated = result.content;
         if was_crlf {
@@ -654,7 +662,8 @@ impl Tool for EditTool {
 
         // Re-marked with the post-write mtime, so the model's next edit to the
         // same file is not rejected as stale by its own change.
-        self.state.mark_read(&ctx.session, &path, modified_time(&path));
+        self.state
+            .mark_read(&ctx.session, &path, modified_time(&path));
 
         // What the edit broke. Asked of the language server rather than
         // guessed, and empty when there is no server for this language.

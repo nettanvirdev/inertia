@@ -20,7 +20,9 @@ use crate::state::Workspace;
 /// Any rather than all: a family is described by the paragraph as a whole, and
 /// an agent holding half of one still needs to be told what it is for.
 fn holds(turn: &Turn, wanted: &[&str]) -> bool {
-    turn.tools.iter().any(|held| wanted.contains(&held.as_str()))
+    turn.tools
+        .iter()
+        .any(|held| wanted.contains(&held.as_str()))
 }
 
 /// The machine an agent was given, as its `computers/` record.
@@ -115,12 +117,7 @@ pub struct Turn {
 /// cacheable prefix because it is the part most likely to differ between two
 /// turns, and anything placed before it would lose its cache entry every time a
 /// memory was written.
-pub fn build(
-    workspace: &Workspace,
-    cwd: &std::path::Path,
-    memories: &str,
-    turn: &Turn,
-) -> String {
+pub fn build(workspace: &Workspace, cwd: &std::path::Path, memories: &str, turn: &Turn) -> String {
     let assembled = build_for(workspace, cwd, turn);
     if memories.is_empty() {
         return assembled;

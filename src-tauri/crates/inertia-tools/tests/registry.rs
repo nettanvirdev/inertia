@@ -5,7 +5,11 @@
 //! cannot take down a turn.
 
 // An `unwrap` in a test is a readable assertion, not a latent panic.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::needless_pass_by_value)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::needless_pass_by_value
+)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -71,14 +75,12 @@ async fn a_refused_call_never_reaches_the_tool() {
 /// nonsense must not be able to interrupt the user with a prompt about it.
 #[tokio::test]
 async fn a_malformed_call_neither_runs_nor_asks() {
-    let tool = Arc::new(
-        MockTool::new("echo").with_parameters(json!({
-            "type": "object",
-            "properties": { "input": { "type": "string" } },
-            "required": ["input"],
-            "additionalProperties": false,
-        })),
-    );
+    let tool = Arc::new(MockTool::new("echo").with_parameters(json!({
+        "type": "object",
+        "properties": { "input": { "type": "string" } },
+        "required": ["input"],
+        "additionalProperties": false,
+    })));
     let gate = Arc::new(MockGate::allow_all());
     let registry = Registry::new(gate.clone()).with_tool(tool.clone());
 
@@ -158,7 +160,10 @@ async fn the_permission_target_is_the_thing_a_rule_would_name() {
     let registry = Registry::new(gate.clone()).with_tool(tool);
 
     registry
-        .run(&call("shell", json!({"input": "git push"})), &context(gate.clone()))
+        .run(
+            &call("shell", json!({"input": "git push"})),
+            &context(gate.clone()),
+        )
         .await
         .unwrap();
 
@@ -172,7 +177,9 @@ async fn oversized_output_is_capped_and_says_so() {
     let gate = Arc::new(MockGate::allow_all());
     let registry = Registry::new(gate.clone())
         .with_tool(tool)
-        .with_limits(Limits { output_bytes: 1_000 });
+        .with_limits(Limits {
+            output_bytes: 1_000,
+        });
 
     let result = registry
         .run(&call("big", json!({})), &context(gate))
@@ -207,7 +214,9 @@ async fn an_unconditionally_denied_tool_is_not_offered() {
     ])));
     let registry = Registry::new(gate)
         .with_tool(Arc::new(MockTool::new("visible")))
-        .with_tool(Arc::new(MockTool::new("hidden").with_permission_key("secret")));
+        .with_tool(Arc::new(
+            MockTool::new("hidden").with_permission_key("secret"),
+        ));
 
     let names: Vec<String> = registry.specs().await.into_iter().map(|s| s.name).collect();
     assert_eq!(names, vec!["visible"]);
@@ -304,7 +313,9 @@ async fn a_tool_source_that_reports_a_type_the_model_sent_wrong_explains_itself(
 
     // The message is written for the model to act on, not for a developer.
     assert!(
-        result.output.contains("`input` must be a string, got number."),
+        result
+            .output
+            .contains("`input` must be a string, got number."),
         "got {}",
         result.output
     );

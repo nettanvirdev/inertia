@@ -79,19 +79,14 @@ impl PermissionGate for MockGate {
         Ok(match &mut *policy {
             Policy::AllowAll => Decision::Allow,
             Policy::DenyAll => Decision::Deny,
-            Policy::Rules(rules) => match evaluate_shaped(
-                rules,
-                &request.key,
-                &request.target,
-                &request.shape,
-            )
-            .action
-            {
-                Action::Allow => Decision::Allow,
-                // Nobody is there to ask, and an unanswered question is not a
-                // yes.
-                Action::Ask | Action::Deny => Decision::Deny,
-            },
+            Policy::Rules(rules) => {
+                match evaluate_shaped(rules, &request.key, &request.target, &request.shape).action {
+                    Action::Allow => Decision::Allow,
+                    // Nobody is there to ask, and an unanswered question is not a
+                    // yes.
+                    Action::Ask | Action::Deny => Decision::Deny,
+                }
+            }
             Policy::Scripted(queue) => {
                 if queue.is_empty() {
                     Decision::Deny

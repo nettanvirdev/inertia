@@ -131,13 +131,19 @@ impl DaytonaProvider {
     ///
     /// A 404 answers `None` rather than failing: a sandbox that is gone is an
     /// ordinary state of the world here, not an error.
-    async fn api(&self, method: reqwest::Method, route: &str, body: Option<Value>) -> Result<Option<Value>> {
+    async fn api(
+        &self,
+        method: reqwest::Method,
+        route: &str,
+        body: Option<Value>,
+    ) -> Result<Option<Value>> {
         if self.api_key.is_empty() {
             return Err(ComputerError::NotReady(format!(
                 "No {KEY_SECRET} is set. Add it under Settings, Secrets."
             )));
         }
-        self.request(method, format!("{}{route}", self.api_url), body).await
+        self.request(method, format!("{}{route}", self.api_url), body)
+            .await
     }
 
     async fn request(
@@ -172,14 +178,19 @@ impl DaytonaProvider {
         }
         if !status.is_success() {
             let body = response.text().await.unwrap_or_default();
-            return Err(ComputerError::Failed(describe_failure(status.as_u16(), &body)));
+            return Err(ComputerError::Failed(describe_failure(
+                status.as_u16(),
+                &body,
+            )));
         }
 
         let text = response.text().await.unwrap_or_default();
         if text.trim().is_empty() {
             return Ok(Some(json!({})));
         }
-        Ok(Some(serde_json::from_str(&text).unwrap_or(json!({ "raw": text }))))
+        Ok(Some(
+            serde_json::from_str(&text).unwrap_or(json!({ "raw": text })),
+        ))
     }
 
     /// Where this sandbox's toolbox lives, asking the API only when it must.
@@ -193,8 +204,9 @@ impl DaytonaProvider {
             .await?
             .ok_or_else(|| ComputerError::Failed("That sandbox is gone.".into()))?;
 
-        let sandbox = read_sandbox(&payload)
-            .ok_or_else(|| ComputerError::Failed("Daytona described a sandbox this app could not read.".into()))?;
+        let sandbox = read_sandbox(&payload).ok_or_else(|| {
+            ComputerError::Failed("Daytona described a sandbox this app could not read.".into())
+        })?;
 
         let proxy = sandbox.toolbox_proxy_url.ok_or_else(|| {
             ComputerError::Failed(
@@ -202,7 +214,10 @@ impl DaytonaProvider {
             )
         })?;
         let proxy = proxy.trim_end_matches('/').to_string();
-        self.proxies.lock().await.insert(handle.to_string(), proxy.clone());
+        self.proxies
+            .lock()
+            .await
+            .insert(handle.to_string(), proxy.clone());
         Ok(proxy)
     }
 
@@ -236,8 +251,12 @@ fn describe_failure(status: u16, body: &str) -> String {
     let detail: String = detail.chars().take(300).collect();
 
     let lead = match status {
-        401 | 403 => format!("Daytona rejected the key. Check {KEY_SECRET} under Settings, Secrets."),
-        402 => "Daytona refused for billing reasons. Check the account's plan or credit.".to_string(),
+        401 | 403 => {
+            format!("Daytona rejected the key. Check {KEY_SECRET} under Settings, Secrets.")
+        }
+        402 => {
+            "Daytona refused for billing reasons. Check the account's plan or credit.".to_string()
+        }
         429 => "Daytona is rate limiting this key right now.".to_string(),
         other => format!("Daytona answered {other}."),
     };
@@ -285,8 +304,11 @@ pub(crate) fn read_exec(payload: &Value, duration_ms: u64) -> ExecResult {
         // A toolbox version that reports no exit code has not said the command
         // worked. Assuming zero turned every silent failure into an empty
         // success - which is how a missing file reads as an empty file.
-        code: number(&["exitCode", "code", "exit_code"])
-            .unwrap_or(if stderr.trim().is_empty() { 0 } else { 1 }) as i32,
+        code: number(&["exitCode", "code", "exit_code"]).unwrap_or(if stderr.trim().is_empty() {
+            0
+        } else {
+            1
+        }) as i32,
         stdout,
         stderr,
         duration_ms,
@@ -360,7 +382,10 @@ impl Provider for DaytonaProvider {
         // 400 whose message names it, depending on the version. Either way the
         // person needs to know which name was asked for and how to make it,
         // not that "Daytona did not make a sandbox".
-        let payload = match self.api(reqwest::Method::POST, "/sandbox", Some(body)).await {
+        let payload = match self
+            .api(reqwest::Method::POST, "/sandbox", Some(body))
+            .await
+        {
             Ok(Some(payload)) => payload,
             Ok(None) => return Err(missing_snapshot(snapshot, None)),
             Err(ComputerError::Failed(said)) if said.to_lowercase().contains("snapshot") => {
@@ -391,15 +416,23 @@ impl Provider for DaytonaProvider {
         // A restarted sandbox gets a new proxy, so the old address must not be
         // reused - that was a 404 on the first command after every start.
         self.forget_proxy(handle).await;
-        self.api(reqwest::Method::POST, &format!("/sandbox/{handle}/start"), None)
-            .await?;
+        self.api(
+            reqwest::Method::POST,
+            &format!("/sandbox/{handle}/start"),
+            None,
+        )
+        .await?;
         Ok(())
     }
 
     async fn stop(&self, handle: &str) -> Result<()> {
         self.forget_proxy(handle).await;
-        self.api(reqwest::Method::POST, &format!("/sandbox/{handle}/stop"), None)
-            .await?;
+        self.api(
+            reqwest::Method::POST,
+            &format!("/sandbox/{handle}/stop"),
+            None,
+        )
+        .await?;
         Ok(())
     }
 
@@ -667,7 +700,9 @@ impl Provider for DaytonaProvider {
             )
             .await?
             .ok_or_else(|| {
-                ComputerError::Failed(format!("There is no snapshot called {snapshot_id} any more."))
+                ComputerError::Failed(format!(
+                    "There is no snapshot called {snapshot_id} any more."
+                ))
             })?;
 
         let sandbox = read_sandbox(&payload).ok_or_else(|| {
@@ -739,11 +774,13 @@ mod tests {
     /// instance can be on either.
     #[test]
     fn both_spellings_of_every_field_are_read() {
-        let new = read_sandbox(&json!({ "id": "s1", "state": "started", "snapshot": "img" })).unwrap();
+        let new =
+            read_sandbox(&json!({ "id": "s1", "state": "started", "snapshot": "img" })).unwrap();
         assert_eq!(new.handle, "s1");
         assert_eq!(new.image.as_deref(), Some("img"));
 
-        let old = read_sandbox(&json!({ "sandboxId": "s2", "status": "stopped", "image": "img2" })).unwrap();
+        let old = read_sandbox(&json!({ "sandboxId": "s2", "status": "stopped", "image": "img2" }))
+            .unwrap();
         assert_eq!(old.handle, "s2");
         assert_eq!(old.status, Status::Stopped);
         assert_eq!(old.image.as_deref(), Some("img2"));
@@ -767,12 +804,16 @@ mod tests {
             .await;
 
         let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
-        provider.create(&Spec { id: "c1".into(), ..Default::default() }).await.unwrap();
+        provider
+            .create(&Spec {
+                id: "c1".into(),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
 
-        let asked: Value = serde_json::from_slice(
-            &server.received_requests().await.unwrap()[0].body,
-        )
-        .unwrap();
+        let asked: Value =
+            serde_json::from_slice(&server.received_requests().await.unwrap()[0].body).unwrap();
         assert_eq!(asked["snapshot"], json!(image::manifest().daytona_snapshot));
     }
 
@@ -798,10 +839,8 @@ mod tests {
             .await
             .unwrap();
 
-        let asked: Value = serde_json::from_slice(
-            &server.received_requests().await.unwrap()[0].body,
-        )
-        .unwrap();
+        let asked: Value =
+            serde_json::from_slice(&server.received_requests().await.unwrap()[0].body).unwrap();
         assert_eq!(asked["snapshot"], json!("mine-2.0.0"));
     }
 
@@ -823,11 +862,17 @@ mod tests {
 
             let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
             let failure = provider
-                .create(&Spec { id: "c1".into(), ..Default::default() })
+                .create(&Spec {
+                    id: "c1".into(),
+                    ..Default::default()
+                })
                 .await
                 .unwrap_err()
                 .to_string();
-            assert!(failure.contains("no snapshot called `inertia-sandbox-1.1.0`"), "{failure}");
+            assert!(
+                failure.contains("no snapshot called `inertia-sandbox-1.1.0`"),
+                "{failure}"
+            );
             assert!(failure.contains("docs/computers.md"), "{failure}");
         }
     }
@@ -861,7 +906,11 @@ mod tests {
         let provider = DaytonaProvider::new("", None);
         let answer = provider.available().await;
         assert!(!answer.ready);
-        assert!(answer.reason.contains("DAYTONA_API_KEY"), "{}", answer.reason);
+        assert!(
+            answer.reason.contains("DAYTONA_API_KEY"),
+            "{}",
+            answer.reason
+        );
     }
 
     #[tokio::test]
@@ -869,14 +918,20 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/sandbox"))
-            .respond_with(ResponseTemplate::new(401).set_body_json(json!({ "message": "bad token" })))
+            .respond_with(
+                ResponseTemplate::new(401).set_body_json(json!({ "message": "bad token" })),
+            )
             .mount(&server)
             .await;
 
         let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
         let answer = provider.available().await;
         assert!(!answer.ready);
-        assert!(answer.reason.contains("DAYTONA_API_KEY"), "{}", answer.reason);
+        assert!(
+            answer.reason.contains("DAYTONA_API_KEY"),
+            "{}",
+            answer.reason
+        );
         assert!(answer.reason.contains("bad token"), "{}", answer.reason);
     }
 
@@ -906,7 +961,10 @@ mod tests {
 
         let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
         assert_eq!(made.handle, "sbx-123");
@@ -938,14 +996,25 @@ mod tests {
 
         let provider = DaytonaProvider::new("dtn-test", Some(api.uri()));
         let result = provider
-            .exec("sbx-1", &ExecRequest { command: "echo hi".into(), ..Default::default() })
+            .exec(
+                "sbx-1",
+                &ExecRequest {
+                    command: "echo hi".into(),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
         assert_eq!(result.stdout, "hi from the sandbox");
 
         // And the address is remembered, so a second command does not ask again.
         assert_eq!(
-            provider.proxies.lock().await.get("sbx-1").map(String::as_str),
+            provider
+                .proxies
+                .lock()
+                .await
+                .get("sbx-1")
+                .map(String::as_str),
             Some(toolbox.uri().trim_end_matches('/'))
         );
     }

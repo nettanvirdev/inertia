@@ -169,9 +169,9 @@ fn parts_to_blocks(parts: &[Part]) -> Vec<Block> {
     parts
         .iter()
         .filter_map(|part| match part {
-            Part::Text { text } if !text.trim().is_empty() => Some(Block::Text {
-                text: text.clone(),
-            }),
+            Part::Text { text } if !text.trim().is_empty() => {
+                Some(Block::Text { text: text.clone() })
+            }
             Part::Text { .. } => None,
             // An unusable image is dropped, never faked into something the
             // provider will reject.
@@ -498,10 +498,8 @@ mod tests {
         let (_, messages) = to_messages("", &history);
 
         assert_eq!(messages[0].role, Role::User);
-        let first_is_a_result = matches!(
-            messages[0].content.first(),
-            Some(Block::ToolResult { .. })
-        );
+        let first_is_a_result =
+            matches!(messages[0].content.first(), Some(Block::ToolResult { .. }));
         assert!(
             !first_is_a_result,
             "the request opens with an unmatched tool_result: {messages:?}"
@@ -715,10 +713,7 @@ mod tests {
             }
 
             for message in &messages {
-                assert!(
-                    !message.content.is_empty(),
-                    "empty message: {messages:?}"
-                );
+                assert!(!message.content.is_empty(), "empty message: {messages:?}");
                 for block in &message.content {
                     if let Block::Text { text } = block {
                         assert!(!text.trim().is_empty(), "empty text block: {messages:?}");

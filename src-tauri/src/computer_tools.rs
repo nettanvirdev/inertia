@@ -267,7 +267,10 @@ fn observation_result(
     }
 
     let mut lines = vec![
-        format!("{note}{}", if unchanged { " (screen unchanged)" } else { "" }),
+        format!(
+            "{note}{}",
+            if unchanged { " (screen unchanged)" } else { "" }
+        ),
         facts.join(" | "),
     ];
     if !unchanged {
@@ -872,7 +875,11 @@ impl Tool for RunTool {
         };
 
         let output = [
-            if body.is_empty() { "(no output)" } else { &body },
+            if body.is_empty() {
+                "(no output)"
+            } else {
+                &body
+            },
             &status,
         ]
         .iter()
@@ -959,7 +966,8 @@ impl Tool for ListTool {
                 format!(
                     "{}  {}b",
                     row.name,
-                    row.size.map_or_else(|| "?".to_string(), |size| size.to_string())
+                    row.size
+                        .map_or_else(|| "?".to_string(), |size| size.to_string())
                 )
             });
         }
@@ -1221,7 +1229,11 @@ mod tests {
         async fn resume(&self, _handle: &str) -> inertia_computers::Result<()> {
             Ok(())
         }
-        async fn remove(&self, _handle: &str, _name: Option<&str>) -> inertia_computers::Result<()> {
+        async fn remove(
+            &self,
+            _handle: &str,
+            _name: Option<&str>,
+        ) -> inertia_computers::Result<()> {
             Ok(())
         }
         async fn status(&self, _handle: &str) -> Health {
@@ -1248,7 +1260,11 @@ mod tests {
             };
             Ok(ExecResult {
                 code: self.code,
-                stdout: if self.code == 0 { said.clone() } else { String::new() },
+                stdout: if self.code == 0 {
+                    said.clone()
+                } else {
+                    String::new()
+                },
                 stderr: if self.code == 0 { String::new() } else { said },
                 duration_ms: 12,
                 timed_out: false,
@@ -1380,9 +1396,14 @@ mod tests {
     fn every_tool_asks_under_the_one_shared_key() {
         let tools = computer_tools(FakeProvider::answering(&[]), record("running"));
         for tool in &tools {
-            let asked = tool.permission(&json!({ "command": "ls", "target": "x", "application": "browser" }));
+            let asked = tool
+                .permission(&json!({ "command": "ls", "target": "x", "application": "browser" }));
             assert_eq!(asked.key, "computer", "{} asked elsewhere", tool.id());
-            assert!(asked.always.is_some(), "{} cannot be allowed always", tool.id());
+            assert!(
+                asked.always.is_some(),
+                "{} cannot be allowed always",
+                tool.id()
+            );
         }
     }
 
@@ -1394,8 +1415,14 @@ mod tests {
         let always = |id: &str, args: Value| tool(&tools, id).permission(&args).always.unwrap();
         assert_eq!(always("computer_observe", json!({})), "observe");
         assert_eq!(always("computer_act", json!({})), "act");
-        assert_eq!(always("computer_open", json!({ "target": "https://x" })), "open");
-        assert_eq!(always("computer_launch", json!({ "application": "browser" })), "launch");
+        assert_eq!(
+            always("computer_open", json!({ "target": "https://x" })),
+            "open"
+        );
+        assert_eq!(
+            always("computer_launch", json!({ "application": "browser" })),
+            "launch"
+        );
         assert_eq!(always("computer_page_text", json!({})), "page_text");
         // `run` is the one that generalises to everything: approving one
         // command should not mean approving only that exact string forever.
@@ -1406,11 +1433,15 @@ mod tests {
 
         // The target is the thing a person would write a rule about.
         assert_eq!(
-            tool(&tools, "computer_run").permission(&json!({ "command": "npm test" })).target,
+            tool(&tools, "computer_run")
+                .permission(&json!({ "command": "npm test" }))
+                .target,
             "npm test"
         );
         assert_eq!(
-            tool(&tools, "computer_open").permission(&json!({ "target": "https://x" })).target,
+            tool(&tools, "computer_open")
+                .permission(&json!({ "target": "https://x" }))
+                .target,
             "https://x"
         );
     }
@@ -1420,7 +1451,12 @@ mod tests {
     #[tokio::test]
     async fn a_stopped_machine_says_so_and_says_what_to_do() {
         let tools = computer_tools(FakeProvider::answering(&[]), record("stopped"));
-        for id in ["computer_observe", "computer_run", "computer_list", "computer_read"] {
+        for id in [
+            "computer_observe",
+            "computer_run",
+            "computer_list",
+            "computer_read",
+        ] {
             let failure = tool(&tools, id)
                 .execute(json!({ "command": "ls", "path": "a" }), &context("s1"))
                 .await
@@ -1483,15 +1519,19 @@ mod tests {
     /// one of them has seen tells you nothing about what the other has.
     #[tokio::test]
     async fn another_conversation_is_still_shown_the_picture() {
-        let provider = FakeProvider::answering(&[
-            &observed("iVBORw0Kshared"),
-            &observed("iVBORw0Kshared"),
-        ]);
+        let provider =
+            FakeProvider::answering(&[&observed("iVBORw0Kshared"), &observed("iVBORw0Kshared")]);
         let tools = computer_tools(provider, record("running"));
         let observe = tool(&tools, "computer_observe");
 
-        let mine = observe.execute(json!({}), &context("s-mine")).await.unwrap();
-        let theirs = observe.execute(json!({}), &context("s-theirs")).await.unwrap();
+        let mine = observe
+            .execute(json!({}), &context("s-mine"))
+            .await
+            .unwrap();
+        let theirs = observe
+            .execute(json!({}), &context("s-theirs"))
+            .await
+            .unwrap();
         assert_eq!(mine.images.len(), 1);
         assert_eq!(theirs.images.len(), 1);
     }
@@ -1586,7 +1626,10 @@ mod tests {
     async fn a_malformed_batch_says_which_part_was_wrong() {
         let tools = computer_tools(FakeProvider::answering(&[]), record("running"));
         let failure = tool(&tools, "computer_act")
-            .execute(json!({ "actions": [{ "kind": "teleport" }] }), &context("s-bad"))
+            .execute(
+                json!({ "actions": [{ "kind": "teleport" }] }),
+                &context("s-bad"),
+            )
             .await
             .unwrap_err()
             .to_string();
@@ -1611,7 +1654,10 @@ mod tests {
         let provider = FakeProvider::answering(&["opened", &observed("iVBORw0Kpage")]);
         let tools = computer_tools(provider.clone(), record("running"));
         let outcome = tool(&tools, "computer_open")
-            .execute(json!({ "target": "https://example.com" }), &context("s-open"))
+            .execute(
+                json!({ "target": "https://example.com" }),
+                &context("s-open"),
+            )
             .await
             .unwrap();
 
@@ -1764,7 +1810,9 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(written.output.contains("Wrote 5 bytes to /workspace/a.txt."));
+        assert!(written
+            .output
+            .contains("Wrote 5 bytes to /workspace/a.txt."));
 
         let read = tool(&tools, "computer_read")
             .execute(json!({ "path": "/workspace/a.txt" }), &context("s-files"))
@@ -1773,12 +1821,18 @@ mod tests {
         assert_eq!(read.output, "hello");
 
         let failure = tool(&tools, "computer_read")
-            .execute(json!({ "path": "/workspace/nope.txt" }), &context("s-files"))
+            .execute(
+                json!({ "path": "/workspace/nope.txt" }),
+                &context("s-files"),
+            )
             .await
             .unwrap_err()
             .to_string();
         // Written for the model to act on, naming the file.
-        assert!(failure.contains("File not found: /workspace/nope.txt"), "{failure}");
+        assert!(
+            failure.contains("File not found: /workspace/nope.txt"),
+            "{failure}"
+        );
     }
 
     #[test]

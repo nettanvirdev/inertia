@@ -131,8 +131,9 @@ async fn tools() {
 
 async fn denied() {
     let gate = Arc::new(MockGate::deny_all());
-    let registry = Registry::new(gate.clone())
-        .with_tool(Arc::new(MockTool::new("shell").with_permission_key("shell")));
+    let registry = Registry::new(gate.clone()).with_tool(Arc::new(
+        MockTool::new("shell").with_permission_key("shell"),
+    ));
 
     drive(
         "denied",
@@ -213,7 +214,10 @@ async fn drive(
     gate: Arc<MockGate>,
     config: AgentConfig,
 ) {
-    println!("\n── {name} {}\n", "─".repeat(60usize.saturating_sub(name.len())));
+    println!(
+        "\n── {name} {}\n",
+        "─".repeat(60usize.saturating_sub(name.len()))
+    );
 
     let agent = Agent::new(
         Arc::new(provider),

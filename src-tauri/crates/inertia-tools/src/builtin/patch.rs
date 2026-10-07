@@ -248,9 +248,11 @@ pub fn parse_diff(text: &str) -> std::result::Result<Vec<FileDiff>, String> {
     }
 
     if files.is_empty() {
-        return Err("No file headers were found. A unified diff needs `--- a/path` and \
+        return Err(
+            "No file headers were found. A unified diff needs `--- a/path` and \
                     `+++ b/path` lines above each set of hunks."
-            .into());
+                .into(),
+        );
     }
     for file in &files {
         if file.hunks.is_empty() && !file.deleting {
@@ -402,7 +404,9 @@ fn edit_script<'a>(a: &[&'a str], b: &[&'a str]) -> Vec<(char, &'a str)> {
         head += 1;
     }
     let mut tail = 0;
-    while tail < a.len() - head && tail < b.len() - head && a[a.len() - 1 - tail] == b[b.len() - 1 - tail]
+    while tail < a.len() - head
+        && tail < b.len() - head
+        && a[a.len() - 1 - tail] == b[b.len() - 1 - tail]
     {
         tail += 1;
     }
@@ -504,7 +508,9 @@ pub fn unified_diff(old_text: &str, new_text: &str, file_path: &str) -> String {
             }
             i += 1;
         }
-        out.push(format!("@@ -{start_old},{old_count} +{start_new},{new_count} @@"));
+        out.push(format!(
+            "@@ -{start_old},{old_count} +{start_new},{new_count} @@"
+        ));
         out.extend(body);
     }
     out.join("\n")
@@ -945,7 +951,12 @@ mod tests {
         }
 
         fn tool(&self) -> PatchTool {
-            PatchTool::new(self.state.clone(), Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())))
+            PatchTool::new(
+                self.state.clone(),
+                Arc::new(inertia_lsp::Lsp::with_launcher(
+                    inertia_lsp::testing::fake_launcher(),
+                )),
+            )
         }
 
         /// Writes a file and reads it, the way a session would.
@@ -957,10 +968,18 @@ mod tests {
             let file = self.dir.path().join(name);
             std::fs::create_dir_all(file.parent().unwrap()).unwrap();
             std::fs::write(&file, contents).unwrap();
-            ReadTool::new(self.state.clone(), Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())))
-                .execute(json!({ "filePath": file.display().to_string() }), &self.ctx())
-                .await
-                .expect("the read ran");
+            ReadTool::new(
+                self.state.clone(),
+                Arc::new(inertia_lsp::Lsp::with_launcher(
+                    inertia_lsp::testing::fake_launcher(),
+                )),
+            )
+            .execute(
+                json!({ "filePath": file.display().to_string() }),
+                &self.ctx(),
+            )
+            .await
+            .expect("the read ran");
             file
         }
 
@@ -1017,7 +1036,17 @@ mod tests {
     #[test]
     fn keeps_a_blank_context_line_rather_than_stopping_at_it() {
         let files = parse_diff(
-            &["--- a/x.js", "+++ b/x.js", "@@ -1,4 +1,4 @@", " one", "", "-two", "+TWO", ""].join("\n"),
+            &[
+                "--- a/x.js",
+                "+++ b/x.js",
+                "@@ -1,4 +1,4 @@",
+                " one",
+                "",
+                "-two",
+                "+TWO",
+                "",
+            ]
+            .join("\n"),
         )
         .unwrap();
         // Four old lines and four new, spread over five body lines: the blank
@@ -1035,14 +1064,16 @@ mod tests {
 
     #[test]
     fn treats_a_missing_count_as_one_line() {
-        let files = parse_diff(&["--- a/x", "+++ b/x", "@@ -3 +3 @@", "-a", "+b"].join("\n")).unwrap();
+        let files =
+            parse_diff(&["--- a/x", "+++ b/x", "@@ -3 +3 @@", "-a", "+b"].join("\n")).unwrap();
         assert_eq!(files[0].hunks[0].body.len(), 2);
     }
 
     #[test]
     fn notices_dev_null_as_a_create() {
         let files =
-            parse_diff(&["--- /dev/null", "+++ b/new.js", "@@ -0,0 +1,1 @@", "+hello"].join("\n")).unwrap();
+            parse_diff(&["--- /dev/null", "+++ b/new.js", "@@ -0,0 +1,1 @@", "+hello"].join("\n"))
+                .unwrap();
         assert!(files[0].creating);
         assert_eq!(files[0].path, "new.js");
     }
@@ -1055,14 +1086,18 @@ mod tests {
 
     #[test]
     fn refuses_a_hunk_whose_counts_do_not_match_its_body() {
-        let err = parse_diff(&["--- a/x", "+++ b/x", "@@ -1,9 +1,9 @@", " a"].join("\n")).unwrap_err();
+        let err =
+            parse_diff(&["--- a/x", "+++ b/x", "@@ -1,9 +1,9 @@", " a"].join("\n")).unwrap_err();
         assert!(err.contains("promised"), "{err}");
     }
 
     #[test]
     fn a_quoted_path_with_a_timestamp_is_cleaned() {
         assert_eq!(clean_path("\"a/my file.js\""), Some("my file.js".into()));
-        assert_eq!(clean_path("b/x.js\t2026-01-01 00:00:00"), Some("x.js".into()));
+        assert_eq!(
+            clean_path("b/x.js\t2026-01-01 00:00:00"),
+            Some("x.js".into())
+        );
         assert_eq!(clean_path("/dev/null"), None);
     }
 
@@ -1076,7 +1111,15 @@ mod tests {
 
     #[test]
     fn applies_a_hunk_found_by_its_context() {
-        let parsed = hunks(&["--- a/x", "+++ b/x", "@@ -1,3 +1,3 @@", " one", "-two", "+TWO", " three"]);
+        let parsed = hunks(&[
+            "--- a/x",
+            "+++ b/x",
+            "@@ -1,3 +1,3 @@",
+            " one",
+            "-two",
+            "+TWO",
+            " three",
+        ]);
         let result = apply_hunks(FILE, &parsed, false).unwrap();
         assert_eq!(result.content, "one\nTWO\nthree\nfour\n");
     }
@@ -1085,15 +1128,34 @@ mod tests {
     fn ignores_the_line_numbers_in_the_header() {
         // The header claims line 400. The context says otherwise, and the
         // context is the part the model actually copied.
-        let parsed = hunks(&["--- a/x", "+++ b/x", "@@ -400,3 +400,3 @@", " one", "-two", "+TWO", " three"]);
-        assert_eq!(apply_hunks(FILE, &parsed, false).unwrap().content, "one\nTWO\nthree\nfour\n");
+        let parsed = hunks(&[
+            "--- a/x",
+            "+++ b/x",
+            "@@ -400,3 +400,3 @@",
+            " one",
+            "-two",
+            "+TWO",
+            " three",
+        ]);
+        assert_eq!(
+            apply_hunks(FILE, &parsed, false).unwrap().content,
+            "one\nTWO\nthree\nfour\n"
+        );
     }
 
     #[test]
     fn applies_two_hunks_in_order() {
         let parsed = hunks(&[
-            "--- a/x", "+++ b/x", "@@ -1,2 +1,2 @@", " one", "-two", "+TWO", "@@ -3,2 +3,2 @@", " three",
-            "-four", "+FOUR",
+            "--- a/x",
+            "+++ b/x",
+            "@@ -1,2 +1,2 @@",
+            " one",
+            "-two",
+            "+TWO",
+            "@@ -3,2 +3,2 @@",
+            " three",
+            "-four",
+            "+FOUR",
         ]);
         let result = apply_hunks(FILE, &parsed, false).unwrap();
         assert_eq!(result.content, "one\nTWO\nthree\nFOUR\n");
@@ -1103,8 +1165,16 @@ mod tests {
     #[test]
     fn reports_which_hunk_failed() {
         let parsed = hunks(&[
-            "--- a/x", "+++ b/x", "@@ -1,2 +1,2 @@", " one", "-two", "+TWO", "@@ -3,2 +3,2 @@", " nothing",
-            "-like", "+this",
+            "--- a/x",
+            "+++ b/x",
+            "@@ -1,2 +1,2 @@",
+            " one",
+            "-two",
+            "+TWO",
+            "@@ -3,2 +3,2 @@",
+            " nothing",
+            "-like",
+            "+this",
         ]);
         let failure = apply_hunks(FILE, &parsed, false).unwrap_err();
         assert_eq!(failure.hunk, 1);
@@ -1120,7 +1190,13 @@ mod tests {
 
     #[test]
     fn builds_the_whole_content_when_creating_a_file() {
-        let parsed = hunks(&["--- /dev/null", "+++ b/new.js", "@@ -0,0 +1,2 @@", "+one", "+two"]);
+        let parsed = hunks(&[
+            "--- /dev/null",
+            "+++ b/new.js",
+            "@@ -0,0 +1,2 @@",
+            "+one",
+            "+two",
+        ]);
         let result = apply_hunks("", &parsed, true).unwrap();
         assert_eq!(result.content, "one\ntwo\n");
         assert_eq!(result.strategies, vec!["created".to_string()]);
@@ -1149,9 +1225,14 @@ mod tests {
     #[test]
     fn far_apart_changes_become_separate_hunks() {
         let old: String = (1..=20).map(|i| format!("line {i}\n")).collect();
-        let new = old.replace("line 2\n", "LINE 2\n").replace("line 19\n", "LINE 19\n");
+        let new = old
+            .replace("line 2\n", "LINE 2\n")
+            .replace("line 19\n", "LINE 19\n");
         let diff = unified_diff(&old, &new, "x");
-        assert_eq!(diff.lines().filter(|line| line.starts_with("@@")).count(), 2);
+        assert_eq!(
+            diff.lines().filter(|line| line.starts_with("@@")).count(),
+            2
+        );
     }
 
     // ── the tool ────────────────────────────────────────────────────────
@@ -1159,25 +1240,49 @@ mod tests {
     #[tokio::test]
     async fn changes_several_files_in_one_call() {
         let bench = Bench::new();
-        let one = bench.make("multi/one.js", "const a = 1;\nconst b = 2;\nconst c = 3;\n").await;
-        let two = bench.make("multi/two.js", "let x = 10;\nlet y = 20;\n").await;
+        let one = bench
+            .make("multi/one.js", "const a = 1;\nconst b = 2;\nconst c = 3;\n")
+            .await;
+        let two = bench
+            .make("multi/two.js", "let x = 10;\nlet y = 20;\n")
+            .await;
 
         let [one_a, one_b] = header(&one);
         let [two_a, two_b] = header(&two);
         let out = bench
             .patch(&lines(&[
-                &one_a, &one_b, "@@ -1,3 +1,3 @@", " const a = 1;", "-const b = 2;", "+const b = 22;",
-                " const c = 3;", &two_a, &two_b, "@@ -1,2 +1,2 @@", " let x = 10;", "-let y = 20;",
+                &one_a,
+                &one_b,
+                "@@ -1,3 +1,3 @@",
+                " const a = 1;",
+                "-const b = 2;",
+                "+const b = 22;",
+                " const c = 3;",
+                &two_a,
+                &two_b,
+                "@@ -1,2 +1,2 @@",
+                " let x = 10;",
+                "-let y = 20;",
                 "+let y = 200;",
             ]))
             .await
             .expect("the patch applied");
 
-        assert_eq!(std::fs::read_to_string(&one).unwrap(), "const a = 1;\nconst b = 22;\nconst c = 3;\n");
-        assert_eq!(std::fs::read_to_string(&two).unwrap(), "let x = 10;\nlet y = 200;\n");
+        assert_eq!(
+            std::fs::read_to_string(&one).unwrap(),
+            "const a = 1;\nconst b = 22;\nconst c = 3;\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&two).unwrap(),
+            "let x = 10;\nlet y = 200;\n"
+        );
 
         assert_eq!(out.title.as_deref(), Some("2 files"));
-        assert!(out.output.starts_with("Applied 2 file(s):\n- "), "{}", out.output);
+        assert!(
+            out.output.starts_with("Applied 2 file(s):\n- "),
+            "{}",
+            out.output
+        );
         assert!(out.output.contains("(1 hunk(s))"), "{}", out.output);
 
         // The shape the card and the thread's file list read.
@@ -1198,11 +1303,23 @@ mod tests {
         let [a, b] = header(&file);
         let out = bench
             .patch(&lines(&[
-                &a, &b, "@@ -1,2 +1,2 @@", " one", "-two", "+TWO", "@@ -3,2 +3,2 @@", " three", "-four", "+FOUR",
+                &a,
+                &b,
+                "@@ -1,2 +1,2 @@",
+                " one",
+                "-two",
+                "+TWO",
+                "@@ -3,2 +3,2 @@",
+                " three",
+                "-four",
+                "+FOUR",
             ]))
             .await
             .expect("the patch applied");
-        assert_eq!(std::fs::read_to_string(&file).unwrap(), "one\nTWO\nthree\nFOUR\n");
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "one\nTWO\nthree\nFOUR\n"
+        );
         assert_eq!(out.title.as_deref(), Some("both.txt"));
         assert!(out.output.contains("(2 hunk(s))"), "{}", out.output);
     }
@@ -1217,20 +1334,43 @@ mod tests {
         let [two_a, two_b] = header(&two);
         let err = bench
             .patch(&lines(&[
-                &one_a, &one_b, "@@ -1,3 +1,3 @@", " alpha", "-bravo", "+BRAVO", " charlie", &two_a, &two_b,
-                "@@ -1,2 +1,2 @@", " nowhere", "-in the file", "+at all",
+                &one_a,
+                &one_b,
+                "@@ -1,3 +1,3 @@",
+                " alpha",
+                "-bravo",
+                "+BRAVO",
+                " charlie",
+                &two_a,
+                &two_b,
+                "@@ -1,2 +1,2 @@",
+                " nowhere",
+                "-in the file",
+                "+at all",
             ]))
             .await
             .expect_err("one hunk is stale");
 
         let text = err.to_string();
-        assert!(text.starts_with("Nothing was written. 1 of 2 file(s)"), "{text}");
+        assert!(
+            text.starts_with("Nothing was written. 1 of 2 file(s)"),
+            "{text}"
+        );
         assert!(text.contains(&two.display().to_string()), "{text}");
-        assert!(text.contains("hunk 1 of 1 (`@@ -1,2 +1,2 @@`) did not apply - Could not find"), "{text}");
-        assert!(text.ends_with("Fix the diff and send the whole thing again."), "{text}");
+        assert!(
+            text.contains("hunk 1 of 1 (`@@ -1,2 +1,2 @@`) did not apply - Could not find"),
+            "{text}"
+        );
+        assert!(
+            text.ends_with("Fix the diff and send the whole thing again."),
+            "{text}"
+        );
         // The file whose hunks were perfectly fine is untouched too. That is
         // the whole promise of the tool.
-        assert_eq!(std::fs::read_to_string(&one).unwrap(), "alpha\nbravo\ncharlie\n");
+        assert_eq!(
+            std::fs::read_to_string(&one).unwrap(),
+            "alpha\nbravo\ncharlie\n"
+        );
         assert_eq!(std::fs::read_to_string(&two).unwrap(), "delta\necho\n");
     }
 
@@ -1274,7 +1414,11 @@ mod tests {
             ]))
             .await
             .expect_err("it exists");
-        assert!(err.to_string().contains("already exists. Patch it instead."), "{err}");
+        assert!(
+            err.to_string()
+                .contains("already exists. Patch it instead."),
+            "{err}"
+        );
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "one\n");
     }
 
@@ -1289,7 +1433,10 @@ mod tests {
             .patch(&lines(&[&a, &b, "@@ -1,2 +1,2 @@", " one", "-two", "+TWO"]))
             .await
             .expect_err("never read");
-        assert!(err.to_string().contains("not read in this conversation"), "{err}");
+        assert!(
+            err.to_string().contains("not read in this conversation"),
+            "{err}"
+        );
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "one\ntwo\n");
     }
 
@@ -1356,19 +1503,35 @@ mod tests {
             .patch(&lines(&[&a, &b, "@@ -1,2 +1,2 @@", " one", " two"]))
             .await
             .expect_err("nothing changed");
-        assert!(err.to_string().contains("the hunks changed nothing"), "{err}");
+        assert!(
+            err.to_string().contains("the hunks changed nothing"),
+            "{err}"
+        );
     }
 
     #[tokio::test]
     async fn keeps_crlf_line_endings_and_a_bom() {
         let bench = Bench::new();
-        let file = bench.make("windows.js", "\u{feff}one\r\ntwo\r\nthree\r\n").await;
+        let file = bench
+            .make("windows.js", "\u{feff}one\r\ntwo\r\nthree\r\n")
+            .await;
         let [a, b] = header(&file);
         bench
-            .patch(&lines(&[&a, &b, "@@ -1,3 +1,3 @@", " one", "-two", "+TWO", " three"]))
+            .patch(&lines(&[
+                &a,
+                &b,
+                "@@ -1,3 +1,3 @@",
+                " one",
+                "-two",
+                "+TWO",
+                " three",
+            ]))
             .await
             .expect("the patch applied");
-        assert_eq!(std::fs::read_to_string(&file).unwrap(), "\u{feff}one\r\nTWO\r\nthree\r\n");
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "\u{feff}one\r\nTWO\r\nthree\r\n"
+        );
     }
 
     #[tokio::test]
@@ -1402,7 +1565,9 @@ mod tests {
         // the settings pane knows, and the patch's own ask names the file.
         assert!(asked.iter().all(|q| q.key == "edit" || q.key == "read"));
         let shown = file.display().to_string();
-        assert!(asked.iter().any(|q| q.key == "edit" && q.target == shown && q.always.as_deref() == Some(shown.as_str())));
+        assert!(asked.iter().any(|q| q.key == "edit"
+            && q.target == shown
+            && q.always.as_deref() == Some(shown.as_str())));
     }
 
     #[tokio::test]
@@ -1429,13 +1594,28 @@ mod tests {
 
     #[test]
     fn the_descriptor_matches_the_electron_tool() {
-        let tool = PatchTool::new(Arc::new(ReadState::new()), Arc::new(inertia_lsp::Lsp::with_launcher(inertia_lsp::testing::fake_launcher())));
+        let tool = PatchTool::new(
+            Arc::new(ReadState::new()),
+            Arc::new(inertia_lsp::Lsp::with_launcher(
+                inertia_lsp::testing::fake_launcher(),
+            )),
+        );
         assert_eq!(tool.id(), "patch");
         let permission = tool.permission(&json!({ "diff": "" }));
-        assert_eq!((permission.key.as_str(), permission.target.as_str()), ("edit", "*"));
+        assert_eq!(
+            (permission.key.as_str(), permission.target.as_str()),
+            ("edit", "*")
+        );
         assert_eq!(permission.always.as_deref(), Some("*"));
-        assert_eq!(tool.render(&json!({ "diff": "+++ b/x\n+++ b/y" })).as_deref(), Some("2 files"));
-        assert_eq!(tool.render(&json!({ "diff": "+++ b/x" })).as_deref(), Some("1 file"));
+        assert_eq!(
+            tool.render(&json!({ "diff": "+++ b/x\n+++ b/y" }))
+                .as_deref(),
+            Some("2 files")
+        );
+        assert_eq!(
+            tool.render(&json!({ "diff": "+++ b/x" })).as_deref(),
+            Some("1 file")
+        );
         assert_eq!(tool.parameters()["required"], json!(["diff"]));
     }
 }

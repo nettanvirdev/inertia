@@ -218,13 +218,18 @@ mod tests {
     #[test]
     fn a_stood_down_agent_is_reported_as_paused() {
         let (_dir, layout) = workspace();
-        assert!(resolve(&layout, "Climate Scientist").expect("found").is_paused());
+        assert!(resolve(&layout, "Climate Scientist")
+            .expect("found")
+            .is_paused());
         assert!(!resolve(&layout, "Inertia Dev").expect("found").is_paused());
     }
 
     #[test]
     fn the_thinking_budget_reaches_the_loop_and_zero_means_off() {
-        assert_eq!(thinking_of(&json!({ "thinkingBudget": 24576 })).0, Some(24576));
+        assert_eq!(
+            thinking_of(&json!({ "thinkingBudget": 24576 })).0,
+            Some(24576)
+        );
         // Zero is how the editor spells "off", and `budget_tokens: 0` is a
         // request the API refuses rather than a request that does not think.
         assert_eq!(thinking_of(&json!({ "thinkingBudget": 0 })).0, None);
@@ -233,8 +238,16 @@ mod tests {
 
     #[test]
     fn only_the_three_efforts_a_provider_understands_are_passed_on() {
-        assert_eq!(thinking_of(&json!({ "reasoningEffort": "high" })).1.as_deref(), Some("high"));
-        assert_eq!(thinking_of(&json!({ "reasoningEffort": "default" })).1, None);
+        assert_eq!(
+            thinking_of(&json!({ "reasoningEffort": "high" }))
+                .1
+                .as_deref(),
+            Some("high")
+        );
+        assert_eq!(
+            thinking_of(&json!({ "reasoningEffort": "default" })).1,
+            None
+        );
         assert_eq!(thinking_of(&json!({ "reasoningEffort": null })).1, None);
     }
 

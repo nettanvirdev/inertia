@@ -192,7 +192,10 @@ pub fn normalize_url(input: &str) -> Option<String> {
         .rsplit_once(':')
         .is_some_and(|(_, port)| !port.is_empty() && port.chars().all(|c| c.is_ascii_digit()));
     let bare = host.split(':').next().unwrap_or(host).to_ascii_lowercase();
-    let loopback = matches!(bare.as_str(), "localhost" | "127.0.0.1" | "[::1]" | "0.0.0.0");
+    let loopback = matches!(
+        bare.as_str(),
+        "localhost" | "127.0.0.1" | "[::1]" | "0.0.0.0"
+    );
     if !host.contains('.') && !loopback && !ported {
         return None;
     }
@@ -550,7 +553,11 @@ impl Panes {
     /// window and they share it, so signing one in signs them all in. Which
     /// one answers is therefore not a question worth asking.
     pub fn any_webview(&self) -> Option<Webview<Wry>> {
-        self.live.lock().values().next().map(|pane| pane.webview.clone())
+        self.live
+            .lock()
+            .values()
+            .next()
+            .map(|pane| pane.webview.clone())
     }
 
     fn webview(&self, id: &str) -> Option<Webview<Wry>> {
@@ -605,8 +612,7 @@ impl Panes {
                     let Some(panes) = watcher.upgrade() else {
                         return;
                     };
-                    let started =
-                        matches!(payload.event(), tauri::webview::PageLoadEvent::Started);
+                    let started = matches!(payload.event(), tauri::webview::PageLoadEvent::Started);
                     let url = payload.url().to_string();
                     // The empty page every pane is created on is not a page
                     // anybody visited. Counted, it would light up Back on the
@@ -747,7 +753,9 @@ impl Panes {
                 return Ok(json!({ "id": id, "closed": true }));
             };
             if seq > 0 && seq < pane.placed {
-                return Ok(json!({ "id": id, "bounds": pane.bounds.as_json(), "visible": pane.visible, "stale": true }));
+                return Ok(
+                    json!({ "id": id, "bounds": pane.bounds.as_json(), "visible": pane.visible, "stale": true }),
+                );
             }
             pane.placed = seq;
             pane.bounds = bounds;
@@ -1078,7 +1086,11 @@ pub fn browser_tools(app: AppHandle) -> Vec<Arc<dyn Tool>> {
 /// answers - which from a synchronous command, already on that thread, is a
 /// deadlock. An async command runs on the runtime instead.
 #[tauri::command]
-pub async fn preview_open(app: AppHandle, id: String, url: Option<String>) -> Result<Value, String> {
+pub async fn preview_open(
+    app: AppHandle,
+    id: String,
+    url: Option<String>,
+) -> Result<Value, String> {
     Panes::global().open(&app, &id, url.as_deref()).await
 }
 
@@ -1132,7 +1144,10 @@ pub async fn preview_console(id: String, options: Option<Value>) -> Result<Vec<V
     let entries = page_log(&id, &browser::console_log_script()).await?;
     Ok(browser::filter_console(
         &entries,
-        options.get("onlyErrors").and_then(Value::as_bool).unwrap_or(false),
+        options
+            .get("onlyErrors")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
         options.get("pattern").and_then(Value::as_str),
         browser::log_count(&options),
     ))
@@ -1144,7 +1159,10 @@ pub async fn preview_network(id: String, options: Option<Value>) -> Result<Vec<V
     let entries = page_log(&id, &browser::network_log_script()).await?;
     Ok(browser::filter_network(
         &entries,
-        options.get("onlyFailed").and_then(Value::as_bool).unwrap_or(false),
+        options
+            .get("onlyFailed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
         options.get("urlPattern").and_then(Value::as_str),
         browser::log_count(&options),
     ))
@@ -1201,7 +1219,8 @@ mod tests {
 
     #[test]
     fn infinities_and_strings_do_not_reach_the_webview() {
-        let bounds = safe_bounds(&json!({ "x": "12", "y": null, "width": f64::MAX, "height": 8.0 }));
+        let bounds =
+            safe_bounds(&json!({ "x": "12", "y": null, "width": f64::MAX, "height": 8.0 }));
         assert_eq!(bounds.x, 0.0, "a string is not a measurement");
         assert_eq!(bounds.height, 8.0);
         assert!(bounds.width.is_finite());
@@ -1253,7 +1272,11 @@ mod tests {
             "file:///C:/Windows/System32",
             "blob:https://example.com/x",
         ] {
-            assert_eq!(normalize_url(hostile), None, "{hostile} was allowed through");
+            assert_eq!(
+                normalize_url(hostile),
+                None,
+                "{hostile} was allowed through"
+            );
         }
     }
 
@@ -1293,7 +1316,13 @@ mod tests {
 
     #[test]
     fn anything_else_belongs_to_no_conversation() {
-        for odd in ["", "chat:web:1", "chat:t1:web:x", "other:t1:web:1", "chat::web:1"] {
+        for odd in [
+            "",
+            "chat:web:1",
+            "chat:t1:web:x",
+            "other:t1:web:1",
+            "chat::web:1",
+        ] {
             assert_eq!(thread_of_pane(odd), None, "{odd} was claimed by a thread");
         }
     }
@@ -1370,7 +1399,10 @@ mod tests {
         // A model asked to evaluate something containing a quote, a backtick
         // and a closing brace used to end the script it was inside.
         let script = begin_script("e1", "document.title + \"`}\"");
-        assert!(script.contains(r#"eval)("document.title + \"`}\"")"#), "{script}");
+        assert!(
+            script.contains(r#"eval)("document.title + \"`}\"")"#),
+            "{script}"
+        );
         assert!(script.contains(r#"var key = "e1";"#));
     }
 

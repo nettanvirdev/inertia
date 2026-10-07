@@ -225,12 +225,7 @@ pub fn put(layout: &Layout, collection: Collection, input: Value) -> Result<Valu
 /// Shallow merge onto what is stored. A missing record is an error, not a
 /// create: the caller asked to change something that was supposed to be there,
 /// and inventing it would hide the fact that it was not.
-pub fn patch(
-    layout: &Layout,
-    collection: Collection,
-    id: &str,
-    changes: Value,
-) -> Result<Value> {
+pub fn patch(layout: &Layout, collection: Collection, id: &str, changes: Value) -> Result<Value> {
     check_id(id)?;
     let current = get(layout, collection, id)?.ok_or_else(|| CollectionError::NotFound {
         collection: collection.key().to_string(),
@@ -262,12 +257,7 @@ pub fn remove(layout: &Layout, collection: Collection, id: &str) -> Result<()> {
 
 /// Renaming a record means renaming its file, so it gets an explicit operation
 /// rather than being a `put` the caller has to follow with a `remove`.
-pub fn rename(
-    layout: &Layout,
-    collection: Collection,
-    id: &str,
-    next_id: &str,
-) -> Result<Value> {
+pub fn rename(layout: &Layout, collection: Collection, id: &str, next_id: &str) -> Result<Value> {
     check_id(id)?;
     check_id(next_id)?;
     if id == next_id {
@@ -336,7 +326,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(saved["id"], "agent-x");
-        let read = get(&layout, Collection::Agents, "agent-x").unwrap().unwrap();
+        let read = get(&layout, Collection::Agents, "agent-x")
+            .unwrap()
+            .unwrap();
         assert_eq!(read["name"], "X");
     }
 
@@ -361,7 +353,13 @@ mod tests {
         assert_eq!(read["context"]["used"], 215460);
 
         // And a round trip through patch keeps them too.
-        patch(&layout, Collection::Threads, "thr-1", json!({ "unread": 2 })).unwrap();
+        patch(
+            &layout,
+            Collection::Threads,
+            "thr-1",
+            json!({ "unread": 2 }),
+        )
+        .unwrap();
         let again = get(&layout, Collection::Threads, "thr-1").unwrap().unwrap();
         assert_eq!(again["room"]["roster"][1], "b");
         assert_eq!(again["unread"], 2);
@@ -370,7 +368,12 @@ mod tests {
     #[test]
     fn an_id_is_derived_from_the_name_when_absent() {
         let (_dir, layout) = workspace();
-        let saved = put(&layout, Collection::Agents, json!({ "name": "Code Review" })).unwrap();
+        let saved = put(
+            &layout,
+            Collection::Agents,
+            json!({ "name": "Code Review" }),
+        )
+        .unwrap();
         assert_eq!(saved["id"], "code-review");
     }
 
@@ -435,7 +438,12 @@ mod tests {
     #[test]
     fn renaming_moves_the_record_and_frees_the_old_id() {
         let (_dir, layout) = workspace();
-        put(&layout, Collection::Agents, json!({ "id": "old", "name": "X" })).unwrap();
+        put(
+            &layout,
+            Collection::Agents,
+            json!({ "id": "old", "name": "X" }),
+        )
+        .unwrap();
         let moved = rename(&layout, Collection::Agents, "old", "new").unwrap();
         assert_eq!(moved["id"], "new");
         assert!(get(&layout, Collection::Agents, "old").unwrap().is_none());
@@ -478,13 +486,17 @@ mod tests {
         )
         .unwrap();
 
-        let file = layout.collection_dir(Collection::Skills).join("code-review/SKILL.md");
+        let file = layout
+            .collection_dir(Collection::Skills)
+            .join("code-review/SKILL.md");
         let text = fsx::read_text(&file).unwrap();
         assert!(text.starts_with("---\n"), "{text}");
         assert!(text.contains("name: Code review"));
         assert!(text.contains("Read it closely."));
 
-        let read = get(&layout, Collection::Skills, "code-review").unwrap().unwrap();
+        let read = get(&layout, Collection::Skills, "code-review")
+            .unwrap()
+            .unwrap();
         assert_eq!(read["instructions"], "Read it closely.");
         assert_eq!(read["enabled"], true);
     }
@@ -504,8 +516,15 @@ mod tests {
     #[test]
     fn removing_a_skill_takes_its_whole_folder() {
         let (_dir, layout) = workspace();
-        put(&layout, Collection::Skills, json!({ "id": "s", "name": "S" })).unwrap();
-        let extra = layout.collection_dir(Collection::Skills).join("s/helper.py");
+        put(
+            &layout,
+            Collection::Skills,
+            json!({ "id": "s", "name": "S" }),
+        )
+        .unwrap();
+        let extra = layout
+            .collection_dir(Collection::Skills)
+            .join("s/helper.py");
         fsx::write_text(&extra, "print()").unwrap();
         remove(&layout, Collection::Skills, "s").unwrap();
         assert!(!extra.exists());

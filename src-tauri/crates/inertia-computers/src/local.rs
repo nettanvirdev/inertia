@@ -103,7 +103,10 @@ fn normalize(path: &Path) -> PathBuf {
 /// The shell, and the flag that makes it take a command line.
 fn shell() -> (&'static str, Vec<&'static str>) {
     if cfg!(windows) {
-        ("powershell.exe", vec!["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"])
+        (
+            "powershell.exe",
+            vec!["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"],
+        )
     } else {
         ("/bin/sh", vec!["-lc"])
     }
@@ -181,7 +184,9 @@ impl Provider for LocalProvider {
         // `<machines>/../..` - the whole workspace. And it must be a folder
         // inside the machines folder, not the machines folder itself.
         let machines = self.root.join("files/machines");
-        let escapes = home.components().any(|part| matches!(part, Component::ParentDir));
+        let escapes = home
+            .components()
+            .any(|part| matches!(part, Component::ParentDir));
         let inside = home
             .strip_prefix(&machines)
             .is_ok_and(|rest| rest.components().next().is_some());
@@ -284,7 +289,11 @@ impl Provider for LocalProvider {
             entries.push(DirEntry {
                 name: item.file_name().to_string_lossy().to_string(),
                 kind: if is_dir { "dir".into() } else { "file".into() },
-                size: if is_dir { None } else { meta.as_ref().map(|m| m.len()) },
+                size: if is_dir {
+                    None
+                } else {
+                    meta.as_ref().map(|m| m.len())
+                },
                 modified_at: meta
                     .as_ref()
                     .and_then(|m| m.modified().ok())
@@ -474,7 +483,9 @@ mod tests {
             .unwrap();
 
         assert!(Path::new(&made.handle).is_dir());
-        assert!(made.handle.starts_with(&dir.path().to_string_lossy().to_string()));
+        assert!(made
+            .handle
+            .starts_with(&dir.path().to_string_lossy().to_string()));
         assert_eq!(made.name, "inertia-box");
     }
 
@@ -483,7 +494,10 @@ mod tests {
     async fn a_path_that_escapes_the_folder_is_refused() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
@@ -497,15 +511,32 @@ mod tests {
     async fn files_round_trip() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
-        provider.write_file(&made.handle, "notes/a.txt", "hello").await.unwrap();
-        assert_eq!(provider.read_file(&made.handle, "notes/a.txt").await.unwrap(), "hello");
+        provider
+            .write_file(&made.handle, "notes/a.txt", "hello")
+            .await
+            .unwrap();
+        assert_eq!(
+            provider
+                .read_file(&made.handle, "notes/a.txt")
+                .await
+                .unwrap(),
+            "hello"
+        );
 
-        let encoded = provider.read_file_base64(&made.handle, "notes/a.txt").await.unwrap();
-        let decoded = base64::engine::general_purpose::STANDARD.decode(encoded).unwrap();
+        let encoded = provider
+            .read_file_base64(&made.handle, "notes/a.txt")
+            .await
+            .unwrap();
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .unwrap();
         assert_eq!(decoded, b"hello");
     }
 
@@ -513,12 +544,21 @@ mod tests {
     async fn a_listing_puts_directories_first() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
-        provider.write_file(&made.handle, "zebra.txt", "z").await.unwrap();
-        provider.write_file(&made.handle, "src/main.rs", "fn main(){}").await.unwrap();
+        provider
+            .write_file(&made.handle, "zebra.txt", "z")
+            .await
+            .unwrap();
+        provider
+            .write_file(&made.handle, "src/main.rs", "fn main(){}")
+            .await
+            .unwrap();
 
         let entries = provider.list_dir(&made.handle, ".").await.unwrap();
         assert_eq!(entries[0].name, "src");
@@ -552,14 +592,23 @@ mod tests {
     async fn removing_by_a_path_that_climbs_out_is_refused() {
         let (dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
         let machines = dir.path().join("files/machines");
 
         let climbing = machines.join("box").join("..").join("..");
-        assert!(provider.remove(&climbing.to_string_lossy(), None).await.is_err());
-        assert!(provider.remove(&machines.to_string_lossy(), None).await.is_err());
+        assert!(provider
+            .remove(&climbing.to_string_lossy(), None)
+            .await
+            .is_err());
+        assert!(provider
+            .remove(&machines.to_string_lossy(), None)
+            .await
+            .is_err());
         assert!(Path::new(&made.handle).is_dir(), "it must still be there");
 
         provider.remove(&made.handle, None).await.unwrap();
@@ -570,18 +619,36 @@ mod tests {
     async fn a_snapshot_can_be_restored_over_later_changes() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
-        provider.write_file(&made.handle, "a.txt", "first").await.unwrap();
+        provider
+            .write_file(&made.handle, "a.txt", "first")
+            .await
+            .unwrap();
         let snap = provider.snapshot(&made.handle, "before").await.unwrap();
 
-        provider.write_file(&made.handle, "a.txt", "second").await.unwrap();
-        provider.write_file(&made.handle, "b.txt", "new").await.unwrap();
+        provider
+            .write_file(&made.handle, "a.txt", "second")
+            .await
+            .unwrap();
+        provider
+            .write_file(&made.handle, "b.txt", "new")
+            .await
+            .unwrap();
 
-        provider.restore(&made.handle, &snap.id, "inertia-box").await.unwrap();
-        assert_eq!(provider.read_file(&made.handle, "a.txt").await.unwrap(), "first");
+        provider
+            .restore(&made.handle, &snap.id, "inertia-box")
+            .await
+            .unwrap();
+        assert_eq!(
+            provider.read_file(&made.handle, "a.txt").await.unwrap(),
+            "first"
+        );
         assert!(
             provider.read_file(&made.handle, "b.txt").await.is_err(),
             "a file made after the snapshot should be gone"
@@ -592,7 +659,10 @@ mod tests {
     async fn snapshots_are_listed_newest_first_with_their_names() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
@@ -606,12 +676,21 @@ mod tests {
     async fn a_command_runs_and_a_failure_is_a_result() {
         let (_dir, provider) = provider();
         let made = provider
-            .create(&Spec { id: "box".into(), ..Default::default() })
+            .create(&Spec {
+                id: "box".into(),
+                ..Default::default()
+            })
             .await
             .unwrap();
 
         let ok = provider
-            .exec(&made.handle, &ExecRequest { command: "echo hi".into(), ..Default::default() })
+            .exec(
+                &made.handle,
+                &ExecRequest {
+                    command: "echo hi".into(),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
         assert!(ok.ok());
@@ -620,7 +699,10 @@ mod tests {
         let failed = provider
             .exec(
                 &made.handle,
-                &ExecRequest { command: "exit 3".into(), ..Default::default() },
+                &ExecRequest {
+                    command: "exit 3".into(),
+                    ..Default::default()
+                },
             )
             .await
             .unwrap();

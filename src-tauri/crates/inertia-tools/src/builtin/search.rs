@@ -236,15 +236,15 @@ impl Tool for GrepTool {
             .case_insensitive(ignore_case)
             .build()
             .map_err(|e| {
-                Error::InvalidInput(format!("`{pattern}` is not a valid regular expression: {e}"))
+                Error::InvalidInput(format!(
+                    "`{pattern}` is not a valid regular expression: {e}"
+                ))
             })?;
 
         let include = match args.get("include").and_then(Value::as_str) {
             Some(glob) => Some(
                 Glob::new(glob)
-                    .map_err(|e| {
-                        Error::InvalidInput(format!("`{glob}` is not a valid glob: {e}"))
-                    })?
+                    .map_err(|e| Error::InvalidInput(format!("`{glob}` is not a valid glob: {e}")))?
                     .compile_matcher(),
             ),
             None => None,

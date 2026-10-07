@@ -540,7 +540,9 @@ pub fn ws_reveal(
     let layout = layout(&app, &state)?;
     let target = fsx::resolve_inside(layout.root(), rel_path.unwrap_or_default()).map_err(err)?;
     let path = target.to_string_lossy().to_string();
-    app.opener().open_path(path.clone(), None::<&str>).map_err(err)?;
+    app.opener()
+        .open_path(path.clone(), None::<&str>)
+        .map_err(err)?;
     Ok(path)
 }
 
@@ -800,7 +802,10 @@ pub fn ws_remove(
         return Err(error);
     }
     tracing::info!(%name, %id, "removed a record");
-    announce(&app, json!({ "collection": name, "id": id, "op": "remove" }));
+    announce(
+        &app,
+        json!({ "collection": name, "id": id, "op": "remove" }),
+    );
     Ok(json!({ "id": id, "removed": true }))
 }
 
@@ -834,7 +839,10 @@ pub fn ws_rename(
 ) -> Result<Value, String> {
     let layout = layout(&app, &state)?;
     let saved = collections::rename(&layout, resolve(&name)?, &id, &next_id).map_err(err)?;
-    announce(&app, json!({ "collection": name, "id": next_id, "op": "rename" }));
+    announce(
+        &app,
+        json!({ "collection": name, "id": next_id, "op": "rename" }),
+    );
     Ok(saved)
 }
 
@@ -867,7 +875,8 @@ fn document(key: &str) -> Result<Document, String> {
     }
 }
 
-const SECRETS_REFUSED: &str = "Secrets are read and written through the secret commands, not as a file.";
+const SECRETS_REFUSED: &str =
+    "Secrets are read and written through the secret commands, not as a file.";
 
 /// A path inside the workspace that is not in its secrets folder.
 ///
@@ -981,8 +990,16 @@ mod tests {
     #[test]
     fn the_file_commands_stay_out_of_the_secrets_folder() {
         let (_dir, layout) = workspace();
-        for path in ["secrets/secrets.json", "secrets", "files/../secrets/other.json"] {
-            assert_eq!(ordinary_file(&layout, path), Err(SECRETS_REFUSED.to_string()), "{path}");
+        for path in [
+            "secrets/secrets.json",
+            "secrets",
+            "files/../secrets/other.json",
+        ] {
+            assert_eq!(
+                ordinary_file(&layout, path),
+                Err(SECRETS_REFUSED.to_string()),
+                "{path}"
+            );
         }
         assert!(ordinary_file(&layout, "settings/avatar.png").is_ok());
         assert!(ordinary_file(&layout, "secrets-export.csv").is_ok());

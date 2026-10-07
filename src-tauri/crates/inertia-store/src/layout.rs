@@ -339,7 +339,9 @@ impl Layout {
 
     /// The day-bucketed activity log for a date, as `YYYY-MM-DD`.
     pub fn activity(&self, date: &str) -> PathBuf {
-        self.root.join("history/activity").join(format!("{date}.json"))
+        self.root
+            .join("history/activity")
+            .join(format!("{date}.json"))
     }
 
     /// The default working directory when no project has been chosen.
@@ -377,7 +379,9 @@ impl Layout {
             fold(&crate::fsx::canonical(&dir).to_string_lossy()),
             fold(Document::Secrets.path()),
         ];
-        spellings.iter().any(|spelling| text.contains(spelling.as_str()))
+        spellings
+            .iter()
+            .any(|spelling| text.contains(spelling.as_str()))
     }
 
     /// Creates every directory a workspace is expected to have.
@@ -458,7 +462,11 @@ mod tests {
         let root = crate::fsx::canonical(dir.path());
         assert_eq!(
             layout.off_limits(),
-            vec![root.join("secrets"), root.join("settings/permissions.json"), root.join("hooks")]
+            vec![
+                root.join("secrets"),
+                root.join("settings/permissions.json"),
+                root.join("hooks")
+            ]
         );
     }
 

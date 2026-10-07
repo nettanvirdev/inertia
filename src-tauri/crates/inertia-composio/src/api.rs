@@ -250,10 +250,7 @@ impl Composio {
             |cursor| {
                 let toolkit = toolkit.clone();
                 async move {
-                    let mut query = vec![
-                        ("toolkit_slug", toolkit),
-                        ("limit", "100".to_string()),
-                    ];
+                    let mut query = vec![("toolkit_slug", toolkit), ("limit", "100".to_string())];
                     if let Some(cursor) = cursor {
                         query.push(("cursor", cursor));
                     }
@@ -494,7 +491,10 @@ mod tests {
             "https://x",
             r#"{"error":{"message":"toolkit_slug is required"}}"#,
         );
-        assert!(message.contains("toolkit_slug is required"), "got {message}");
+        assert!(
+            message.contains("toolkit_slug is required"),
+            "got {message}"
+        );
     }
 
     #[test]
@@ -559,7 +559,9 @@ mod tests {
         let items = collect_pages(
             |cursor| {
                 // A fresh cursor every time, so only the ceiling stops it.
-                let next = cursor.map(|c| format!("{c}x")).unwrap_or_else(|| "a".into());
+                let next = cursor
+                    .map(|c| format!("{c}x"))
+                    .unwrap_or_else(|| "a".into());
                 async move { Ok(([json!(1), json!(2)].to_vec(), Some(next))) }
             },
             5,

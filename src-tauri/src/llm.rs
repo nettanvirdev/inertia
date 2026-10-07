@@ -448,7 +448,8 @@ fn translate(event: StreamEvent) -> Value {
             "usage": usage.as_ref().map(tokens),
         });
     }
-    serde_json::to_value(&event).unwrap_or_else(|_| json!({ "type": "error", "message": "That reply could not be read." }))
+    serde_json::to_value(&event)
+        .unwrap_or_else(|_| json!({ "type": "error", "message": "That reply could not be read." }))
 }
 
 /// Every event carries the id of the stream it belongs to.
@@ -782,7 +783,9 @@ async fn summarise(models: &dyn Models, call: SummarizeCall) -> Result<Value, St
     while let Some(event) = stream.next().await {
         match event {
             StreamEvent::Delta { text } => summary.push_str(&text),
-            StreamEvent::Done { usage: reported, .. } => usage = reported,
+            StreamEvent::Done {
+                usage: reported, ..
+            } => usage = reported,
             // The failure is what the person needs to read, not a shorter
             // sentence about summarising in general.
             StreamEvent::Error { message, .. } => return Err(message),
@@ -828,8 +831,14 @@ mod tests {
 
     #[test]
     fn the_protocol_is_inferred_from_the_url_when_not_stated() {
-        assert_eq!(protocol_name(&record("https://api.anthropic.com/v1")), "anthropic");
-        assert_eq!(protocol_name(&record("https://api.groq.com/openai/v1")), "openai");
+        assert_eq!(
+            protocol_name(&record("https://api.anthropic.com/v1")),
+            "anthropic"
+        );
+        assert_eq!(
+            protocol_name(&record("https://api.groq.com/openai/v1")),
+            "openai"
+        );
     }
 
     /// A stated protocol wins over the URL, and the dialog is told it was not a
@@ -839,7 +848,9 @@ mod tests {
         let mut stated = record("https://api.minimax.io/anthropic");
         stated.protocol = Some(Protocol::Anthropic);
         assert!(!stated.protocol.is_none());
-        assert!(record("https://api.minimax.io/anthropic").protocol.is_none());
+        assert!(record("https://api.minimax.io/anthropic")
+            .protocol
+            .is_none());
     }
 
     /* -- the call that is not a turn ------------------------------------ */
@@ -953,7 +964,10 @@ mod tests {
         assert_eq!(request.history[1].text(), "Sure.");
         assert_eq!(request.temperature, Some(0.2));
         assert_eq!(request.max_tokens, Some(256));
-        assert!(request.tools.is_empty(), "a one-shot call was offered tools");
+        assert!(
+            request.tools.is_empty(),
+            "a one-shot call was offered tools"
+        );
     }
 
     /// A tool round trip has to survive the round trip: the window rebuilds
@@ -1005,10 +1019,16 @@ mod tests {
     #[tokio::test]
     async fn the_reply_reaches_the_window_tagged_with_the_streams_id() {
         let models = Fake::new(MockProvider::new().turn(vec![
-            StreamEvent::Start { model: "mock-model".into() },
+            StreamEvent::Start {
+                model: "mock-model".into(),
+            },
             StreamEvent::Reasoning { text: "hm".into() },
-            StreamEvent::Delta { text: "A short ".into() },
-            StreamEvent::Delta { text: "answer".into() },
+            StreamEvent::Delta {
+                text: "A short ".into(),
+            },
+            StreamEvent::Delta {
+                text: "answer".into(),
+            },
             StreamEvent::Done {
                 finish: Some(FinishReason::Stop),
                 usage: Some(Usage {
@@ -1167,7 +1187,10 @@ mod tests {
         .err()
         .expect("a request with no model was accepted");
         assert_eq!(refused, "No model was chosen.");
-        assert!(models.asked.lock().is_empty(), "a provider was resolved anyway");
+        assert!(
+            models.asked.lock().is_empty(),
+            "a provider was resolved anyway"
+        );
     }
 
     /* -- summarising ---------------------------------------------------- */
@@ -1217,7 +1240,10 @@ mod tests {
             "## Open",
             "## Worth keeping",
         ] {
-            assert!(request.system.contains(heading), "the instruction lost {heading}");
+            assert!(
+                request.system.contains(heading),
+                "the instruction lost {heading}"
+            );
         }
         assert!(request.tools.is_empty(), "the summariser was offered tools");
         assert_eq!(request.temperature, Some(0.0));
@@ -1249,7 +1275,10 @@ mod tests {
         .expect("a summary");
 
         let system = models.provider.last_request().expect("a request").system;
-        assert!(system.starts_with(SUMMARY_INSTRUCTION), "the instruction was replaced");
+        assert!(
+            system.starts_with(SUMMARY_INSTRUCTION),
+            "the instruction was replaced"
+        );
         assert!(system.ends_with("particular attention to this:\nkeep the SQL"));
     }
 
@@ -1277,7 +1306,10 @@ mod tests {
             .await
             .expect_err("an empty transcript was summarised");
         assert_eq!(refused, "There is nothing to summarise yet.");
-        assert!(models.asked.lock().is_empty(), "a provider was resolved anyway");
+        assert!(
+            models.asked.lock().is_empty(),
+            "a provider was resolved anyway"
+        );
     }
 
     /// An empty note must not be written into the transcript as though it were
@@ -1314,6 +1346,9 @@ mod tests {
     fn a_long_message_is_shortened_without_splitting_a_character() {
         let long = "é".repeat(MAX_DIGEST_CHARS_PER_ENTRY + 500);
         let written = digest(&[json!({ "role": "user", "content": long })]);
-        assert_eq!(written.chars().count(), "user: ".len() + MAX_DIGEST_CHARS_PER_ENTRY);
+        assert_eq!(
+            written.chars().count(),
+            "user: ".len() + MAX_DIGEST_CHARS_PER_ENTRY
+        );
     }
 }

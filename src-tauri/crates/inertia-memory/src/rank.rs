@@ -89,7 +89,10 @@ pub fn index(memories: &[&Value]) -> Index {
             for word in &words {
                 *counts.entry(word.clone()).or_insert(0) += 1;
             }
-            Doc { counts, length: words.len() }
+            Doc {
+                counts,
+                length: words.len(),
+            }
         })
         .collect();
 
@@ -108,7 +111,12 @@ pub fn index(memories: &[&Value]) -> Index {
         spread as f64 / total as f64
     };
 
-    Index { docs, seen, total, average_length }
+    Index {
+        docs,
+        seen,
+        total,
+        average_length,
+    }
 }
 
 /// The classic inverse document frequency, floored so a common word cannot go
@@ -193,7 +201,10 @@ impl Default for Weights {
     /// outranks a memory that actually answers the question, because then
     /// pinning six things would be the same as pinning none.
     fn default() -> Self {
-        Self { pin: 1.5, fresh: 0.6 }
+        Self {
+            pin: 1.5,
+            fresh: 0.6,
+        }
     }
 }
 
@@ -212,9 +223,17 @@ pub fn score<'a>(
         .enumerate()
         .map(|(position, memory)| {
             let relevance = relevance_of(index, position, &words);
-            let pinned = if record::is_pinned(memory) { weights.pin } else { 0.0 };
+            let pinned = if record::is_pinned(memory) {
+                weights.pin
+            } else {
+                0.0
+            };
             let score = relevance + pinned + aged(memory, now_ms) * weights.fresh;
-            Scored { memory, relevance, score }
+            Scored {
+                memory,
+                relevance,
+                score,
+            }
         })
         .collect();
 
@@ -233,7 +252,12 @@ pub fn score<'a>(
 /// returns the pinned memories plus whatever is newest, which looks like recall
 /// working and is in fact recall having nothing to say. A pinned memory reaches
 /// the model through the injected block regardless.
-pub fn search<'a>(memories: &[&'a Value], query: &str, limit: usize, now_ms: i64) -> Vec<&'a Value> {
+pub fn search<'a>(
+    memories: &[&'a Value],
+    query: &str,
+    limit: usize,
+    now_ms: i64,
+) -> Vec<&'a Value> {
     if query.trim().is_empty() {
         return Vec::new();
     }

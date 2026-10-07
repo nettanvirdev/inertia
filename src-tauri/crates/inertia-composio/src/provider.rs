@@ -156,7 +156,9 @@ pub struct ComposioTool {
 
 impl std::fmt::Debug for ComposioTool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ComposioTool").field("id", &self.id).finish()
+        f.debug_struct("ComposioTool")
+            .field("id", &self.id)
+            .finish()
     }
 }
 
@@ -212,8 +214,7 @@ impl Tool for ComposioTool {
         // MCP and OpenAPI. A rule that reads "allow composio gmail" is one a
         // person can write and mean; "allow composio gmail_fetch_emails" is
         // not a decision anyone wants to make forty times.
-        PermissionRequest::new("composio", self.toolkit.clone())
-            .with_always(self.toolkit.clone())
+        PermissionRequest::new("composio", self.toolkit.clone()).with_always(self.toolkit.clone())
     }
 
     fn render(&self, _args: &Value) -> Option<String> {
@@ -221,8 +222,8 @@ impl Tool for ComposioTool {
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
-        let account = (!self.connected_account_id.is_empty())
-            .then_some(self.connected_account_id.as_str());
+        let account =
+            (!self.connected_account_id.is_empty()).then_some(self.connected_account_id.as_str());
 
         // Composio's own spelling, not the lower-cased id.
         let result = self
@@ -482,7 +483,10 @@ impl ComposioProvider {
                 continue;
             }
             let selected = select(&discovered, &record.enabled_tools);
-            if let Some((_, slot)) = connections.iter_mut().find(|(held, _)| held.id == record.id) {
+            if let Some((_, slot)) = connections
+                .iter_mut()
+                .find(|(held, _)| held.id == record.id)
+            {
                 *slot = selected;
             }
         }
@@ -639,7 +643,9 @@ mod tests {
 
     #[test]
     fn a_tool_without_a_slug_is_skipped() {
-        assert!(ComposioTool::new(&record(), &json!({ "name": "x" }), Composio::new("k")).is_none());
+        assert!(
+            ComposioTool::new(&record(), &json!({ "name": "x" }), Composio::new("k")).is_none()
+        );
     }
 
     // ── selection ───────────────────────────────────────────────────────

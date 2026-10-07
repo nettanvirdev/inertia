@@ -382,7 +382,11 @@ impl Terminals {
             self.sessions
                 .lock()
                 .insert(id.to_string(), Arc::clone(&session));
-            push(&session, &self.sink, "[this process is no longer running]\r\n");
+            push(
+                &session,
+                &self.sink,
+                "[this process is no longer running]\r\n",
+            );
             return Ok(session.snapshot());
         }
 
@@ -395,7 +399,13 @@ impl Terminals {
     }
 
     /// Spawn the shell and the thread that reads it.
-    fn start(&self, session: &Arc<Session>, cwd: &str, cols: usize, rows: usize) -> Result<(), String> {
+    fn start(
+        &self,
+        session: &Arc<Session>,
+        cwd: &str,
+        cols: usize,
+        rows: usize,
+    ) -> Result<(), String> {
         let shell = shell::shell_for_pty();
         let pair = native_pty_system()
             .openpty(PtySize {
@@ -497,7 +507,12 @@ impl Terminals {
         Ok(data.len())
     }
 
-    pub fn resize(&self, id: &str, cols: Option<usize>, rows: Option<usize>) -> Result<(usize, usize), String> {
+    pub fn resize(
+        &self,
+        id: &str,
+        cols: Option<usize>,
+        rows: Option<usize>,
+    ) -> Result<(usize, usize), String> {
         let session = self.get(id)?;
         let (cols, rows) = {
             let mut inner = session.inner.lock();
@@ -841,7 +856,11 @@ fn read_loop(session: &Arc<Session>, sink: &Arc<Sink>, mut reader: Box<dyn Read 
         .map(|status| status.exit_code())
         .unwrap_or(0);
     session.inner.lock().alive = false;
-    push(session, sink, &format!("\r\n[the shell exited with {code}]\r\n"));
+    push(
+        session,
+        sink,
+        &format!("\r\n[the shell exited with {code}]\r\n"),
+    );
     sink.emit(json!({ "type": "exit", "id": session.id, "code": code }));
 }
 
@@ -1057,7 +1076,9 @@ mod tests {
             marker(&terminals, id, ">").is_some(),
             "the shell never drew a prompt"
         );
-        terminals.run(id, "cd moved").expect("the move was typed in");
+        terminals
+            .run(id, "cd moved")
+            .expect("the move was typed in");
 
         let mut reported = None;
         for _ in 0..200 {
@@ -1175,4 +1196,3 @@ mod tests {
         assert_eq!(take_utf8(&mut carry), "ok");
     }
 }
-

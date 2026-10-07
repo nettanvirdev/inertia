@@ -139,7 +139,8 @@ pub async fn run_command(
     let reading = tokio::spawn(drain(child.stdout.take(), child.stderr.take()));
     let pid = child.id();
 
-    let waited = tokio::time::timeout(Duration::from_millis(handler.timeout_ms), child.wait()).await;
+    let waited =
+        tokio::time::timeout(Duration::from_millis(handler.timeout_ms), child.wait()).await;
 
     if waited.is_err() {
         kill_tree(pid).await;

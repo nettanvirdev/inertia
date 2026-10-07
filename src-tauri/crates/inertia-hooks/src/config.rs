@@ -76,7 +76,10 @@ pub struct Handler {
 }
 
 fn text(value: Option<&Value>) -> String {
-    value.and_then(Value::as_str).unwrap_or_default().to_string()
+    value
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string()
 }
 
 fn normalise(
@@ -384,11 +387,7 @@ pub fn matches(handler: &Handler, event: &str, subject: Option<&str>) -> bool {
     }
 }
 
-pub fn select<'a>(
-    handlers: &'a [Handler],
-    event: &str,
-    subject: Option<&str>,
-) -> Vec<&'a Handler> {
+pub fn select<'a>(handlers: &'a [Handler], event: &str, subject: Option<&str>) -> Vec<&'a Handler> {
     handlers
         .iter()
         .filter(|handler| matches(handler, event, subject))

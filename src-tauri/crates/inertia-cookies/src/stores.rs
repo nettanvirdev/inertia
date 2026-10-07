@@ -26,15 +26,78 @@ struct Chromium {
 /// Opera is the odd one: its folder is a profile rather than a folder of
 /// profiles, which the scan handles by treating the root as a candidate too.
 const CHROMIUM: &[Chromium] = &[
-    Chromium { id: "chrome", label: "Google Chrome", win: "Google/Chrome/User Data", win_roaming: "", mac: "Google/Chrome", linux: "google-chrome" },
-    Chromium { id: "chrome-beta", label: "Chrome Beta", win: "Google/Chrome Beta/User Data", win_roaming: "", mac: "Google/Chrome Beta", linux: "google-chrome-beta" },
-    Chromium { id: "edge", label: "Microsoft Edge", win: "Microsoft/Edge/User Data", win_roaming: "", mac: "Microsoft Edge", linux: "microsoft-edge" },
-    Chromium { id: "brave", label: "Brave", win: "BraveSoftware/Brave-Browser/User Data", win_roaming: "", mac: "BraveSoftware/Brave-Browser", linux: "BraveSoftware/Brave-Browser" },
-    Chromium { id: "vivaldi", label: "Vivaldi", win: "Vivaldi/User Data", win_roaming: "", mac: "Vivaldi", linux: "vivaldi" },
-    Chromium { id: "chromium", label: "Chromium", win: "Chromium/User Data", win_roaming: "", mac: "Chromium", linux: "chromium" },
-    Chromium { id: "yandex", label: "Yandex", win: "Yandex/YandexBrowser/User Data", win_roaming: "", mac: "Yandex/YandexBrowser", linux: "yandex-browser" },
-    Chromium { id: "opera", label: "Opera", win: "", win_roaming: "Opera Software/Opera Stable", mac: "com.operasoftware.Opera", linux: "opera" },
-    Chromium { id: "opera-gx", label: "Opera GX", win: "", win_roaming: "Opera Software/Opera GX Stable", mac: "com.operasoftware.OperaGX", linux: "" },
+    Chromium {
+        id: "chrome",
+        label: "Google Chrome",
+        win: "Google/Chrome/User Data",
+        win_roaming: "",
+        mac: "Google/Chrome",
+        linux: "google-chrome",
+    },
+    Chromium {
+        id: "chrome-beta",
+        label: "Chrome Beta",
+        win: "Google/Chrome Beta/User Data",
+        win_roaming: "",
+        mac: "Google/Chrome Beta",
+        linux: "google-chrome-beta",
+    },
+    Chromium {
+        id: "edge",
+        label: "Microsoft Edge",
+        win: "Microsoft/Edge/User Data",
+        win_roaming: "",
+        mac: "Microsoft Edge",
+        linux: "microsoft-edge",
+    },
+    Chromium {
+        id: "brave",
+        label: "Brave",
+        win: "BraveSoftware/Brave-Browser/User Data",
+        win_roaming: "",
+        mac: "BraveSoftware/Brave-Browser",
+        linux: "BraveSoftware/Brave-Browser",
+    },
+    Chromium {
+        id: "vivaldi",
+        label: "Vivaldi",
+        win: "Vivaldi/User Data",
+        win_roaming: "",
+        mac: "Vivaldi",
+        linux: "vivaldi",
+    },
+    Chromium {
+        id: "chromium",
+        label: "Chromium",
+        win: "Chromium/User Data",
+        win_roaming: "",
+        mac: "Chromium",
+        linux: "chromium",
+    },
+    Chromium {
+        id: "yandex",
+        label: "Yandex",
+        win: "Yandex/YandexBrowser/User Data",
+        win_roaming: "",
+        mac: "Yandex/YandexBrowser",
+        linux: "yandex-browser",
+    },
+    Chromium {
+        id: "opera",
+        label: "Opera",
+        win: "",
+        win_roaming: "Opera Software/Opera Stable",
+        mac: "com.operasoftware.Opera",
+        linux: "opera",
+    },
+    Chromium {
+        id: "opera-gx",
+        label: "Opera GX",
+        win: "",
+        win_roaming: "Opera Software/Opera GX Stable",
+        mac: "com.operasoftware.OperaGX",
+        linux: "",
+    },
 ];
 
 /// A Firefox-family browser, by where its folder of profiles is.
@@ -48,10 +111,34 @@ struct Firefox {
 }
 
 const FIREFOX: &[Firefox] = &[
-    Firefox { id: "firefox", label: "Firefox", win_roaming: "Mozilla/Firefox/Profiles", mac: "Firefox/Profiles", home: ".mozilla/firefox" },
-    Firefox { id: "librewolf", label: "LibreWolf", win_roaming: "librewolf/Profiles", mac: "LibreWolf/Profiles", home: ".librewolf" },
-    Firefox { id: "waterfox", label: "Waterfox", win_roaming: "Waterfox/Profiles", mac: "Waterfox/Profiles", home: ".waterfox" },
-    Firefox { id: "zen", label: "Zen Browser", win_roaming: "zen/Profiles", mac: "zen/Profiles", home: ".zen" },
+    Firefox {
+        id: "firefox",
+        label: "Firefox",
+        win_roaming: "Mozilla/Firefox/Profiles",
+        mac: "Firefox/Profiles",
+        home: ".mozilla/firefox",
+    },
+    Firefox {
+        id: "librewolf",
+        label: "LibreWolf",
+        win_roaming: "librewolf/Profiles",
+        mac: "LibreWolf/Profiles",
+        home: ".librewolf",
+    },
+    Firefox {
+        id: "waterfox",
+        label: "Waterfox",
+        win_roaming: "Waterfox/Profiles",
+        mac: "Waterfox/Profiles",
+        home: ".waterfox",
+    },
+    Firefox {
+        id: "zen",
+        label: "Zen Browser",
+        win_roaming: "zen/Profiles",
+        mac: "zen/Profiles",
+        home: ".zen",
+    },
 ];
 
 fn home() -> PathBuf {
@@ -93,8 +180,12 @@ fn chromium_folder(browser: &Chromium) -> Option<PathBuf> {
         return (!browser.win.is_empty()).then(|| under(local_app_data(), browser.win));
     }
     if cfg!(target_os = "macos") {
-        return (!browser.mac.is_empty())
-            .then(|| under(home().join("Library").join("Application Support"), browser.mac));
+        return (!browser.mac.is_empty()).then(|| {
+            under(
+                home().join("Library").join("Application Support"),
+                browser.mac,
+            )
+        });
     }
     (!browser.linux.is_empty()).then(|| under(config_home(), browser.linux))
 }
@@ -105,8 +196,12 @@ fn firefox_folder(browser: &Firefox) -> Option<PathBuf> {
             .then(|| under(roaming_app_data(), browser.win_roaming));
     }
     if cfg!(target_os = "macos") {
-        return (!browser.mac.is_empty())
-            .then(|| under(home().join("Library").join("Application Support"), browser.mac));
+        return (!browser.mac.is_empty()).then(|| {
+            under(
+                home().join("Library").join("Application Support"),
+                browser.mac,
+            )
+        });
     }
     (!browser.home.is_empty()).then(|| under(home(), browser.home))
 }
@@ -216,7 +311,11 @@ fn chromium_profiles(browser: &Chromium) -> Vec<Source> {
     candidates
         .into_iter()
         .filter_map(|folder| {
-            let profile_dir = if folder.is_empty() { dir.clone() } else { dir.join(&folder) };
+            let profile_dir = if folder.is_empty() {
+                dir.clone()
+            } else {
+                dir.join(&folder)
+            };
             let file = chromium_cookie_file(&profile_dir)?;
             let (bytes, updated_at) = stat_of(&file)?;
             let named = names
@@ -225,14 +324,22 @@ fn chromium_profiles(browser: &Chromium) -> Vec<Source> {
                 .and_then(serde_json::Value::as_str)
                 .map(str::to_string);
             Some(Source {
-                id: format!("{}:{}", browser.id, if folder.is_empty() { "." } else { &folder }),
+                id: format!(
+                    "{}:{}",
+                    browser.id,
+                    if folder.is_empty() { "." } else { &folder }
+                ),
                 browser_id: browser.id.to_string(),
                 browser: browser.label.to_string(),
                 family: "chromium".into(),
                 profile: named
                     .filter(|name| !name.trim().is_empty())
                     .unwrap_or_else(|| {
-                        if folder.is_empty() { browser.label.to_string() } else { folder.clone() }
+                        if folder.is_empty() {
+                            browser.label.to_string()
+                        } else {
+                            folder.clone()
+                        }
                     }),
                 file,
                 // The key lives one level up, beside every profile that shares
@@ -309,7 +416,13 @@ mod tests {
     #[test]
     fn a_relative_path_joins_with_this_platforms_separator() {
         let joined = under(PathBuf::from("base"), "Google/Chrome/User Data");
-        assert_eq!(joined, PathBuf::from("base").join("Google").join("Chrome").join("User Data"));
+        assert_eq!(
+            joined,
+            PathBuf::from("base")
+                .join("Google")
+                .join("Chrome")
+                .join("User Data")
+        );
     }
 
     /// The sort is a string comparison, so the format has to be the one where

@@ -136,7 +136,10 @@ async fn download(url: &str) -> String {
 
     // Trust the header enough to skip an oversized body, but check the bytes
     // too: a CDN that omits the length would otherwise be unbounded.
-    if response.content_length().is_some_and(|n| n > MAX_BYTES as u64) {
+    if response
+        .content_length()
+        .is_some_and(|n| n > MAX_BYTES as u64)
+    {
         return String::new();
     }
     let Ok(bytes) = response.bytes().await else {
@@ -201,11 +204,11 @@ mod tests {
 
     #[test]
     fn refuses_an_svg_carrying_script() {
-        assert!(suspicious("image/svg+xml", b"<svg><script>x</script></svg>"));
         assert!(suspicious(
             "image/svg+xml",
-            b"<svg><foreignObject/></svg>"
+            b"<svg><script>x</script></svg>"
         ));
+        assert!(suspicious("image/svg+xml", b"<svg><foreignObject/></svg>"));
         assert!(!suspicious("image/svg+xml", b"<svg><path/></svg>"));
         // Only SVG is scanned: the same bytes in a PNG are pixels.
         assert!(!suspicious("image/png", b"<script>"));

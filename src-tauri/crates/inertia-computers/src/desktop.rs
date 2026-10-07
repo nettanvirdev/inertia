@@ -88,7 +88,17 @@ pub const KINDS: &[&str] = &[
 /// The fields an action may carry, so stray ones beside the list can be folded
 /// back in.
 const ACTION_FIELDS: &[&str] = &[
-    "kind", "x", "y", "button", "double", "text", "key", "modifiers", "direction", "amount", "ms",
+    "kind",
+    "x",
+    "y",
+    "button",
+    "double",
+    "text",
+    "key",
+    "modifiers",
+    "direction",
+    "amount",
+    "ms",
 ];
 
 /// What a correct call looks like, quoted in every complaint about a wrong one.
@@ -411,10 +421,8 @@ pub fn parse_actions(value: Option<&Value>, extra: &Value) -> Result<Vec<Action>
                 // batches - the same rejection six times, because nothing in
                 // the error told the model which of its two fields was wrong.
                 if key.is_empty() {
-                    let spare: Vec<&String> = modifiers
-                        .iter()
-                        .filter(|name| !is_modifier(name))
-                        .collect();
+                    let spare: Vec<&String> =
+                        modifiers.iter().filter(|name| !is_modifier(name)).collect();
                     if spare.len() == 1 {
                         key = spare[0].clone();
                         modifiers.retain(|name| is_modifier(name));
@@ -687,7 +695,10 @@ fn annotation() -> String {
             x - 15,
             x + 15
         ));
-        draws.push(format!("-fill white -pointsize 10 -annotate +{}+9 '{x}'", x - 12));
+        draws.push(format!(
+            "-fill white -pointsize 10 -annotate +{}+9 '{x}'",
+            x - 12
+        ));
         draws.push(format!(
             "-fill none -stroke 'rgba(255,255,255,0.5)' -strokewidth 1 -draw 'line {x},12 {x},18'"
         ));
@@ -842,12 +853,7 @@ pub fn batch_with_seed(
     for action in actions {
         lines.push(format!("{};", action_command(action, humanize, seed)));
     }
-    let wait = bounded(
-        settle_ms.map(Value::from).as_ref(),
-        0,
-        MAX_SETTLE_MS,
-        350,
-    );
+    let wait = bounded(settle_ms.map(Value::from).as_ref(), 0, MAX_SETTLE_MS, 350);
     if wait > 0 {
         lines.push(format!("sleep {:.3};", wait as f64 / 1000.0));
     }
@@ -1100,7 +1106,10 @@ mod tests {
     fn a_still_is_taken_with_a_tool_the_image_actually_has() {
         let command = still();
         assert!(command.contains("import -window root"), "{command}");
-        assert!(command.contains("base64 -w0"), "it has to cross an exec boundary");
+        assert!(
+            command.contains("base64 -w0"),
+            "it has to cross an exec boundary"
+        );
         // The fallbacks are for an image somebody built themselves, and they
         // come after, not instead.
         assert!(command.find("import").unwrap() < command.find("scrot").unwrap());
@@ -1312,7 +1321,10 @@ mod tests {
     /// already is.
     #[test]
     fn arriving_always_steps_off_the_target_first() {
-        assert_eq!(arrive(100, 200), "xdotool mousemove 100 199 mousemove --sync 100 200");
+        assert_eq!(
+            arrive(100, 200),
+            "xdotool mousemove 100 199 mousemove --sync 100 200"
+        );
         // The top row aims down rather than off the screen.
         assert_eq!(arrive(5, 0), "xdotool mousemove 5 1 mousemove --sync 5 0");
     }
@@ -1329,7 +1341,10 @@ mod tests {
             false,
             1,
         );
-        assert_eq!(command, "xdotool mousemove 10 9 mousemove --sync 10 10 click 1");
+        assert_eq!(
+            command,
+            "xdotool mousemove 10 9 mousemove --sync 10 10 click 1"
+        );
     }
 
     #[test]

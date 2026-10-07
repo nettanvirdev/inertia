@@ -103,7 +103,9 @@ impl Steer {
     /// `Vec<String>`. The queue is still perfectly usable, and taking the
     /// turn down over it would turn one panic into two.
     fn lock(&self) -> std::sync::MutexGuard<'_, Queue> {
-        self.inner.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.inner
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
@@ -136,7 +138,10 @@ mod tests {
         let steer = Steer::new();
         steer.send("first");
         steer.send("second");
-        assert_eq!(steer.take(), vec!["first".to_string(), "second".to_string()]);
+        assert_eq!(
+            steer.take(),
+            vec!["first".to_string(), "second".to_string()]
+        );
     }
 
     #[test]

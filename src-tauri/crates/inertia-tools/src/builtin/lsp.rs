@@ -212,7 +212,9 @@ impl Tool for LspTool {
         if let Answer::Unsupported { error } = &answer {
             return Ok(ToolOutcome {
                 title: Some("the server could not answer".to_string()),
-                output: format!("The language server did not answer that: {error}. Use `grep` instead."),
+                output: format!(
+                    "The language server did not answer that: {error}. Use `grep` instead."
+                ),
                 metadata: Some(json!({
                     "operation": operation,
                     "path": file.display().to_string(),

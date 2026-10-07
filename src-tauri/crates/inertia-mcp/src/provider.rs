@@ -269,7 +269,9 @@ impl McpProvider {
 
     /// Disconnects a server, stopping its process.
     pub fn remove(&self, id: &str) {
-        self.connections.write().retain(|(record, _)| record.id != id);
+        self.connections
+            .write()
+            .retain(|(record, _)| record.id != id);
         self.invalidate();
     }
 
@@ -394,8 +396,11 @@ mod tests {
     fn a_blank_folder_argument_is_marked_for_filling() {
         let schema = folder_schema(json!("string"));
 
-        for supplied in [json!({}), json!({ "projectPath": null }), json!({ "projectPath": "  " })]
-        {
+        for supplied in [
+            json!({}),
+            json!({ "projectPath": null }),
+            json!({ "projectPath": "  " }),
+        ] {
             let filled = mark_fillable_folders(&schema, supplied.clone());
             assert_eq!(
                 filled["projectPath"],

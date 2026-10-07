@@ -112,7 +112,11 @@ pub fn terminal_write(id: String, data: String) -> Result<usize, String> {
 }
 
 #[tauri::command]
-pub fn terminal_resize(id: String, cols: Option<usize>, rows: Option<usize>) -> Result<(usize, usize), String> {
+pub fn terminal_resize(
+    id: String,
+    cols: Option<usize>,
+    rows: Option<usize>,
+) -> Result<(usize, usize), String> {
     terminals().resize(&id, cols, rows)
 }
 
@@ -242,8 +246,10 @@ mod tests {
     #[test]
     fn closing_a_tab_nobody_opened_is_false_rather_than_an_error() {
         assert!(!terminal_close("chat:app-terminal-test-3:sh:1".to_string()));
-        assert!(terminal_read("chat:app-terminal-test-3:sh:1".to_string(), None)
-            .text
-            .is_empty());
+        assert!(
+            terminal_read("chat:app-terminal-test-3:sh:1".to_string(), None)
+                .text
+                .is_empty()
+        );
     }
 }

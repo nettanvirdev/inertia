@@ -161,8 +161,8 @@ pub fn parse_output(
         out.updated_input = Some(input.clone());
     }
 
-    if let Some(extra) =
-        trimmed(specific.get("additionalContext")).or_else(|| trimmed(json.get("additionalContext")))
+    if let Some(extra) = trimmed(specific.get("additionalContext"))
+        .or_else(|| trimmed(json.get("additionalContext")))
     {
         out.context.push(extra);
     }

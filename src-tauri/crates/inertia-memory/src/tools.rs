@@ -48,8 +48,13 @@ pub fn all(store: Store) -> Vec<Arc<dyn Tool>> {
 pub fn all_announcing(store: Store, wrote: Option<Wrote>) -> Vec<Arc<dyn Tool>> {
     let store = Arc::new(store);
     vec![
-        Arc::new(RecallTool { store: store.clone() }),
-        Arc::new(SaveTool { store: store.clone(), wrote: wrote.clone() }),
+        Arc::new(RecallTool {
+            store: store.clone(),
+        }),
+        Arc::new(SaveTool {
+            store: store.clone(),
+            wrote: wrote.clone(),
+        }),
         Arc::new(ForgetTool { store, wrote }),
     ]
 }
@@ -138,7 +143,10 @@ impl Tool for RecallTool {
     }
 
     async fn execute(&self, args: Value, _ctx: &ToolContext) -> Result<ToolOutcome> {
-        let query = args.get("query").and_then(Value::as_str).unwrap_or_default();
+        let query = args
+            .get("query")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
         let limit = args
             .get("limit")
             .and_then(Value::as_u64)
@@ -157,7 +165,11 @@ impl Tool for RecallTool {
         Ok(ToolOutcome::text(body).with_title(format!(
             "{} {}",
             found.len(),
-            if found.len() == 1 { "memory" } else { "memories" }
+            if found.len() == 1 {
+                "memory"
+            } else {
+                "memories"
+            }
         )))
     }
 }
@@ -232,7 +244,10 @@ impl Tool for SaveTool {
     }
 
     fn permission(&self, args: &Value) -> PermissionRequest {
-        let title = args.get("title").and_then(Value::as_str).unwrap_or("a memory");
+        let title = args
+            .get("title")
+            .and_then(Value::as_str)
+            .unwrap_or("a memory");
         PermissionRequest::new("memory", format!("remember {title}")).with_always("memory")
     }
 
@@ -270,11 +285,10 @@ impl Tool for SaveTool {
         match self.store.remember(&input, true) {
             Ok(saved) => {
                 said(&self.wrote, &record::text(&saved, "id"), "put");
-                Ok(ToolOutcome::text(format!(
-                    "Remembered: {}",
-                    record::text(&saved, "title")
-                ))
-                .with_title(record::text(&saved, "title")))
+                Ok(
+                    ToolOutcome::text(format!("Remembered: {}", record::text(&saved, "title")))
+                        .with_title(record::text(&saved, "title")),
+                )
             }
             Err(why) => Ok(ToolOutcome::text(format!("Not remembered. {why}"))),
         }
@@ -444,7 +458,10 @@ mod tests {
     async fn telling_nobody_is_allowed() {
         let (dir, _store, tools) = setup();
         let out = tool(&tools, "memory_save")
-            .execute(json!({ "title": "A fact", "body": "Something true." }), &ctx(&dir))
+            .execute(
+                json!({ "title": "A fact", "body": "Something true." }),
+                &ctx(&dir),
+            )
             .await
             .expect("the call ran");
         assert!(out.output.starts_with("Remembered:"), "{}", out.output);
@@ -523,11 +540,16 @@ mod tests {
     fn only_the_safe_half_of_memory_can_be_approved_forever() {
         let (_dir, _store, tools) = setup();
         assert_eq!(
-            tool(&tools, "memory_recall").permission(&json!({})).always.as_deref(),
+            tool(&tools, "memory_recall")
+                .permission(&json!({}))
+                .always
+                .as_deref(),
             Some("memory")
         );
         assert_eq!(
-            tool(&tools, "memory_forget").permission(&json!({ "id": "a" })).always,
+            tool(&tools, "memory_forget")
+                .permission(&json!({ "id": "a" }))
+                .always,
             None
         );
     }

@@ -85,10 +85,7 @@ fn main() {
                         "isError": true
                     }),
                     _ => {
-                        let text = arguments
-                            .get("text")
-                            .and_then(|t| t.as_str())
-                            .unwrap_or("");
+                        let text = arguments.get("text").and_then(|t| t.as_str()).unwrap_or("");
                         let folder = arguments
                             .get("projectPath")
                             .and_then(|t| t.as_str())

@@ -123,7 +123,10 @@ impl Background {
         let pid = child.id()?;
         let stdout = child.stdout.take();
         let stderr = child.stderr.take();
-        let stdin = child.stdin.take().map(|s| Arc::new(tokio::sync::Mutex::new(s)));
+        let stdin = child
+            .stdin
+            .take()
+            .map(|s| Arc::new(tokio::sync::Mutex::new(s)));
 
         self.entries.lock().insert(
             pid,
@@ -162,7 +165,9 @@ impl Background {
 
     fn absorb(&self, pid: u32, chunk: &str) {
         let mut entries = self.entries.lock();
-        let Some(entry) = entries.get_mut(&pid) else { return };
+        let Some(entry) = entries.get_mut(&pid) else {
+            return;
+        };
         entry.tail.push_str(chunk);
         if entry.tail.len() > BACKGROUND_TAIL_CHARS {
             let over = entry.tail.len() - BACKGROUND_TAIL_CHARS;
@@ -281,10 +286,17 @@ impl Background {
     /// `Ok(false)` when the pid is unknown or the process has exited, and
     /// `Err` when the pipe is already closed, which is what happens after
     /// `end` - the model is told so it does not keep typing into nothing.
-    pub async fn write(&self, pid: u32, text: &str, end: bool) -> std::result::Result<bool, String> {
+    pub async fn write(
+        &self,
+        pid: u32,
+        text: &str,
+        end: bool,
+    ) -> std::result::Result<bool, String> {
         let stdin = {
             let entries = self.entries.lock();
-            let Some(entry) = entries.get(&pid) else { return Ok(false) };
+            let Some(entry) = entries.get(&pid) else {
+                return Ok(false);
+            };
             if entry.exited_at.is_some() {
                 return Ok(false);
             }
@@ -391,11 +403,17 @@ fn describe(entry: &Listed) -> String {
     } else {
         format!(
             "exited {}",
-            entry.exit_code.map(|c| c.to_string()).unwrap_or_else(|| "unknown".into())
+            entry
+                .exit_code
+                .map(|c| c.to_string())
+                .unwrap_or_else(|| "unknown".into())
         )
     };
     let age = now_ms().saturating_sub(entry.started_at) / 1000;
-    format!("{}  [{}]  {}s ago  {}", entry.pid, state, age, entry.command)
+    format!(
+        "{}  [{}]  {}s ago  {}",
+        entry.pid, state, age, entry.command
+    )
 }
 
 #[derive(Debug)]
@@ -513,12 +531,18 @@ impl Tool for ShellLogsTool {
         } else {
             format!(
                 "exited with code {}",
-                found.exit_code.map(|c| c.to_string()).unwrap_or_else(|| "unknown".into())
+                found
+                    .exit_code
+                    .map(|c| c.to_string())
+                    .unwrap_or_else(|| "unknown".into())
             )
         };
         let header = format!("pid {} ({state}): {}", found.pid, found.command);
         let dropped = if found.dropped > 0 {
-            format!("\n[{} earlier characters dropped to keep this a tail]\n", found.dropped)
+            format!(
+                "\n[{} earlier characters dropped to keep this a tail]\n",
+                found.dropped
+            )
         } else {
             String::new()
         };
@@ -663,11 +687,10 @@ impl Tool for ShellWriteTool {
             )
         };
 
-        let sent = self
-            .0
-            .write(pid, &text, end)
-            .await
-            .map_err(|message| Error::Other(format!("Could not write to pid {pid}: {message}")))?;
+        let sent =
+            self.0.write(pid, &text, end).await.map_err(|message| {
+                Error::Other(format!("Could not write to pid {pid}: {message}"))
+            })?;
         if !sent {
             return Err(Error::Other(format!(
                 "No running background process with pid {pid}. It may have exited; read shell_logs {pid} to see how, or shell_list to see what is running."
@@ -705,7 +728,10 @@ mod tests {
         // the turn and has no way to find out why.
         let tools = background_tools(Arc::new(Background::new()));
         let ids: Vec<&str> = tools.iter().map(|t| t.id()).collect();
-        assert_eq!(ids, vec!["shell_list", "shell_logs", "shell_kill", "shell_write"]);
+        assert_eq!(
+            ids,
+            vec!["shell_list", "shell_logs", "shell_kill", "shell_write"]
+        );
         // Reading what a process you were allowed to start has printed is not
         // a separate power. A second key would only teach people to allow
         // everything.

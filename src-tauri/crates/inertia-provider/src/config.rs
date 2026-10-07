@@ -84,9 +84,7 @@ impl ProviderConfig {
     /// `Authorization` must suppress our `authorization` and not end up
     /// sending both.
     pub fn overrides(&self, name: &str) -> bool {
-        self.headers
-            .keys()
-            .any(|k| k.eq_ignore_ascii_case(name))
+        self.headers.keys().any(|k| k.eq_ignore_ascii_case(name))
     }
 }
 

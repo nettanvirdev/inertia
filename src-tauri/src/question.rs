@@ -585,7 +585,10 @@ mod tests {
             event["question"]["question"],
             json!("Which shape should the cache take?")
         );
-        assert_eq!(event["question"]["options"][1]["label"], json!("One per day"));
+        assert_eq!(
+            event["question"]["options"][1]["label"],
+            json!("One per day")
+        );
         assert_eq!(event["question"]["id"], event["id"]);
 
         // And the card comes off the screen when it ends.

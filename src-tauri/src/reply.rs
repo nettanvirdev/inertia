@@ -258,7 +258,10 @@ mod tests {
         match &assembling.reply.parts[0] {
             Part::Tool { state, output, .. } => {
                 assert_eq!(*state, ToolState::Failed);
-                assert!(output.as_deref().unwrap_or_default().contains("interrupted"));
+                assert!(output
+                    .as_deref()
+                    .unwrap_or_default()
+                    .contains("interrupted"));
             }
             _ => panic!("expected a tool part"),
         }
@@ -289,10 +292,18 @@ mod tests {
             .write_messages("routine-morning", &[earlier])
             .unwrap();
 
-        let mut assembling =
-            Assembling::new("anthropic/x", Some("atlas".into()), "check the build", "msg_new".into());
-        assembling.observe(&AgentEvent::Delta { text: "It is green.".into() });
-        assembling.observe(&AgentEvent::Delta { text: " Used tok-build-123456.".into() });
+        let mut assembling = Assembling::new(
+            "anthropic/x",
+            Some("atlas".into()),
+            "check the build",
+            "msg_new".into(),
+        );
+        assembling.observe(&AgentEvent::Delta {
+            text: "It is green.".into(),
+        });
+        assembling.observe(&AgentEvent::Delta {
+            text: " Used tok-build-123456.".into(),
+        });
         assembling.observe(&AgentEvent::Done {
             stopped: StopReason::Complete,
             history: Vec::new(),
@@ -325,7 +336,10 @@ mod tests {
             history: Vec::new(),
             usage: None,
         });
-        assert_eq!(assembling.reply.error.as_deref(), Some("the provider refused"));
+        assert_eq!(
+            assembling.reply.error.as_deref(),
+            Some("the provider refused")
+        );
         assert_eq!(assembling.reply.status, Some(Status::Sent));
     }
 }

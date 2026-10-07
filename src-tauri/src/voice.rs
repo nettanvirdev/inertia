@@ -95,7 +95,8 @@ pub fn invalidate() {
 /// it is why every path to ElevenLabs comes through here.
 fn api_key(state: &AppState) -> Result<String, String> {
     let workspace = state.workspace()?;
-    let app = inertia_store::collections::read_document(&workspace.layout, Document::App, json!({}));
+    let app =
+        inertia_store::collections::read_document(&workspace.layout, Document::App, json!({}));
     let name = app
         .get("elevenLabsKeySecret")
         .and_then(Value::as_str)
@@ -169,10 +170,7 @@ pub struct SpeakInput {
 }
 
 #[tauri::command]
-pub async fn voice_speak(
-    state: State<'_, AppState>,
-    request: SpeakInput,
-) -> Result<Value, String> {
+pub async fn voice_speak(state: State<'_, AppState>, request: SpeakInput) -> Result<Value, String> {
     let (client, _) = client(&state)?;
 
     let spoken = request.text.trim();

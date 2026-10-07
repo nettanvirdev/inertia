@@ -182,7 +182,11 @@ mod tests {
         assert!(assistant.content.is_none());
 
         let json = serde_json::to_value(assistant).unwrap();
-        assert_eq!(json["content"], Value::Null, "content must be explicit null");
+        assert_eq!(
+            json["content"],
+            Value::Null,
+            "content must be explicit null"
+        );
         assert_eq!(json["tool_calls"][0]["function"]["name"], "read");
         assert_eq!(json["tool_calls"][0]["type"], "function");
     }

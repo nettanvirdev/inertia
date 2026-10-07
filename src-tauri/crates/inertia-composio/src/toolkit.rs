@@ -141,7 +141,12 @@ fn categories(meta: &Value) -> Vec<String> {
 pub fn normalise(item: &Value, configured: &BTreeSet<String>) -> Value {
     let empty = json!({});
     let meta = item.get("meta").unwrap_or(&empty);
-    let text = |value: Option<&Value>| value.and_then(Value::as_str).unwrap_or_default().to_string();
+    let text = |value: Option<&Value>| {
+        value
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string()
+    };
 
     let slug = text(item.get("slug"));
     let names = categories(meta);

@@ -36,7 +36,9 @@ pub const MAX_MESSAGE_CHARS: usize = 240;
 pub const MAX_BLOCK_CHARS: usize = 4000;
 
 fn severity(item: &Value) -> u64 {
-    item.get("severity").and_then(Value::as_u64).unwrap_or(ERROR)
+    item.get("severity")
+        .and_then(Value::as_u64)
+        .unwrap_or(ERROR)
 }
 
 fn start(item: &Value, field: &str) -> u64 {
@@ -160,7 +162,10 @@ mod tests {
         assert_eq!(report(Path::new("a.ts"), &[]), "");
         // A hint and an information are not things the model broke.
         assert_eq!(
-            report(Path::new("a.ts"), &[item(3, 0, "note"), item(4, 1, "style")]),
+            report(
+                Path::new("a.ts"),
+                &[item(3, 0, "note"), item(4, 1, "style")]
+            ),
             ""
         );
         assert!(!interesting(&[item(4, 0, "style")]));
@@ -218,7 +223,11 @@ mod tests {
             .map(|i| item(1, i, &"y".repeat(MAX_MESSAGE_CHARS)))
             .collect();
         let block = report(Path::new("a.ts"), &items);
-        assert!(block.len() < MAX_BLOCK_CHARS + 200, "got {} bytes", block.len());
+        assert!(
+            block.len() < MAX_BLOCK_CHARS + 200,
+            "got {} bytes",
+            block.len()
+        );
         assert!(block.contains("more"), "it must say what was dropped");
     }
 }

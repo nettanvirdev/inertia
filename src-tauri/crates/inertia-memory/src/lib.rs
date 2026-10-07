@@ -34,7 +34,7 @@ pub mod record;
 pub mod store;
 pub mod tools;
 
-pub use capture::{Capture, Complete, Captured};
+pub use capture::{Capture, Captured, Complete};
 pub use record::{INJECT_BUDGET_BYTES, LOW_CONFIDENCE, STALE_AFTER_DAYS};
 pub use store::{Backend, Capabilities, Local, Store};
 
@@ -104,7 +104,10 @@ impl Settings {
                 .to_string()
         };
 
-        let budget = prefs.get("memoryBudget").and_then(Value::as_u64).unwrap_or(0) as usize;
+        let budget = prefs
+            .get("memoryBudget")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as usize;
         let capture = match text("memoryCapture") {
             given if CAPTURE_MODES.contains(&given.as_str()) => given,
             _ => "session".into(),
@@ -113,10 +116,18 @@ impl Settings {
         let backend = text("memoryBackend");
         Self {
             enabled: flag("memory", true),
-            backend: if backend.is_empty() { LOCAL_BACKEND.into() } else { backend },
+            backend: if backend.is_empty() {
+                LOCAL_BACKEND.into()
+            } else {
+                backend
+            },
             capture,
             review: flag("memoryReview", false),
-            budget: if budget > 0 { budget } else { INJECT_BUDGET_BYTES },
+            budget: if budget > 0 {
+                budget
+            } else {
+                INJECT_BUDGET_BYTES
+            },
             project_memory: flag("memoryProject", true),
             agent_scoped: flag("memoryPerAgent", false),
             instructions: text("memoryInstructions").trim().to_string(),

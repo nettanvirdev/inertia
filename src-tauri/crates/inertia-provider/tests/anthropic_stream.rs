@@ -25,8 +25,7 @@ async fn stream_against(body: String, status: u16) -> Vec<StreamEvent> {
     let server = MockServer::start().await;
 
     let response = if status == 200 {
-        ResponseTemplate::new(200)
-            .set_body_raw(body, "text/event-stream")
+        ResponseTemplate::new(200).set_body_raw(body, "text/event-stream")
     } else {
         ResponseTemplate::new(status).set_body_raw(body, "application/json")
     };
@@ -37,11 +36,8 @@ async fn stream_against(body: String, status: u16) -> Vec<StreamEvent> {
         .mount(&server)
         .await;
 
-    let provider = AnthropicProvider::new(ProviderConfig::new(
-        "anthropic",
-        server.uri(),
-        "sk-test",
-    ));
+    let provider =
+        AnthropicProvider::new(ProviderConfig::new("anthropic", server.uri(), "sk-test"));
 
     let request = ChatRequest {
         model: "claude-sonnet-4".into(),
@@ -107,9 +103,15 @@ async fn a_404_falls_through_to_the_other_base_url() {
     };
 
     let events: Vec<StreamEvent> = provider.stream_chat(request).collect().await;
-    assert_eq!(prose(&events), "Hi", "the retry should have reached the gateway");
+    assert_eq!(
+        prose(&events),
+        "Hi",
+        "the retry should have reached the gateway"
+    );
     assert!(
-        !events.iter().any(|e| matches!(e, StreamEvent::Error { .. })),
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::Error { .. })),
         "a base URL that needed interpreting is not a failure: {events:?}"
     );
 

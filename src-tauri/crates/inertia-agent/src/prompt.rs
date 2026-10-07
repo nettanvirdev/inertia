@@ -582,7 +582,9 @@ pub fn describe_person(profile: &serde_json::Value) -> Option<String> {
         ));
     }
     if !locale.is_empty() {
-        lines.push(format!("They read dates and numbers in the {locale} format."));
+        lines.push(format!(
+            "They read dates and numbers in the {locale} format."
+        ));
     }
     if !bio.is_empty() {
         lines.push(String::new());
@@ -680,7 +682,11 @@ fn identity(agent: Option<&AgentIdentity>) -> Option<String> {
     let mut parts: Vec<String> = Vec::new();
 
     let name = agent.name.trim();
-    let role = agent.role.as_deref().map(str::trim).filter(|role| !role.is_empty());
+    let role = agent
+        .role
+        .as_deref()
+        .map(str::trim)
+        .filter(|role| !role.is_empty());
     if !name.is_empty() {
         parts.push(match role {
             Some(role) => format!(
@@ -755,7 +761,9 @@ fn environment(context: &Context) -> String {
         .map(str::trim)
         .filter(|previous| !previous.is_empty() && *previous != context.cwd)
     {
-        lines.push(format!("  Earlier turns in this conversation ran in: {moved}"));
+        lines.push(format!(
+            "  Earlier turns in this conversation ran in: {moved}"
+        ));
         lines.push(
             "  The user changed it. What you said about the old folder was true then.".to_owned(),
         );
@@ -775,7 +783,11 @@ fn environment(context: &Context) -> String {
     }
     lines.push(format!(
         "  Is a git repository: {}",
-        if context.is_git_repository { "yes" } else { "no" }
+        if context.is_git_repository {
+            "yes"
+        } else {
+            "no"
+        }
     ));
     if let Some(worktree) = &context.worktree {
         let branch = worktree
@@ -865,7 +877,10 @@ pub fn read_layout(cwd: &Path) -> Option<Layout> {
         .collect();
     let more = total - shown.len();
 
-    Some(Layout { entries: shown, more })
+    Some(Layout {
+        entries: shown,
+        more,
+    })
 }
 
 /// What is actually in the working folder.
@@ -1180,7 +1195,10 @@ fn workbench(can_browse: bool, can_read_terminal: bool) -> Option<String> {
     if !can_browse && !can_read_terminal {
         return None;
     }
-    let mut lines: Vec<&str> = vec!["# The browser and the terminal beside this conversation", ""];
+    let mut lines: Vec<&str> = vec![
+        "# The browser and the terminal beside this conversation",
+        "",
+    ];
 
     if can_browse {
         lines.extend([
@@ -1365,7 +1383,12 @@ fn room(room: &Room) -> Option<String> {
         .map(str::to_owned),
     );
 
-    if let Some(custom) = room.custom.as_deref().map(str::trim).filter(|c| !c.is_empty()) {
+    if let Some(custom) = room
+        .custom
+        .as_deref()
+        .map(str::trim)
+        .filter(|c| !c.is_empty())
+    {
         lines.push(String::new());
         lines.push("## How this person wants their agents to work together".to_owned());
         lines.push(String::new());
@@ -1430,7 +1453,10 @@ fn product() -> String {
 /// nothing said what they were for or whose account they acted on. This says
 /// what is behind the menu.
 fn apps(list: &[App]) -> Option<String> {
-    let usable: Vec<&App> = list.iter().filter(|app| !app.toolkit_slug.is_empty()).collect();
+    let usable: Vec<&App> = list
+        .iter()
+        .filter(|app| !app.toolkit_slug.is_empty())
+        .collect();
     if usable.is_empty() {
         return None;
     }
@@ -1625,7 +1651,10 @@ pub fn read_project_instructions(cwd: &Path) -> ProjectInstructions {
                 .ok()
                 .map(|rel| rel.display().to_string())
                 .filter(|rel| !rel.is_empty())
-                .or_else(|| file.file_name().map(|name| name.to_string_lossy().into_owned()))
+                .or_else(|| {
+                    file.file_name()
+                        .map(|name| name.to_string_lossy().into_owned())
+                })
                 .unwrap_or_default();
             InstructionFile { path, body }
         })
@@ -1684,7 +1713,11 @@ fn instructions(project: &ProjectInstructions) -> Option<String> {
         format!(
             "The project at {} includes the following instructions{}.",
             project.root,
-            if many { ", from more than one file" } else { "" }
+            if many {
+                ", from more than one file"
+            } else {
+                ""
+            }
         ),
         "Follow them. They were written by the user and they outrank your general habits."
             .to_owned(),
@@ -1935,7 +1968,10 @@ mod tests {
         });
         assert!(prompt.starts_with("# Who you are"));
         assert!(prompt.find("Be terse.").unwrap() < prompt.find("---").unwrap());
-        assert!(prompt.find("# Who you are").unwrap() < prompt.find("You are an agent inside Inertia").unwrap());
+        assert!(
+            prompt.find("# Who you are").unwrap()
+                < prompt.find("You are an agent inside Inertia").unwrap()
+        );
     }
 
     #[test]
@@ -1953,15 +1989,17 @@ mod tests {
             agent: AgentIdentity::from_record(&record),
             ..context()
         });
-        assert!(prompt.contains("You are Inertia Dev, the desktop engineering on this person's team."));
+        assert!(
+            prompt.contains("You are Inertia Dev, the desktop engineering on this person's team.")
+        );
         assert!(prompt.contains("Knows this codebase."));
         assert!(prompt.contains("Always run the tests."));
     }
 
     #[test]
     fn an_older_record_keeps_its_instructions_under_the_old_key() {
-        let identity = AgentIdentity::from_record(&json!({ "name": "Old", "prompt": "Be brief." }))
-            .unwrap();
+        let identity =
+            AgentIdentity::from_record(&json!({ "name": "Old", "prompt": "Be brief." })).unwrap();
         assert_eq!(identity.system_prompt.as_deref(), Some("Be brief."));
     }
 
@@ -1975,8 +2013,11 @@ mod tests {
         .unwrap();
         assert!(identity.role.is_none());
         assert!(identity.description.is_none());
-        assert!(build(&Context { agent: Some(identity), ..context() })
-            .contains("You are Scraper.\n"));
+        assert!(build(&Context {
+            agent: Some(identity),
+            ..context()
+        })
+        .contains("You are Scraper.\n"));
     }
 
     #[test]
@@ -2152,7 +2193,9 @@ mod tests {
         assert!(text.contains(&format!(
             "- The call shape is a list of action objects: {COMPUTER_ACT_EXAMPLE}"
         )));
-        assert!(text.contains(r#"  {"kind":"key","key":"Left","modifiers":["alt"]}, and computer_open with"#));
+        assert!(text.contains(
+            r#"  {"kind":"key","key":"Left","modifiers":["alt"]}, and computer_open with"#
+        ));
         assert!(text.ends_with("  what a page says, what is in a field. Look first."));
     }
 
@@ -2234,11 +2277,24 @@ mod tests {
     fn the_room_names_the_others_and_leaves_the_speaker_out() {
         let text = room(&Room {
             roster: vec![
-                Seat { id: "a1".into(), name: "Nova".into(), role: Some("Engineer".into()), description: None },
-                Seat { id: "a2".into(), name: "Iris".into(), role: Some("Designer".into()), description: Some("Owns how it looks.".into()) },
+                Seat {
+                    id: "a1".into(),
+                    name: "Nova".into(),
+                    role: Some("Engineer".into()),
+                    description: None,
+                },
+                Seat {
+                    id: "a2".into(),
+                    name: "Iris".into(),
+                    role: Some("Designer".into()),
+                    description: Some("Owns how it looks.".into()),
+                },
             ],
             me: Some("a1".into()),
-            permissions: RoomPermissions { max_agents: 6, ..Default::default() },
+            permissions: RoomPermissions {
+                max_agents: 6,
+                ..Default::default()
+            },
             person: Some("Sam (the person)".into()),
             ..Default::default()
         })
@@ -2345,7 +2401,9 @@ mod tests {
             room: Some(a_room()),
             ..context()
         });
-        assert!(prompt.contains("- **Climate Scientist** (`@climate-scientist`) - Researcher. Atmosphere, oceans, ice."));
+        assert!(prompt.contains(
+            "- **Climate Scientist** (`@climate-scientist`) - Researcher. Atmosphere, oceans, ice."
+        ));
         assert!(!prompt.contains("- **Inertia Dev**"));
     }
 
@@ -2363,7 +2421,9 @@ mod tests {
             }),
             ..context()
         });
-        assert!(prompt.contains("You may bring another agent in (`invite`, or name them with `@`).\n"));
+        assert!(
+            prompt.contains("You may bring another agent in (`invite`, or name them with `@`).\n")
+        );
         assert!(!prompt.contains("hand the conversation over"));
     }
 
@@ -2381,7 +2441,8 @@ mod tests {
             }),
             ..context()
         });
-        assert!(prompt.contains("You cannot change who is in this conversation; the person decides that."));
+        assert!(prompt
+            .contains("You cannot change who is in this conversation; the person decides that."));
     }
 
     #[test]
@@ -2430,7 +2491,9 @@ mod tests {
         assert!(text.contains("Inertia is the app you are running inside, and you can change how it is set up.\nIt is a desktop app"));
         assert!(product().starts_with("Inertia is the app you are running inside"));
         assert!(product().contains("<what_inertia_is_made_of>\n  Agents - teammates like you."));
-        assert!(product().ends_with("Removing something is a separate tool and it goes one at a time."));
+        assert!(
+            product().ends_with("Removing something is a separate tool and it goes one at a time.")
+        );
     }
 
     #[test]
@@ -2442,8 +2505,16 @@ mod tests {
     #[test]
     fn apps_name_each_app_whose_account_it_is_and_the_prefix_its_tools_carry() {
         let text = apps(&[
-            App { toolkit_slug: "gmail".into(), name: "Gmail".into(), label: "someone@gmail.com".into() },
-            App { toolkit_slug: "github".into(), name: "GitHub".into(), label: String::new() },
+            App {
+                toolkit_slug: "gmail".into(),
+                name: "Gmail".into(),
+                label: "someone@gmail.com".into(),
+            },
+            App {
+                toolkit_slug: "github".into(),
+                name: "GitHub".into(),
+                label: String::new(),
+            },
         ])
         .unwrap();
         assert_eq!(
@@ -2465,11 +2536,17 @@ mod tests {
     fn apps_come_ahead_of_the_person_and_after_the_product() {
         let text = build(&Context {
             can_set_up: true,
-            apps: vec![App { toolkit_slug: "gmail".into(), name: "Gmail".into(), label: "a@b.c".into() }],
+            apps: vec![App {
+                toolkit_slug: "gmail".into(),
+                name: "Gmail".into(),
+                label: "a@b.c".into(),
+            }],
             person: describe_person(&json!({ "name": "Sam" })),
             ..context()
         });
-        let product_at = text.find("Inertia is the app you are running inside").unwrap();
+        let product_at = text
+            .find("Inertia is the app you are running inside")
+            .unwrap();
         let apps_at = text.find("<connected-apps>").unwrap();
         let person_at = text.find("You work for Sam.").unwrap();
         assert!(product_at < apps_at && apps_at < person_at);
@@ -2481,11 +2558,21 @@ mod tests {
         let app = App::from_record(&active).unwrap();
         assert_eq!(app.name, "Gmail");
         assert_eq!(app.label, "x@y.z");
-        assert!(App::from_record(&json!({ "toolkitSlug": "gmail", "status": "INITIATED" })).is_none());
-        assert!(App::from_record(&json!({ "toolkitSlug": "gmail", "status": "ACTIVE", "enabled": false })).is_none());
+        assert!(
+            App::from_record(&json!({ "toolkitSlug": "gmail", "status": "INITIATED" })).is_none()
+        );
+        assert!(App::from_record(
+            &json!({ "toolkitSlug": "gmail", "status": "ACTIVE", "enabled": false })
+        )
+        .is_none());
         assert!(App::from_record(&json!({ "status": "ACTIVE" })).is_none());
         // No name: the slug stands in, as connectedApps does.
-        assert_eq!(App::from_record(&json!({ "toolkitSlug": "slack", "status": "active" })).unwrap().name, "slack");
+        assert_eq!(
+            App::from_record(&json!({ "toolkitSlug": "slack", "status": "active" }))
+                .unwrap()
+                .name,
+            "slack"
+        );
     }
 
     /* -- person ------------------------------------------------------------- */
@@ -2533,12 +2620,16 @@ mod tests {
 
     #[test]
     fn the_person_is_not_told_to_be_called_by_the_name_it_already_has() {
-        assert!(!describe_person(&json!({ "name": "Elias", "shortName": "elias" }))
-            .unwrap()
-            .contains("Call them"));
-        assert!(describe_person(&json!({ "name": "Md Tanvir Ahamed", "shortName": "Tanvir" }))
-            .unwrap()
-            .contains("Call them Tanvir."));
+        assert!(
+            !describe_person(&json!({ "name": "Elias", "shortName": "elias" }))
+                .unwrap()
+                .contains("Call them")
+        );
+        assert!(
+            describe_person(&json!({ "name": "Md Tanvir Ahamed", "shortName": "Tanvir" }))
+                .unwrap()
+                .contains("Call them Tanvir.")
+        );
     }
 
     #[test]
@@ -2599,8 +2690,14 @@ mod tests {
         let text = instructions(&ProjectInstructions {
             root: "/repo".into(),
             files: vec![
-                InstructionFile { path: "AGENTS.md".into(), body: "Root rules.".into() },
-                InstructionFile { path: "packages\\api\\AGENTS.md".into(), body: "Api rules.".into() },
+                InstructionFile {
+                    path: "AGENTS.md".into(),
+                    body: "Root rules.".into(),
+                },
+                InstructionFile {
+                    path: "packages\\api\\AGENTS.md".into(),
+                    body: "Api rules.".into(),
+                },
             ],
         })
         .unwrap();
@@ -2662,15 +2759,26 @@ mod tests {
         let found = read_project_instructions(&api);
         assert_eq!(found.root, absolute(root).display().to_string());
         let bodies: Vec<&str> = found.files.iter().map(|f| f.body.as_str()).collect();
-        assert_eq!(bodies, vec!["root  rules", "mine", "api rules", "rule a", "rule b"]);
+        assert_eq!(
+            bodies,
+            vec!["root  rules", "mine", "api rules", "rule a", "rule b"]
+        );
         assert_eq!(found.files[0].path, "AGENTS.md");
         assert_eq!(
             found.files[2].path,
-            Path::new("packages").join("api").join("CLAUDE.md").display().to_string()
+            Path::new("packages")
+                .join("api")
+                .join("CLAUDE.md")
+                .display()
+                .to_string()
         );
         assert_eq!(
             found.files[3].path,
-            Path::new(".claude").join("rules").join("a.md").display().to_string()
+            Path::new(".claude")
+                .join("rules")
+                .join("a.md")
+                .display()
+                .to_string()
         );
     }
 
@@ -2738,8 +2846,14 @@ mod tests {
 
     #[test]
     fn a_description_with_markup_of_its_own_is_escaped() {
-        let text = skills(&[skill("deploy", "Deploy", "Use </description> carefully & often")]).unwrap();
-        assert!(text.contains("<description>Use &lt;/description&gt; carefully &amp; often</description>"));
+        let text = skills(&[skill(
+            "deploy",
+            "Deploy",
+            "Use </description> carefully & often",
+        )])
+        .unwrap();
+        assert!(text
+            .contains("<description>Use &lt;/description&gt; carefully &amp; often</description>"));
     }
 
     #[test]
@@ -2767,7 +2881,9 @@ mod tests {
             "id": "half-made", "name": "half-made", "description": "", "missing": true
         }));
         assert!(from_disk.missing);
-        let real = Skill::from_record(&json!({ "id": "deploy", "name": "Deploy", "description": "Ship it" }));
+        let real = Skill::from_record(
+            &json!({ "id": "deploy", "name": "Deploy", "description": "Ship it" }),
+        );
         assert!(!real.missing);
         assert_eq!(real.description, "Ship it");
     }
@@ -2778,7 +2894,10 @@ mod tests {
             skills: vec![skill("deploy", "Deploy", "Ship a release")],
             instructions: ProjectInstructions {
                 root: "/repo".into(),
-                files: vec![InstructionFile { path: "AGENTS.md".into(), body: "Be careful.".into() }],
+                files: vec![InstructionFile {
+                    path: "AGENTS.md".into(),
+                    body: "Be careful.".into(),
+                }],
             },
             ..context()
         });
@@ -2791,17 +2910,27 @@ mod tests {
     #[test]
     fn every_section_lands_in_electrons_order() {
         let text = build(&Context {
-            agent: Some(AgentIdentity { name: "Atlas".into(), ..Default::default() }),
+            agent: Some(AgentIdentity {
+                name: "Atlas".into(),
+                ..Default::default()
+            }),
             layout: Some(Layout::default()),
             computer: Some(json!({ "name": "box", "provider": "docker" })),
             can_delegate: true,
             can_browse: true,
             can_set_up: true,
-            apps: vec![App { toolkit_slug: "gmail".into(), name: "Gmail".into(), label: String::new() }],
+            apps: vec![App {
+                toolkit_slug: "gmail".into(),
+                name: "Gmail".into(),
+                label: String::new(),
+            }],
             person: Some("You work for Sam.".into()),
             instructions: ProjectInstructions {
                 root: "/repo".into(),
-                files: vec![InstructionFile { path: "AGENTS.md".into(), body: "Be careful.".into() }],
+                files: vec![InstructionFile {
+                    path: "AGENTS.md".into(),
+                    body: "Be careful.".into(),
+                }],
             },
             skills: vec![skill("deploy", "Deploy", "Ship")],
             room: Some(a_room()),
@@ -2825,9 +2954,15 @@ mod tests {
         ];
         let positions: Vec<usize> = markers
             .iter()
-            .map(|marker| text.find(marker).unwrap_or_else(|| panic!("{marker} is missing")))
+            .map(|marker| {
+                text.find(marker)
+                    .unwrap_or_else(|| panic!("{marker} is missing"))
+            })
             .collect();
-        assert!(positions.windows(2).all(|pair| pair[0] < pair[1]), "{positions:?}");
+        assert!(
+            positions.windows(2).all(|pair| pair[0] < pair[1]),
+            "{positions:?}"
+        );
         assert_eq!(text.matches(SEPARATOR).count(), markers.len() - 1);
     }
 
@@ -2836,12 +2971,18 @@ mod tests {
         let text = |mode| build(&Context { mode, ..context() });
         assert!(text(Mode::Chat).contains("# This turn is a conversation\n\nYou are in Chat mode"));
         assert!(text(Mode::Plan).contains("# This turn is for planning\n\nYou are in Plan mode"));
-        assert!(text(Mode::Autonomous).contains("# This turn is for building\n\nYou are in Autonomous mode"));
-        assert!(text(Mode::Group).contains("# You are in a group chat\n\nThis conversation is a group"));
+        assert!(text(Mode::Autonomous)
+            .contains("# This turn is for building\n\nYou are in Autonomous mode"));
+        assert!(
+            text(Mode::Group).contains("# You are in a group chat\n\nThis conversation is a group")
+        );
 
         let mut seen = std::collections::HashSet::new();
         for mode in [Mode::Chat, Mode::Plan, Mode::Autonomous, Mode::Group] {
-            assert!(seen.insert(mode.instruction()), "{mode:?} reuses another mode's text");
+            assert!(
+                seen.insert(mode.instruction()),
+                "{mode:?} reuses another mode's text"
+            );
         }
     }
 
@@ -2872,7 +3013,10 @@ mod tests {
     fn only_plan_holds_the_plan_and_only_a_group_holds_the_group_tools() {
         assert!(!Mode::Plan.withheld().contains(&PRESENT_PLAN));
         for mode in [Mode::Chat, Mode::Autonomous, Mode::Group] {
-            assert!(mode.withheld().contains(&PRESENT_PLAN), "{mode:?} holds a plan tool");
+            assert!(
+                mode.withheld().contains(&PRESENT_PLAN),
+                "{mode:?} holds a plan tool"
+            );
         }
         for tool in GROUP_ONLY {
             assert!(!Mode::Group.withheld().contains(tool));
@@ -2907,7 +3051,8 @@ mod tests {
         });
         assert!(!prompt.contains("# This turn"));
         assert!(prompt.contains("You were started by another agent to do one piece of work"));
-        assert!(prompt.contains("There is no user in this conversation.\n\n---\n\nHere is the environment"));
+        assert!(prompt
+            .contains("There is no user in this conversation.\n\n---\n\nHere is the environment"));
     }
 
     #[test]

@@ -64,10 +64,7 @@ impl FixedClock {
 
 impl Clock for FixedClock {
     fn now(&self) -> Timestamp {
-        self.now
-            .lock()
-            .map(|t| *t)
-            .unwrap_or(Timestamp::UNIX_EPOCH)
+        self.now.lock().map(|t| *t).unwrap_or(Timestamp::UNIX_EPOCH)
     }
 }
 

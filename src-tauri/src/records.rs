@@ -395,7 +395,12 @@ impl Recorder {
                             .and_then(Value::as_str)
                             .unwrap_or_default()
                             .to_string();
-                        joined.push_str(event.get("text").and_then(Value::as_str).unwrap_or_default());
+                        joined.push_str(
+                            event
+                                .get("text")
+                                .and_then(Value::as_str)
+                                .unwrap_or_default(),
+                        );
                         last.insert("text".into(), Value::String(joined));
                     }
                 } else {
@@ -518,7 +523,10 @@ impl Recorder {
             let records = self.inner.records.lock();
             match records.get(turn_id) {
                 Some(record) if !record.shed => return Some(Value::Object(record.value.clone())),
-                Some(record) => (Some(Value::Object(record.value.clone())), record.layout.clone()),
+                Some(record) => (
+                    Some(Value::Object(record.value.clone())),
+                    record.layout.clone(),
+                ),
                 None => (None, None),
             }
         };
@@ -536,7 +544,8 @@ impl Recorder {
     /// something still running would strand it.
     pub fn forget(&self, thread_id: &str) {
         self.inner.records.lock().retain(|_, record| {
-            text(&record.value, "threadId") != thread_id || text(&record.value, "status") == "running"
+            text(&record.value, "threadId") != thread_id
+                || text(&record.value, "status") == "running"
         });
     }
 
@@ -641,7 +650,10 @@ pub fn agent_history(state: State<'_, AppState>, thread_id: Option<String>) -> V
     };
     history_of(
         &workspace.layout,
-        thread_id.as_deref().map(str::trim).filter(|id| !id.is_empty()),
+        thread_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|id| !id.is_empty()),
     )
 }
 
@@ -667,8 +679,7 @@ mod tests {
     }
 
     fn stored(layout: &Layout, id: &str) -> Option<Value> {
-        inertia_store::collections::get(layout, Collection::Turns, id)
-            .expect("readable")
+        inertia_store::collections::get(layout, Collection::Turns, id).expect("readable")
     }
 
     /// The shape a reopened window rejoins on.
@@ -706,8 +717,14 @@ mod tests {
 
         recorder.forget("thr-1");
 
-        assert!(recorder.get("turn-done").is_none(), "a finished turn is dropped");
-        assert!(recorder.get("turn-live").is_some(), "a running turn is kept");
+        assert!(
+            recorder.get("turn-done").is_none(),
+            "a finished turn is dropped"
+        );
+        assert!(
+            recorder.get("turn-live").is_some(),
+            "a running turn is kept"
+        );
     }
 
     #[test]
@@ -715,7 +732,10 @@ mod tests {
         let recorder = Recorder::new();
         recorder.start("turn-a", meta(None));
         for ch in "hello there".chars() {
-            recorder.event("turn-a", &json!({ "type": "delta", "text": ch.to_string() }));
+            recorder.event(
+                "turn-a",
+                &json!({ "type": "delta", "text": ch.to_string() }),
+            );
         }
         let active = recorder.active();
         assert_eq!(active.len(), 1);
@@ -730,8 +750,14 @@ mod tests {
         recorder.start("turn-b", meta(None));
         recorder.event("turn-b", &json!({ "type": "delta", "text": "Reading" }));
         recorder.event("turn-b", &json!({ "type": "tool-start", "callId": "c1", "name": "read", "id": "turn-b", "threadId": "thr-1" }));
-        recorder.event("turn-b", &json!({ "type": "tool-update", "callId": "c1", "metadata": { "lines": 2 } }));
-        recorder.event("turn-b", &json!({ "type": "tool-end", "callId": "c1", "ok": true, "output": "one" }));
+        recorder.event(
+            "turn-b",
+            &json!({ "type": "tool-update", "callId": "c1", "metadata": { "lines": 2 } }),
+        );
+        recorder.event(
+            "turn-b",
+            &json!({ "type": "tool-end", "callId": "c1", "ok": true, "output": "one" }),
+        );
 
         let turn = recorder.get("turn-b").expect("held");
         let kinds: Vec<&str> = turn["events"]
@@ -751,7 +777,10 @@ mod tests {
         let recorder = Recorder::new();
         recorder.start("turn-c", meta(None));
         recorder.event("turn-c", &json!({ "type": "step", "step": 1 }));
-        recorder.event("turn-c", &json!({ "type": "usage", "usage": { "input": 10 } }));
+        recorder.event(
+            "turn-c",
+            &json!({ "type": "usage", "usage": { "input": 10 } }),
+        );
         recorder.event("turn-c", &json!({ "type": "step", "step": 2 }));
         recorder.event("turn-c", &json!({ "type": "done", "stopped": "complete", "usage": { "input": 15, "output": 4 } }));
 
@@ -784,7 +813,10 @@ mod tests {
         recorder.start("turn-f", meta(Some(&layout)));
         recorder.event("turn-f", &json!({ "type": "delta", "text": "hi" }));
 
-        assert!(stored(&layout, "turn-f").is_none(), "written before the debounce");
+        assert!(
+            stored(&layout, "turn-f").is_none(),
+            "written before the debounce"
+        );
         tokio::time::sleep(WRITE_DELAY + Duration::from_millis(150)).await;
         let running = stored(&layout, "turn-f").expect("written after the debounce");
         assert_eq!(running["status"], "running");
@@ -812,19 +844,27 @@ mod tests {
         let recorder = Recorder::new();
         recorder.start("turn-h", Meta::default());
         for i in 0..(MAX_EVENTS + 50) {
-            recorder.event("turn-h", &json!({ "type": "tool-start", "callId": format!("c{i}"), "name": "shell" }));
+            recorder.event(
+                "turn-h",
+                &json!({ "type": "tool-start", "callId": format!("c{i}"), "name": "shell" }),
+            );
         }
         let turn = recorder.get("turn-h").expect("held");
         let events = turn["events"].as_array().expect("events");
         assert_eq!(events.len(), MAX_EVENTS);
         assert_eq!(turn["truncated"], true);
         // The tail is what a rejoining window needs.
-        assert_eq!(events[events.len() - 1]["callId"], format!("c{}", MAX_EVENTS + 49));
+        assert_eq!(
+            events[events.len() - 1]["callId"],
+            format!("c{}", MAX_EVENTS + 49)
+        );
     }
 
     #[test]
     fn a_stored_turn_that_was_running_when_the_process_died_reads_as_interrupted() {
-        let settled = settle_stored(json!({ "id": "turn-i", "status": "running", "startedAt": "2026-09-01T00:00:00Z" }));
+        let settled = settle_stored(
+            json!({ "id": "turn-i", "status": "running", "startedAt": "2026-09-01T00:00:00Z" }),
+        );
         assert_eq!(settled["status"], "interrupted");
         assert_eq!(settled["endedAt"], "2026-09-01T00:00:00Z");
 
@@ -842,8 +882,14 @@ mod tests {
             inertia_store::collections::put(&layout, Collection::Turns, record).expect("written");
         }
         assert_eq!(settle_workspace(&layout), 1);
-        assert_eq!(stored(&layout, "t-running").expect("kept")["status"], "interrupted");
-        assert_eq!(stored(&layout, "t-done").expect("kept")["status"], "complete");
+        assert_eq!(
+            stored(&layout, "t-running").expect("kept")["status"],
+            "interrupted"
+        );
+        assert_eq!(
+            stored(&layout, "t-done").expect("kept")["status"],
+            "complete"
+        );
     }
 
     #[test]
@@ -867,7 +913,10 @@ mod tests {
         recorder.start("turn-m", meta(Some(&layout)));
         recorder.end_all("cancelled");
         assert_eq!(recorder.get("turn-m").expect("held")["status"], "cancelled");
-        assert_eq!(stored(&layout, "turn-m").expect("written")["status"], "cancelled");
+        assert_eq!(
+            stored(&layout, "turn-m").expect("written")["status"],
+            "cancelled"
+        );
     }
 
     /// A turn stopped from outside owes the folder its ending too, and a turn
@@ -878,12 +927,18 @@ mod tests {
         let recorder = Recorder::new();
         recorder.start("turn-n", meta(Some(&layout)));
         recorder.finish("turn-n", "cancelled");
-        assert_eq!(stored(&layout, "turn-n").expect("written")["status"], "cancelled");
+        assert_eq!(
+            stored(&layout, "turn-n").expect("written")["status"],
+            "cancelled"
+        );
 
         recorder.start("turn-o", meta(Some(&layout)));
         recorder.event("turn-o", &json!({ "type": "error", "message": "boom" }));
         recorder.finish("turn-o", "cancelled");
-        assert_eq!(stored(&layout, "turn-o").expect("written")["status"], "error");
+        assert_eq!(
+            stored(&layout, "turn-o").expect("written")["status"],
+            "error"
+        );
     }
 
     #[test]
@@ -928,7 +983,10 @@ mod tests {
         }
 
         let history = history_of(&layout, Some("thr-1"));
-        let ids: Vec<&str> = history.iter().map(|t| t["id"].as_str().unwrap_or_default()).collect();
+        let ids: Vec<&str> = history
+            .iter()
+            .map(|t| t["id"].as_str().unwrap_or_default())
+            .collect();
         assert_eq!(ids, ["t1", "t2"]);
         assert_eq!(history[0]["status"], "interrupted");
 
@@ -956,7 +1014,9 @@ mod tests {
         )
         .expect("written");
         assert!(recorder.find("old", None).is_none());
-        let old = recorder.find("old", Some(&layout)).expect("read off the folder");
+        let old = recorder
+            .find("old", Some(&layout))
+            .expect("read off the folder");
         assert_eq!(old["events"][0]["text"], "long ago");
         assert!(recorder.find("nobody", Some(&layout)).is_none());
     }
@@ -968,7 +1028,10 @@ mod tests {
         for i in 0..(KEEP_FINISHED + 3) {
             let id = format!("turn-{i:03}");
             recorder.start(&id, meta(Some(&layout)));
-            recorder.event(&id, &json!({ "type": "delta", "text": format!("reply {i}") }));
+            recorder.event(
+                &id,
+                &json!({ "type": "delta", "text": format!("reply {i}") }),
+            );
             recorder.event(&id, &json!({ "type": "done", "stopped": "complete" }));
         }
 
@@ -977,11 +1040,18 @@ mod tests {
         assert_eq!(first["status"], "complete");
         assert!(first["events"].as_array().expect("events").is_empty());
         // ...and the newest were not.
-        let last = recorder.get(&format!("turn-{:03}", KEEP_FINISHED + 2)).expect("held");
-        assert_eq!(last["events"][0]["text"], format!("reply {}", KEEP_FINISHED + 2));
+        let last = recorder
+            .get(&format!("turn-{:03}", KEEP_FINISHED + 2))
+            .expect("held");
+        assert_eq!(
+            last["events"][0]["text"],
+            format!("reply {}", KEEP_FINISHED + 2)
+        );
 
         // `find` goes to the folder for a shed one, where the events still are.
-        let found = recorder.find("turn-000", None).expect("read off the folder");
+        let found = recorder
+            .find("turn-000", None)
+            .expect("read off the folder");
         assert_eq!(found["events"][0]["text"], "reply 0");
     }
 }

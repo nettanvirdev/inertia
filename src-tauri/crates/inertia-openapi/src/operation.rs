@@ -97,7 +97,9 @@ pub fn extract(document: &Value, namespace: &str) -> Vec<Operation> {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for (path, item) in paths {
-        let Some(item) = item.as_object() else { continue };
+        let Some(item) = item.as_object() else {
+            continue;
+        };
 
         // Parameters declared on the path item apply to every operation under
         // it, and are frequently where the path parameters actually live.
@@ -314,9 +316,7 @@ impl Operation {
                         .replace(&format!("{{{}}}", parameter.name), &encoded);
                 }
                 In::Query => parts.query.push((parameter.name.clone(), as_text(value))),
-                In::Header => parts
-                    .headers
-                    .push((parameter.name.clone(), as_text(value))),
+                In::Header => parts.headers.push((parameter.name.clone(), as_text(value))),
                 In::Body => {
                     body.insert(parameter.name.clone(), value.clone());
                 }
@@ -413,7 +413,11 @@ mod tests {
         let ids: Vec<&str> = operations.iter().map(|o| o.id.as_str()).collect();
         assert_eq!(
             ids,
-            vec!["test_creatething", "test_delete__things__id", "test_getthing"]
+            vec![
+                "test_creatething",
+                "test_delete__things__id",
+                "test_getthing"
+            ]
         );
     }
 
@@ -477,7 +481,10 @@ mod tests {
 
     #[test]
     fn the_schema_refuses_improvised_fields() {
-        assert_eq!(operation("test_getthing").schema()["additionalProperties"], false);
+        assert_eq!(
+            operation("test_getthing").schema()["additionalProperties"],
+            false
+        );
     }
 
     #[test]
@@ -537,7 +544,9 @@ mod tests {
         });
         let operation = &extract(&spec, "x")[0];
         assert!(operation.unresolved);
-        assert!(operation.description.contains("points outside the document"));
+        assert!(operation
+            .description
+            .contains("points outside the document"));
     }
 
     // ── request building ────────────────────────────────────────────────
@@ -560,7 +569,10 @@ mod tests {
     fn query_parameters_are_collected_separately() {
         let parts =
             operation("test_getthing").build_request(&json!({ "id": "1", "verbose": true }));
-        assert_eq!(parts.query, vec![("verbose".to_string(), "true".to_string())]);
+        assert_eq!(
+            parts.query,
+            vec![("verbose".to_string(), "true".to_string())]
+        );
         assert!(parts.body.is_none());
     }
 

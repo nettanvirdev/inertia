@@ -260,10 +260,7 @@ mod tests {
         let out = perspective(vec![Entry::user("hi"), by("b", "Hello")], &seat("a"));
         // One user message, not two: no provider takes two user turns in a row.
         assert_eq!(out.len(), 1);
-        assert_eq!(
-            text_of(&out[0]),
-            "Tanvir (the person): hi\n\nAtlas: Hello"
-        );
+        assert_eq!(text_of(&out[0]), "Tanvir (the person): hi\n\nAtlas: Hello");
     }
 
     #[test]
@@ -344,7 +341,9 @@ mod tests {
         };
         let parts = user.parts.as_ref().expect("parts were dropped");
         assert_eq!(parts.len(), 2);
-        assert!(matches!(&parts[0], Part::Text { text } if text == "Tanvir (the person): look at this"));
+        assert!(
+            matches!(&parts[0], Part::Text { text } if text == "Tanvir (the person): look at this")
+        );
         assert!(matches!(parts[1], Part::ImageUrl { .. }));
     }
 

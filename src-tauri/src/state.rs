@@ -10,9 +10,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use inertia_composio::provider::{ComposioProvider, ConnectionRecord};
 use inertia_core::tool::{PermissionGate, ToolRegistry};
 use inertia_core::Provider;
-use inertia_composio::provider::{ComposioProvider, ConnectionRecord};
 use inertia_mcp::client::ServerRecord;
 use inertia_mcp::provider::McpProvider;
 use inertia_openapi::provider::{ImportRecord, OpenApiProvider};
@@ -91,11 +91,8 @@ impl Workspace {
     }
 
     pub fn save_mcp_record(&self, record: &ServerRecord) -> Result<(), String> {
-        inertia_store::fsx::write_json(
-            &self.layout.record(Collection::Mcp, &record.id),
-            record,
-        )
-        .map_err(|e| e.to_string())
+        inertia_store::fsx::write_json(&self.layout.record(Collection::Mcp, &record.id), record)
+            .map_err(|e| e.to_string())
     }
 
     pub fn delete_mcp_record(&self, id: &str) -> Result<(), String> {
@@ -450,7 +447,9 @@ pub fn provider_for(
     )?;
 
     let record = models.provider(provider_id).ok_or_else(|| {
-        format!("No provider called `{provider_id}` is configured. Add one in Settings → Providers.")
+        format!(
+            "No provider called `{provider_id}` is configured. Add one in Settings → Providers."
+        )
     })?;
 
     if !record.enabled {
@@ -517,49 +516,49 @@ pub fn registry_with(
             .collect::<Vec<_>>()
     };
     let registry = Registry::new(gate)
-            .with_tools(keep(builtin_tools(
-                workspace.reads.clone(),
-                workspace.lists.clone(),
-                workspace.background.clone(),
-                workspace.lsp.clone(),
-            )))
-            .with_tools(keep(extra))
-            // Inertia's own setup, as tools. Everything the app shows is a
-            // file in the workspace folder, so an agent could already write one
-            // with `write` - badly, and without the app noticing. These
-            // validate first and announce after. Without them an agent asked
-            // about its own team ran `ls` over the workspace and reported that
-            // there were no agents in it.
-            .with_tools(keep(crate::inertia_tools::inertia_tools(
-                workspace.layout.clone(),
-                workspace.emit.clone(),
-                // The live one: connecting an app, saving an MCP server and
-                // importing an API all reach real services, and a tool that
-                // quietly did nothing would be worse than one that refuses.
-                Arc::new(crate::inertia_tools::LiveApps::new(workspace.clone())),
-            )))
-            // The other half of the bargain the injected block makes: the
-            // prompt carries titles, and these read one in full, write a new
-            // one, or throw one away.
-            // Announcing, so a memory an agent writes reaches the Memory
-            // screen without a relaunch. The same emitter the setup tools use.
-            .with_tools(inertia_memory::tools::all_announcing(
-                memory,
-                Some({
-                    let emit = workspace.emit.clone();
-                    std::sync::Arc::new(move |id: &str, op: &str| {
-                        emit(serde_json::json!({
-                            "collection": "memory",
-                            "id": id,
-                            "op": op,
-                        }));
-                    })
-                }),
-            ))
-            // Every external source joins the same flat list as the
-            // builtins, sorted together by id, so the model cannot tell them
-            // apart - and a broken one is dropped rather than taking the turn
-            // down with it.
+        .with_tools(keep(builtin_tools(
+            workspace.reads.clone(),
+            workspace.lists.clone(),
+            workspace.background.clone(),
+            workspace.lsp.clone(),
+        )))
+        .with_tools(keep(extra))
+        // Inertia's own setup, as tools. Everything the app shows is a
+        // file in the workspace folder, so an agent could already write one
+        // with `write` - badly, and without the app noticing. These
+        // validate first and announce after. Without them an agent asked
+        // about its own team ran `ls` over the workspace and reported that
+        // there were no agents in it.
+        .with_tools(keep(crate::inertia_tools::inertia_tools(
+            workspace.layout.clone(),
+            workspace.emit.clone(),
+            // The live one: connecting an app, saving an MCP server and
+            // importing an API all reach real services, and a tool that
+            // quietly did nothing would be worse than one that refuses.
+            Arc::new(crate::inertia_tools::LiveApps::new(workspace.clone())),
+        )))
+        // The other half of the bargain the injected block makes: the
+        // prompt carries titles, and these read one in full, write a new
+        // one, or throw one away.
+        // Announcing, so a memory an agent writes reaches the Memory
+        // screen without a relaunch. The same emitter the setup tools use.
+        .with_tools(inertia_memory::tools::all_announcing(
+            memory,
+            Some({
+                let emit = workspace.emit.clone();
+                std::sync::Arc::new(move |id: &str, op: &str| {
+                    emit(serde_json::json!({
+                        "collection": "memory",
+                        "id": id,
+                        "op": op,
+                    }));
+                })
+            }),
+        ))
+        // Every external source joins the same flat list as the
+        // builtins, sorted together by id, so the model cannot tell them
+        // apart - and a broken one is dropped rather than taking the turn
+        // down with it.
         .with_provider(workspace.mcp.clone())
         .with_provider(workspace.openapi.clone())
         .with_provider(workspace.composio.clone());
@@ -721,12 +720,27 @@ mod tests {
     #[tokio::test]
     async fn an_autonomous_turn_is_handed_the_tools_that_do_the_work() {
         let tools = ids(Mode::Autonomous, Vec::new()).await;
-        for tool in ["read", "write", "edit", "glob", "grep", "shell", "ls", "todowrite"] {
-            assert!(tools.contains(&tool.to_string()), "Autonomous is missing {tool}");
+        for tool in [
+            "read",
+            "write",
+            "edit",
+            "glob",
+            "grep",
+            "shell",
+            "ls",
+            "todowrite",
+        ] {
+            assert!(
+                tools.contains(&tool.to_string()),
+                "Autonomous is missing {tool}"
+            );
         }
         // And not the ones that only mean something somewhere else.
         for tool in ["invite", "handover", "part", "present_plan"] {
-            assert!(!tools.contains(&tool.to_string()), "Autonomous was handed {tool}");
+            assert!(
+                !tools.contains(&tool.to_string()),
+                "Autonomous was handed {tool}"
+            );
         }
     }
 
@@ -735,7 +749,10 @@ mod tests {
         let tools = ids(Mode::Plan, Vec::new()).await;
         // Its own prompt says these are withheld. They have to actually be.
         for tool in ["write", "edit", "shell"] {
-            assert!(!tools.contains(&tool.to_string()), "Plan still holds {tool}");
+            assert!(
+                !tools.contains(&tool.to_string()),
+                "Plan still holds {tool}"
+            );
         }
         // Being unable to write is not being unable to investigate.
         for tool in ["read", "glob", "grep", "ls"] {
@@ -760,8 +777,12 @@ mod tests {
             vec![Arc::new(inertia_tools::builtin::look::PresentPlanTool)];
 
         // Plan holds it...
-        assert!(ids(Mode::Plan, extra.clone()).await.contains(&"present_plan".to_string()));
+        assert!(ids(Mode::Plan, extra.clone())
+            .await
+            .contains(&"present_plan".to_string()));
         // ...and nothing else does, even when the turn offers it.
-        assert!(!ids(Mode::Autonomous, extra).await.contains(&"present_plan".to_string()));
+        assert!(!ids(Mode::Autonomous, extra)
+            .await
+            .contains(&"present_plan".to_string()));
     }
 }
