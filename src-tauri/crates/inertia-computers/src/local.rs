@@ -176,8 +176,16 @@ impl Provider for LocalProvider {
         let home = PathBuf::from(handle);
         // Guarded, because this deletes a directory tree and the handle is a
         // path: a handle that had somehow become empty or `/` would take the
-        // disk with it.
-        if !home.starts_with(self.root.join("files/machines")) {
+        // disk with it. `..` is refused outright rather than resolved, because
+        // `starts_with` compares components and would pass
+        // `<machines>/../..` - the whole workspace. And it must be a folder
+        // inside the machines folder, not the machines folder itself.
+        let machines = self.root.join("files/machines");
+        let escapes = home.components().any(|part| matches!(part, Component::ParentDir));
+        let inside = home
+            .strip_prefix(&machines)
+            .is_ok_and(|rest| rest.components().next().is_some());
+        if escapes || !inside {
             return Err(ComputerError::Failed(
                 "That machine is not in this workspace, so it was not removed.".into(),
             ));
@@ -535,6 +543,27 @@ mod tests {
 
         assert!(provider.remove(&path, None).await.is_err());
         assert!(elsewhere.path().is_dir(), "it must still be there");
+    }
+
+    /// A handle that starts inside the machines folder and climbs out of it
+    /// with `..` still names somewhere else, and so does the machines folder
+    /// itself, which holds every machine.
+    #[tokio::test]
+    async fn removing_by_a_path_that_climbs_out_is_refused() {
+        let (dir, provider) = provider();
+        let made = provider
+            .create(&Spec { id: "box".into(), ..Default::default() })
+            .await
+            .unwrap();
+        let machines = dir.path().join("files/machines");
+
+        let climbing = machines.join("box").join("..").join("..");
+        assert!(provider.remove(&climbing.to_string_lossy(), None).await.is_err());
+        assert!(provider.remove(&machines.to_string_lossy(), None).await.is_err());
+        assert!(Path::new(&made.handle).is_dir(), "it must still be there");
+
+        provider.remove(&made.handle, None).await.unwrap();
+        assert!(!Path::new(&made.handle).exists());
     }
 
     #[tokio::test]

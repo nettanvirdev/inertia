@@ -6,6 +6,7 @@
 //! means a person debugging this can paste the same command into a terminal and
 //! see what the app saw.
 
+use std::path::Path;
 use std::process::Stdio;
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,141 @@ use crate::{
 /// The live screen, published to loopback only.
 const SCREEN_VIEW_PORT: u16 = 6080;
 const SCREEN_CONTROL_PORT: u16 = 6081;
+
+/// Where the container's `start.sh` reads the screen's password from.
+const SCREEN_PASSWORD_ENV: &str = "INERTIA_SCREEN_PASSWORD";
+
+/// The label a snapshot carries naming the machine it was taken of, so one
+/// machine's snapshots are neither listed for nor restored onto another.
+const MACHINE_LABEL: &str = "inertia.machine";
+
+/// The most processes and threads one machine may hold at once.
+///
+/// A fork bomb, or a build tool that spawns without bound, otherwise takes the
+/// whole Docker VM down with it and every other machine on it. Chromium alone
+/// runs a few hundred threads, and Docker counts threads, so this is set well
+/// above what a browser plus a parallel build reaches rather than at a number
+/// that sounds tidy.
+const PIDS_LIMIT: &str = "4096";
+
+/// A fresh password for one machine's screen.
+///
+/// Eight characters because VNC's challenge reads no more than eight - a
+/// longer one would only look stronger. Six random bytes from the operating
+/// system's generator (through `Uuid::new_v4`, whose first six bytes are all
+/// random), base64url so it sits in a URL fragment without escaping.
+fn screen_password() -> String {
+    let random = uuid::Uuid::new_v4().into_bytes();
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&random[..6])
+}
+
+/// `KEY=value` lines in a private temp file, for `--env-file`.
+///
+/// Not `-e KEY=value`: that puts the value in docker's argv, and any process on
+/// this computer can read another's argv for as long as it runs. Docker reads
+/// the file literally - no quoting, no expansion - so the one thing it cannot
+/// carry is a line break, which is refused rather than silently split into a
+/// second variable. The file is deleted when the answer is dropped.
+fn env_file<'a>(
+    pairs: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Result<tempfile::NamedTempFile> {
+    use std::io::Write;
+
+    let failed = |e: std::io::Error| {
+        ComputerError::Failed(format!("The machine's environment could not be written: {e}"))
+    };
+    let mut file = tempfile::NamedTempFile::new().map_err(failed)?;
+    for (key, value) in pairs {
+        if key.is_empty() || key.contains(['=', '\n', '\r']) || value.contains(['\n', '\r']) {
+            return Err(ComputerError::Failed(format!(
+                "`{key}` cannot be passed to the machine: a name must be non-empty and \
+                 without `=`, and a value cannot contain a line break."
+            )));
+        }
+        writeln!(file, "{key}={value}").map_err(failed)?;
+    }
+    file.flush().map_err(failed)?;
+    Ok(file)
+}
+
+/// The one `docker run` a machine is started with, whether it is new or being
+/// restored from a snapshot. One function so the two cannot drift: a restore
+/// that ran its own shorter command used to bring a machine back with no
+/// screen and none of the limits it was made with.
+pub(crate) fn run_args(
+    name: &str,
+    from: &str,
+    cpus: Option<String>,
+    memory: Option<String>,
+    env_file: &Path,
+) -> Vec<String> {
+    let workdir = image::manifest().workdir;
+    let mut args: Vec<String> = vec![
+        "run".into(),
+        "-d".into(),
+        "--name".into(),
+        name.into(),
+        "--label".into(),
+        "inertia=1".into(),
+        "-w".into(),
+        workdir.clone(),
+        // A network of its own. On Docker's shared default bridge every
+        // container can reach every other one's ports, which made each
+        // machine's screen server a door into all the others.
+        "--network".into(),
+        name.into(),
+        // Nothing in the machine can gain privileges through a setuid binary.
+        // The agent runs as an ordinary user and has no business becoming
+        // root.
+        "--security-opt".into(),
+        "no-new-privileges".into(),
+        "--pids-limit".into(),
+        PIDS_LIMIT.into(),
+        "--env-file".into(),
+        env_file.display().to_string(),
+    ];
+
+    // Limits only when the record asked for them. Docker takes no limit at all
+    // as "everything", which is the wrong default for a machine an agent drives
+    // unattended - but a limit the user did not choose is worse.
+    if let Some(cpus) = cpus {
+        args.extend(["--cpus".into(), cpus]);
+    }
+    if let Some(memory) = memory {
+        args.extend(["--memory".into(), memory]);
+    }
+
+    args.extend([
+        // A named volume rather than a bind mount, so the machine's disk
+        // survives `docker rm` and so nothing in it can reach the host's
+        // filesystem through a path the user did not choose.
+        "-v".into(),
+        format!("{name}-workspace:{workdir}"),
+        // No host port is named, so Docker picks a free one - two machines
+        // running at once would collide on a fixed port. `127.0.0.1::` and not
+        // `::`: the difference between "this computer can watch the screen"
+        // and "the network can". A machine with a browser someone is signed
+        // into does not belong on the LAN.
+        "-p".into(),
+        format!("127.0.0.1::{SCREEN_VIEW_PORT}"),
+        "-p".into(),
+        format!("127.0.0.1::{SCREEN_CONTROL_PORT}"),
+        from.into(),
+    ]);
+    args
+}
+
+/// The CPU and memory limits a container was run with, as `docker run` takes
+/// them, from `{{.HostConfig.NanoCpus}}|{{.HostConfig.Memory}}`. Zero is
+/// Docker's "no limit".
+pub(crate) fn parse_limits(text: &str) -> (Option<String>, Option<String>) {
+    let (cpus, memory) = text.trim().split_once('|').unwrap_or_default();
+    let positive = |value: &str| value.trim().parse::<u64>().ok().filter(|n| *n > 0);
+    (
+        positive(cpus).map(|nano| (nano as f64 / 1e9).to_string()),
+        positive(memory).map(|bytes| bytes.to_string()),
+    )
+}
 
 /// What a `docker` invocation produced. A non-zero code is a result here too -
 /// `docker inspect` on a container that is gone is how "missing" is detected.
@@ -246,23 +382,21 @@ pub async fn ensure_image(cli: &dyn DockerCli, sink: Sink<'_>) -> Result<Built> 
 
     // The context is written out of the binary at the last moment. Doing it
     // before the inspect would pay the filesystem cost on every provision, and
-    // the common case is that the image is already there.
-    let dir = image::write_context().map_err(|e| {
+    // the common case is that the image is already there. Held until this
+    // function returns, which is when the directory is deleted.
+    let context = image::write_context().map_err(|e| {
         ComputerError::Failed(format!(
-            "The sandbox build context could not be written to {}: {e}",
-            image::context_dir().display()
+            "The sandbox build context could not be written: {e}"
         ))
     })?;
-    let mut dockerfile = dir.clone();
-    dockerfile.push(&manifest.dockerfile);
 
     sink(
         "stdout",
         &format!("Building {}. First time only.\n", manifest.reference),
     );
 
-    let dir = dir.display().to_string();
-    let dockerfile = dockerfile.display().to_string();
+    let dir = context.path().display().to_string();
+    let dockerfile = context.path().join(&manifest.dockerfile).display().to_string();
     let result = cli
         .stream(
             &[
@@ -347,6 +481,65 @@ impl DockerProvider {
             )));
         }
         Ok(output.stdout.trim().to_string())
+    }
+
+    /// The machine's own network, made if it is not there yet.
+    ///
+    /// "Already exists" is success: a machine being restored, or one whose
+    /// first `docker run` failed, already has one.
+    async fn ensure_network(&self, name: &str) -> Result<()> {
+        let output = self
+            .run(
+                &["network", "create", "--label", "inertia=1", name],
+                Duration::from_secs(30),
+            )
+            .await?;
+        if output.code == 0 || output.stderr.contains("already exists") {
+            return Ok(());
+        }
+        // Docker hands each network a subnet from a fixed pool, and it runs out
+        // after a few dozen. What it says then is about address pools, which
+        // nobody making a computer would connect with having too many.
+        if output.stderr.contains("non-overlapping") {
+            return Err(ComputerError::Failed(
+                "Docker has no network addresses left for another machine. Remove machines \
+                 you no longer need, or unused networks with `docker network prune`."
+                    .into(),
+            ));
+        }
+        Err(ComputerError::Failed(first_line(&output.stderr).unwrap_or_else(
+            || format!("The network for {name} could not be made."),
+        )))
+    }
+
+    /// Runs a machine: its network, a new screen password, and the shared run
+    /// arguments. Answers the container id.
+    async fn launch(
+        &self,
+        name: &str,
+        from: &str,
+        cpus: Option<String>,
+        memory: Option<String>,
+    ) -> Result<String> {
+        self.ensure_network(name).await?;
+
+        // Held until `docker run` has read it, then deleted.
+        let password = screen_password();
+        let env = env_file([(SCREEN_PASSWORD_ENV, password.as_str())])?;
+        let args = run_args(name, from, cpus, memory, env.path());
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+
+        let container = self.must(&args, Duration::from_secs(120)).await?;
+        Ok(container.chars().take(64).collect())
+    }
+
+    /// The container's name, which is the machine's and survives a restore
+    /// that replaces the container itself.
+    async fn container_name(&self, handle: &str) -> Result<String> {
+        let name = self
+            .must(&["inspect", "-f", "{{.Name}}", handle], Duration::from_secs(15))
+            .await?;
+        Ok(name.trim_start_matches('/').to_string())
     }
 }
 
@@ -483,43 +676,12 @@ impl Provider for DockerProvider {
         // debris.
         let _ = self.run(&["rm", "-f", &name], Duration::from_secs(20)).await;
 
-        let volume = format!("{name}-workspace:{}", manifest.workdir);
-        let view = format!("127.0.0.1::{SCREEN_VIEW_PORT}");
-        let control = format!("127.0.0.1::{SCREEN_CONTROL_PORT}");
         let cpus = spec.cpu.filter(|c| *c > 0.0).map(|c| c.to_string());
         let memory = spec.memory_gb.filter(|m| *m > 0.0).map(|m| format!("{m}g"));
-
-        let mut args: Vec<&str> = vec![
-            "run", "-d", "--name", &name, "--label", "inertia=1", "-w", &manifest.workdir,
-        ];
-
-        // Limits only when the record asked for them. Docker takes no limit at
-        // all as "everything", which is the wrong default for a machine an
-        // agent drives unattended - but a limit the user did not choose is
-        // worse.
-        if let Some(cpus) = &cpus {
-            args.extend(["--cpus", cpus]);
-        }
-        if let Some(memory) = &memory {
-            args.extend(["--memory", memory]);
-        }
-
-        // A named volume rather than a bind mount, so the machine's disk
-        // survives `docker rm` and so nothing in it can reach the host's
-        // filesystem through a path the user did not choose.
-        args.extend(["-v", &volume]);
-
-        // No host port is named, so Docker picks a free one - two machines
-        // running at once would collide on a fixed port. `127.0.0.1::` and not
-        // `::`: the difference between "this computer can watch the screen" and
-        // "the network can". A machine with a browser someone is signed into
-        // does not belong on the LAN.
-        args.extend(["-p", &view, "-p", &control, &manifest.reference]);
-
-        let container = self.must(&args, Duration::from_secs(120)).await?;
+        let container = self.launch(&name, &manifest.reference, cpus, memory).await?;
 
         Ok(Created {
-            handle: container.chars().take(64).collect(),
+            handle: container,
             name,
             status: Status::Running,
             os: "Debian 12 (container)".into(),
@@ -553,12 +715,17 @@ impl Provider for DockerProvider {
 
     async fn remove(&self, handle: &str, name: Option<&str>) -> Result<()> {
         self.run(&["rm", "-f", handle], Duration::from_secs(60)).await?;
-        // The volume goes with it, or a removed machine leaves its disk behind
-        // forever with nothing in the UI that could ever mention it again.
+        // The volume and the network go with it, or a removed machine leaves
+        // them behind forever with nothing in the UI that could ever mention
+        // them again. The network's removal is allowed to fail: a machine made
+        // before machines had networks of their own has none.
         if let Some(name) = name {
             let volume = format!("{name}-workspace");
             let _ = self
                 .run(&["volume", "rm", "-f", &volume], Duration::from_secs(30))
+                .await;
+            let _ = self
+                .run(&["network", "rm", name], Duration::from_secs(30))
                 .await;
         }
         Ok(())
@@ -633,18 +800,25 @@ impl Provider for DockerProvider {
         }
 
         let timeout = request.timeout.unwrap_or(DEFAULT_TIMEOUT);
-        let env: Vec<String> = request
-            .env
-            .iter()
-            .map(|(key, value)| format!("{key}={value}"))
-            .collect();
+
+        // Through a file rather than `-e`, because a caller's environment is
+        // where a token goes, and argv is readable by the whole host. Held
+        // until the command returns.
+        let env = if request.env.is_empty() {
+            None
+        } else {
+            Some(env_file(
+                request.env.iter().map(|(k, v)| (k.as_str(), v.as_str())),
+            )?)
+        };
+        let env_path = env.as_ref().map(|file| file.path().display().to_string());
 
         let mut args: Vec<&str> = vec!["exec"];
         if let Some(cwd) = request.cwd.as_deref().filter(|c| !c.is_empty()) {
             args.extend(["-w", cwd]);
         }
-        for pair in &env {
-            args.extend(["-e", pair]);
+        if let Some(path) = &env_path {
+            args.extend(["--env-file", path]);
         }
         args.push(handle);
         for part in &manifest.shell {
@@ -770,8 +944,9 @@ impl Provider for DockerProvider {
     async fn snapshot(&self, handle: &str, name: &str) -> Result<Snapshot> {
         let id = format!("snap-{}", jiff::Timestamp::now().as_millisecond());
         let tag = format!("inertia-snapshot:{id}");
+        let owner = format!("LABEL {MACHINE_LABEL}={}", self.container_name(handle).await?);
         self.must(
-            &["commit", "-m", name, handle, &tag],
+            &["commit", "-m", name, "-c", &owner, handle, &tag],
             Duration::from_secs(300),
         )
         .await?;
@@ -784,12 +959,20 @@ impl Provider for DockerProvider {
         })
     }
 
-    async fn snapshots(&self, _handle: &str) -> Result<Vec<Snapshot>> {
+    /// This machine's snapshots, and no other's. A machine whose container is
+    /// gone has no name to look them up by, and lists none.
+    async fn snapshots(&self, handle: &str) -> Result<Vec<Snapshot>> {
+        let Ok(name) = self.container_name(handle).await else {
+            return Ok(Vec::new());
+        };
+        let owned = format!("label={MACHINE_LABEL}={name}");
         let output = self
             .run(
                 &[
                     "images",
                     "inertia-snapshot",
+                    "--filter",
+                    &owned,
                     "--format",
                     "{{.Tag}}|{{.CreatedAt}}|{{.Size}}",
                 ],
@@ -825,28 +1008,35 @@ impl Provider for DockerProvider {
 
         // Checked before anything is destroyed: restoring onto a snapshot that
         // is not there would remove the running container and leave nothing to
-        // put back.
-        self.must(&["image", "inspect", &tag], Duration::from_secs(15))
+        // put back. And it has to be this machine's own - an id is only a
+        // timestamp, and another machine's disk is not this one's past.
+        let owner_of = format!("{{{{index .Config.Labels \"{MACHINE_LABEL}\"}}}}");
+        let owner = self
+            .must(&["image", "inspect", "-f", &owner_of, &tag], Duration::from_secs(15))
             .await
-            .map_err(|_| {
-                ComputerError::Failed(format!("There is no snapshot called {snapshot_id} any more."))
-            })?;
+            .unwrap_or_default();
+        if owner != name {
+            return Err(ComputerError::Failed(format!(
+                "This machine has no snapshot called {snapshot_id}."
+            )));
+        }
+
+        // The limits it was made with, read before the container they are on
+        // goes. A container that is already gone had none worth keeping.
+        let limits = self
+            .must(
+                &["inspect", "-f", "{{.HostConfig.NanoCpus}}|{{.HostConfig.Memory}}", handle],
+                Duration::from_secs(15),
+            )
+            .await
+            .unwrap_or_default();
+        let (cpus, memory) = parse_limits(&limits);
 
         let _ = self.run(&["rm", "-f", handle], Duration::from_secs(60)).await;
-
-        let volume = format!("{name}-workspace:{}", manifest.workdir);
-        let container = self
-            .must(
-                &[
-                    "run", "-d", "--name", name, "--label", "inertia=1", "-w", &manifest.workdir,
-                    "-v", &volume, &tag, "sleep", "infinity",
-                ],
-                Duration::from_secs(120),
-            )
-            .await?;
+        let container = self.launch(name, &tag, cpus, memory).await?;
 
         Ok(Created {
-            handle: container.chars().take(64).collect(),
+            handle: container,
             name: name.to_string(),
             status: Status::Running,
             os: "Debian 12 (container)".into(),
@@ -885,7 +1075,23 @@ impl Provider for DockerProvider {
     /// VNC server in it, or one whose publish failed, has no mapping - and half
     /// a screen is not worth showing, since the "take control" switch would
     /// then be a button that does nothing.
+    ///
+    /// The password rides in the URL's fragment, which noVNC reads as
+    /// `password` and the browser never sends to the server, so it is in no
+    /// request line and no websockify log. It is read back off the container
+    /// rather than kept on the machine's record: the container already holds
+    /// it, and a record is a file in the workspace that gets copied, synced and
+    /// committed. A machine from before screens had passwords has none, and
+    /// its URL has no fragment - its screen server never asks for one.
     async fn screen(&self, handle: &str) -> Result<Option<Screen>> {
+        let env = self
+            .run(
+                &["inspect", "-f", "{{range .Config.Env}}{{println .}}{{end}}", handle],
+                Duration::from_secs(10),
+            )
+            .await?;
+        let fragment = screen_fragment(&env.stdout);
+
         let mut found = Vec::new();
         for port in [SCREEN_VIEW_PORT, SCREEN_CONTROL_PORT] {
             let asked = port.to_string();
@@ -902,10 +1108,22 @@ impl Provider for DockerProvider {
         }
 
         Ok(Some(Screen {
-            view: format!("http://127.0.0.1:{}/vnc.html", found[0]),
-            control: format!("http://127.0.0.1:{}/vnc.html", found[1]),
+            view: format!("http://127.0.0.1:{}/vnc.html{fragment}", found[0]),
+            control: format!("http://127.0.0.1:{}/vnc.html{fragment}", found[1]),
         }))
     }
+}
+
+/// `#password=...` for a container whose environment carries a screen
+/// password, or nothing for one that does not. `env` is one `KEY=value` per
+/// line, as `docker inspect` prints `.Config.Env`.
+pub(crate) fn screen_fragment(env: &str) -> String {
+    let prefix = format!("{SCREEN_PASSWORD_ENV}=");
+    env.lines()
+        .find_map(|line| line.trim().strip_prefix(&prefix))
+        .filter(|password| !password.is_empty())
+        .map(|password| format!("#password={password}"))
+        .unwrap_or_default()
 }
 
 /// The host port out of `docker port`'s answer.
@@ -942,6 +1160,10 @@ mod tests {
         /// What the build prints, chunk by chunk.
         chunks: Vec<(&'static str, &'static str)>,
         calls: Mutex<Vec<Vec<String>>>,
+        /// Whether the Dockerfile the build was pointed at was a real file
+        /// while the build ran. Checked then, because the directory is gone
+        /// by the time the call returns.
+        dockerfile_was_there: Mutex<bool>,
     }
 
     impl FakeCli {
@@ -951,6 +1173,7 @@ mod tests {
                 build,
                 chunks,
                 calls: Mutex::new(Vec::new()),
+                dockerfile_was_there: Mutex::new(false),
             }
         }
 
@@ -983,6 +1206,7 @@ mod tests {
 
         async fn stream(&self, args: &[&str], _timeout: Duration, sink: Sink<'_>) -> Result<Output> {
             self.record(args);
+            *self.dockerfile_was_there.lock().unwrap() = Path::new(args[4]).is_file();
             let mut stdout = String::new();
             let mut stderr = String::new();
             for (stream, text) in &self.chunks {
@@ -1037,7 +1261,7 @@ mod tests {
 "),
             ("stderr", "#4 resolve docker.io/library/debian
 "),
-            ("stdout", "Successfully tagged inertia-sandbox:1.0.0
+            ("stdout", "Successfully tagged inertia-sandbox:1.1.0
 "),
         ]);
         let (seen, sink) = recorder();
@@ -1054,15 +1278,17 @@ mod tests {
         assert_eq!(build[1], "-t");
         assert_eq!(build[2], image::manifest().reference);
         assert_eq!(build[3], "-f");
-        // The Dockerfile it was pointed at is a real file, written out of the
+        // The Dockerfile it was pointed at was a real file, written out of the
         // binary by this call. That is the whole claim of embedding it.
-        assert!(std::path::Path::new(&build[4]).is_file());
-        assert!(std::path::Path::new(&build[5]).is_dir());
+        assert!(*cli.dockerfile_was_there.lock().unwrap());
+        // And the context is gone once the build is: it is a private
+        // directory per build, not a shared one left in temp.
+        assert!(!Path::new(&build[5]).exists());
 
         let reported = seen.lock().unwrap().clone();
         // The first line says what is about to happen, because a person who
         // pressed Build and sees nothing for a minute assumes it hung.
-        assert!(reported[0].1.contains("Building inertia-sandbox:1.0.0"));
+        assert!(reported[0].1.contains(&format!("Building {}", image::manifest().reference)));
         assert_eq!(reported[1].0, "stdout");
         assert!(reported[1].1.contains("FROM debian"));
         // stderr is carried through as stderr: buildkit writes its progress
@@ -1086,6 +1312,81 @@ ERROR: failed to solve: chromium: not found
         assert!(failure.to_string().contains("chromium: not found"), "{failure}");
     }
 
+
+    /// What a new machine and a restored one are both run with.
+    #[test]
+    fn a_machine_runs_isolated_hardened_and_published_to_loopback_only() {
+        let env = Path::new("/tmp/env");
+        let args = run_args("inertia-box", "inertia-sandbox:1.1.0", None, None, env);
+        let pair = |flag: &str, value: &str| {
+            args.windows(2).any(|w| w[0] == flag && w[1] == value)
+        };
+
+        assert_eq!(args[..2], ["run".to_string(), "-d".to_string()]);
+        assert!(pair("--name", "inertia-box"));
+        // Its own network, not the shared bridge every container can see.
+        assert!(pair("--network", "inertia-box"));
+        assert!(pair("--security-opt", "no-new-privileges"));
+        assert!(pair("--pids-limit", PIDS_LIMIT));
+        // The password arrives through a file, never as a value in argv.
+        assert!(pair("--env-file", &env.display().to_string()));
+        assert!(!args.iter().any(|a| a == "-e" || a.contains(SCREEN_PASSWORD_ENV)));
+        assert!(pair("-v", "inertia-box-workspace:/workspace"));
+        assert!(pair("-p", "127.0.0.1::6080"));
+        assert!(pair("-p", "127.0.0.1::6081"));
+        assert_eq!(args.last().unwrap(), "inertia-sandbox:1.1.0");
+        // No limit unless one was asked for.
+        assert!(!args.iter().any(|a| a == "--cpus" || a == "--memory"));
+
+        let limited = run_args("inertia-box", "x", Some("2".into()), Some("8g".into()), env);
+        assert!(limited.windows(2).any(|w| w[0] == "--cpus" && w[1] == "2"));
+        assert!(limited.windows(2).any(|w| w[0] == "--memory" && w[1] == "8g"));
+    }
+
+    /// A restore runs with the limits the machine had, read off its container.
+    #[test]
+    fn limits_come_back_off_docker_inspect() {
+        assert_eq!(
+            parse_limits("2500000000|8589934592\n"),
+            (Some("2.5".into()), Some("8589934592".into()))
+        );
+        assert_eq!(parse_limits("0|0"), (None, None));
+        assert_eq!(parse_limits(""), (None, None));
+    }
+
+    #[test]
+    fn each_screen_password_is_new_and_url_safe() {
+        let one = screen_password();
+        let two = screen_password();
+        assert_eq!(one.len(), 8);
+        assert_ne!(one, two);
+        assert!(one
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+    }
+
+    #[test]
+    fn the_env_file_holds_each_pair_and_refuses_a_line_break() {
+        let file = env_file([("A", "one two"), ("B", "x=y")]).unwrap();
+        assert_eq!(std::fs::read_to_string(file.path()).unwrap(), "A=one two\nB=x=y\n");
+
+        // A line break would end the value and start a variable nobody asked
+        // for, so it is refused rather than written.
+        assert!(env_file([("A", "one\nEVIL=1")]).is_err());
+        assert!(env_file([("A=B", "x")]).is_err());
+        assert!(env_file([("", "x")]).is_err());
+    }
+
+    #[test]
+    fn the_screen_url_carries_the_password_only_when_the_container_has_one() {
+        assert_eq!(
+            screen_fragment("PATH=/usr/bin\nINERTIA_SCREEN_PASSWORD=Ab-_12xY\nHOME=/home/agent\n"),
+            "#password=Ab-_12xY"
+        );
+        // A machine from before screens had passwords.
+        assert_eq!(screen_fragment("PATH=/usr/bin\n"), "");
+        assert_eq!(screen_fragment("INERTIA_SCREEN_PASSWORD=\n"), "");
+    }
 
     /// `docker port` prints one line per binding, and a container published
     /// on both IPv4 and IPv6 prints two that can differ.

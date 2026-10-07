@@ -1,13 +1,13 @@
 /**
  * The window's view of a machine.
  *
- * A thin, literal mirror of the channels in `main/sandbox/ipc.cjs`, with the
+ * A thin, literal mirror of the commands in `bridge/computers.js`, with the
  * envelope unwrapped and one convenience on top: `runCommand`, which pairs the
  * request with the output stream so a terminal does not have to subscribe,
  * filter and unsubscribe by hand every time someone presses Enter.
  *
- * No caching and no policy. The main process is the only thing that knows what
- * a machine is doing, and a second opinion held in the renderer is a second
+ * No caching and no policy. The backend is the only thing that knows what
+ * a machine is doing, and a second opinion held in the window is a second
  * opinion that goes stale the moment someone stops a container from a terminal.
  */
 
@@ -140,20 +140,6 @@ export function workdirOf(computer) {
   if (computer?.workdir) return computer.workdir;
   if (computer?.provider === "daytona") return "/home/daytona";
   return "/workspace";
-}
-
-/** `/workspace/src/lib` -> the crumbs a breadcrumb bar renders. */
-export function pathCrumbs(path) {
-  const parts = String(path ?? "/")
-    .split("/")
-    .filter(Boolean);
-  const crumbs = [{ name: "/", path: "/" }];
-  let acc = "";
-  for (const part of parts) {
-    acc += `/${part}`;
-    crumbs.push({ name: part, path: acc });
-  }
-  return crumbs;
 }
 
 export function joinPath(base, name) {

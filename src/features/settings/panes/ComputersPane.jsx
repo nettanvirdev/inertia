@@ -19,7 +19,7 @@ import { SettingsCard, SettingsRow, SettingsSection } from "../SettingsRow";
  * closed, over a hardcoded list of four providers with invented "connected"
  * badges - one of which named a backend the app has never had. All of it is
  * real now: the settings are a document in the workspace, and the provider list
- * is the main process being asked whether each one can actually run.
+ * is the backend being asked whether each one can actually run.
  *
  * The two policy switches that were here - "allow agents to install packages",
  * "allow network egress" - are gone rather than wired up. Neither was
@@ -338,7 +338,7 @@ export function ComputersPane() {
               size="xs"
               className="w-64"
               value={daytonaImage}
-              placeholder={image?.fallback ?? "debian:12-slim"}
+              placeholder="debian:12-slim"
               aria-label="Daytona image"
               onChange={(event) => setDaytonaImage(event.target.value)}
               onBlur={() => save({ daytonaImage: daytonaImage.trim() })}

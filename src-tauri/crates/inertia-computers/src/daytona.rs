@@ -248,6 +248,20 @@ fn describe_failure(status: u16, body: &str) -> String {
     }
 }
 
+/// The snapshot a sandbox was asked to be made from is not on the account.
+///
+/// The default name is only on an account where someone pushed the sandbox
+/// image under it, so this is the first thing anyone new to Daytona meets,
+/// and it has to say what to do.
+fn missing_snapshot(name: &str, said: Option<&str>) -> ComputerError {
+    let lead = said.map(|said| format!("{said} ")).unwrap_or_default();
+    ComputerError::Failed(format!(
+        "{lead}Daytona has no snapshot called `{name}` on this account. Build the sandbox \
+         image, push it to Daytona as a snapshot with that name (see docs/computers.md), or \
+         pick a snapshot the account has when making the computer."
+    ))
+}
+
 /// What an `execute` answer said. The field names differ between versions.
 pub(crate) fn read_exec(payload: &Value, duration_ms: u64) -> ExecResult {
     let number = |keys: &[&str]| -> Option<i64> {
@@ -342,10 +356,18 @@ impl Provider for DaytonaProvider {
             body["disk"] = json!(disk);
         }
 
-        let payload = self
-            .api(reqwest::Method::POST, "/sandbox", Some(body))
-            .await?
-            .ok_or_else(|| ComputerError::Failed("Daytona did not make a sandbox.".into()))?;
+        // A snapshot that is not on the account comes back as a 404, or as a
+        // 400 whose message names it, depending on the version. Either way the
+        // person needs to know which name was asked for and how to make it,
+        // not that "Daytona did not make a sandbox".
+        let payload = match self.api(reqwest::Method::POST, "/sandbox", Some(body)).await {
+            Ok(Some(payload)) => payload,
+            Ok(None) => return Err(missing_snapshot(snapshot, None)),
+            Err(ComputerError::Failed(said)) if said.to_lowercase().contains("snapshot") => {
+                return Err(missing_snapshot(snapshot, Some(&said)))
+            }
+            Err(other) => return Err(other),
+        };
         let sandbox = read_sandbox(&payload).ok_or_else(|| {
             ComputerError::Failed("Daytona described a sandbox this app could not read.".into())
         })?;
@@ -781,6 +803,33 @@ mod tests {
         )
         .unwrap();
         assert_eq!(asked["snapshot"], json!("mine-2.0.0"));
+    }
+
+    /// The default snapshot exists only where someone pushed it, so its
+    /// absence is what a new account meets first and has to be actionable.
+    #[tokio::test]
+    async fn a_snapshot_the_account_lacks_is_named_with_the_way_out() {
+        for refusal in [
+            ResponseTemplate::new(404),
+            ResponseTemplate::new(400)
+                .set_body_json(json!({ "message": "Snapshot inertia-sandbox-1.1.0 not found" })),
+        ] {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/sandbox"))
+                .respond_with(refusal)
+                .mount(&server)
+                .await;
+
+            let provider = DaytonaProvider::new("dtn-test", Some(server.uri()));
+            let failure = provider
+                .create(&Spec { id: "c1".into(), ..Default::default() })
+                .await
+                .unwrap_err()
+                .to_string();
+            assert!(failure.contains("no snapshot called `inertia-sandbox-1.1.0`"), "{failure}");
+            assert!(failure.contains("docs/computers.md"), "{failure}");
+        }
     }
 
     #[test]

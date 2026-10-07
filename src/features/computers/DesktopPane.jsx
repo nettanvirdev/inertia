@@ -30,7 +30,9 @@ import { computers as machines } from "@/lib/computers";
  * The image runs two VNC servers: 6080 is view-only, 6081 is not. Switching to
  * control changes which port the iframe is pointed at, so "you are only
  * watching" is a fact about the socket rather than about a URL parameter the
- * page could be talked out of. Both are published to loopback on the host.
+ * page could be talked out of. Both are published to loopback on the host, and
+ * both ask for the machine's own password, which arrives in the URL's fragment
+ * (`#password=`) so it is never sent to the server; `novncUrl` keeps it.
  */
 
 const RATES = [

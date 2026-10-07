@@ -23,8 +23,18 @@
 # are not optional and neither is clearing the crash state, or the machine comes
 # back from a stop showing "Chrome didn't shut down correctly" across the page
 # the agent is trying to read.
+#
+# **The base is pinned by digest, the packages are not.** The digest is the
+# multi-arch index of `debian:bookworm-slim`, so the same bytes are built from
+# on an Intel and an ARM machine and a tag that is re-pointed upstream cannot
+# change what this file means. The apt packages below are left at whatever
+# bookworm currently ships: they are signed by Debian's archive key, which apt
+# checks, and pinning every version would freeze security fixes out of an image
+# that is rebuilt on each machine that uses it. Bump the digest deliberately
+# (`docker buildx imagetools inspect debian:bookworm-slim`) along with the tag
+# in image.json.
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587
 
 # One layer, because each of these is needed by something that is needed.
 #
@@ -74,11 +84,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && ln -sfn /bin/true /usr/bin/xmessage \
   && mkdir -p /etc/inertia/fluxbox
 
-# Node from NodeSource rather than the distribution archive, which ships a
+# Node from nodejs.org rather than the distribution archive, which ships a
 # version old enough that half of npm refuses to install against it.
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
+#
+# The official tarball, checked against a SHA-256 written here, rather than a
+# vendor setup script piped into bash: that script runs as root with whatever
+# its server says today, and this runs only bytes someone has already looked
+# at. To bump, take both sums from
+# https://nodejs.org/dist/v<version>/SHASUMS256.txt.
+ARG NODE_VERSION=22.23.3
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) arch=x64;   sum=1084aa36196bba4c3a5e69a1ee388a6e4ff729dad09445fbcd434b28fe3c24af ;; \
+      arm64) arch=arm64; sum=5ced2d48d1d7198739b7f86804de0171aefb6823b684b12341d3321afc3cb0b2 ;; \
+      *) echo "no Node checksum for $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSLo /tmp/node.tar.gz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${arch}.tar.gz" \
+    && echo "${sum}  /tmp/node.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 --no-same-owner \
+    && rm /tmp/node.tar.gz \
+    && node --version
 
 # A non-root user, because an agent that runs as root inside its own machine
 # will eventually be handed a command that assumes it is not.
@@ -110,7 +134,8 @@ USER agent
 
 # 6080 watches, 6081 drives. Two servers rather than one with a client-side
 # flag, because "you are only watching" should be true of the connection and
-# not merely of the page that opened it.
+# not merely of the page that opened it. Both ask for the password the app
+# hands the container at run time; see start.sh.
 EXPOSE 6080 6081
 
 ENTRYPOINT ["/usr/bin/tini", "--"]

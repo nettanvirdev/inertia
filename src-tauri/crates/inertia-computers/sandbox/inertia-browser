@@ -82,9 +82,24 @@ if [ -d "$ACTUAL_PROFILE" ] && [ ! -e "$ACTUAL_PROFILE/SingletonLock" ] && [ ! -
     done || true
 fi
 
-FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=basic --disable-features=Translate,MediaRouter --start-maximized"
-
+# The caller's arguments come last, after ours, so one of theirs can override a
+# default. `set --` is the POSIX shell's only array: building the flags as one
+# string and splitting it unquoted would also split and glob anything a caller
+# passed with a space in it.
 if [ "$USER_DATA_DIR_SET" -eq 0 ]; then
-  exec "$BIN" $FLAGS --user-data-dir="$PROFILE" "$@"
+  set -- --user-data-dir="$PROFILE" "$@"
 fi
-exec "$BIN" $FLAGS "$@"
+exec "$BIN" \
+  --test-type \
+  --no-sandbox \
+  --disable-dev-shm-usage \
+  --disable-gpu \
+  --disable-software-rasterizer \
+  --no-first-run \
+  --no-default-browser-check \
+  --disable-session-crashed-bubble \
+  --hide-crash-restore-bubble \
+  --password-store=basic \
+  --disable-features=Translate,MediaRouter \
+  --start-maximized \
+  "$@"

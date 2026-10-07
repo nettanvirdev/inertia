@@ -1072,17 +1072,15 @@ mod tests {
         assert_eq!(PROVIDER_IDS.len(), 3);
     }
 
-    /// The settings pane reads `ref`, `buildable`, `dir` and `fallback` off
-    /// this, and draws "No Dockerfile found" when `buildable` is false. It
-    /// never can be: the context is compiled into the binary.
+    /// The settings pane reads `ref` and `buildable` off this, and draws "No
+    /// Dockerfile found" when `buildable` is false. It never can be: the
+    /// context is compiled into the binary.
     #[test]
     fn the_image_answers_from_the_binary_rather_than_from_a_folder() {
         let info = computer_image();
-        assert_eq!(info["ref"], json!("inertia-sandbox:1.0.0"));
+        assert_eq!(info["ref"], json!("inertia-sandbox:1.1.0"));
         assert_eq!(info["buildable"], json!(true));
         assert_eq!(info["workdir"], json!("/workspace"));
-        assert_eq!(info["fallback"], json!("debian:12-slim"));
-        assert!(info["dir"].as_str().is_some_and(|dir| !dir.is_empty()));
     }
 
     /// The pane's back, forward and reload buttons are all one `key` verb with

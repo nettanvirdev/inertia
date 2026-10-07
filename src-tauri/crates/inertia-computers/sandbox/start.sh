@@ -39,7 +39,7 @@ export NPM_CONFIG_PREFIX="$HOME/.local"
 # The working directory may arrive as an empty volume, in which case nothing in
 # the image is visible under it.
 mkdir -p /workspace
-cd /workspace
+cd /workspace || exit 1
 
 # A stale lock from a container that was killed rather than stopped.
 rm -f "/tmp/.X${DISPLAY_NUM}-lock" "/tmp/.X11-unix/X${DISPLAY_NUM}"
@@ -131,16 +131,34 @@ fi
 # only watching" a property of the page rather than of the connection, which is
 # a promise the browser could break by accident.
 #
-# Bound to 0.0.0.0 inside the container and published to 127.0.0.1 on the host,
-# so the reachable surface is the loopback interface of the machine the app is
-# running on and nothing else. -nopw for the same reason: the boundary is the
-# port publish, and a password neither side has to type is theatre.
+# websockify is bound to 0.0.0.0 inside the container, because that is the
+# address Docker's port publish forwards to; on the host it is published to
+# 127.0.0.1 only. That alone is not a boundary: any other container on the
+# same Docker network can reach 0.0.0.0 here, and with no password it could
+# watch and drive this desktop - including a browser someone is signed into.
+# So both servers require the password the app generated for this machine and
+# handed over as INERTIA_SCREEN_PASSWORD, and the app gives every machine a
+# network of its own as well.
+#
+# The password goes through a file rather than x11vnc's argv, where anything
+# that can list processes would read it. Without one the screen is not
+# served at all, rather than served open: a container started by hand from
+# this image gets a shell and a browser but no live screen.
 NOVNC_ROOT=/usr/share/novnc
-if [[ -d "$NOVNC_ROOT" ]] && command -v x11vnc >/dev/null 2>&1; then
-  x11vnc -display "$DISPLAY" -forever -shared -viewonly -nopw     -listen 127.0.0.1 -rfbport 5900 -xkb -ncache 0 >/tmp/inertia/x11vnc-view.log 2>&1 &
-  x11vnc -display "$DISPLAY" -forever -shared -nopw     -listen 127.0.0.1 -rfbport 5901 -xkb -ncache 0 >/tmp/inertia/x11vnc-control.log 2>&1 &
-  websockify --heartbeat=30 --web="$NOVNC_ROOT" 0.0.0.0:6080 127.0.0.1:5900     >/tmp/inertia/novnc-view.log 2>&1 &
-  websockify --heartbeat=30 --web="$NOVNC_ROOT" 0.0.0.0:6081 127.0.0.1:5901     >/tmp/inertia/novnc-control.log 2>&1 &
+PASSWORD_FILE=/tmp/inertia/screen-password
+if [[ -z "${INERTIA_SCREEN_PASSWORD:-}" ]]; then
+  echo "live screen disabled: INERTIA_SCREEN_PASSWORD is not set" >&2
+  echo 0 > /tmp/inertia/screen-up
+elif [[ -d "$NOVNC_ROOT" ]] && command -v x11vnc >/dev/null 2>&1; then
+  (umask 077 && printf '%s\n' "$INERTIA_SCREEN_PASSWORD" > "$PASSWORD_FILE")
+  x11vnc -display "$DISPLAY" -forever -shared -viewonly -passwdfile "$PASSWORD_FILE" \
+    -listen 127.0.0.1 -rfbport 5900 -xkb -ncache 0 >/tmp/inertia/x11vnc-view.log 2>&1 &
+  x11vnc -display "$DISPLAY" -forever -shared -passwdfile "$PASSWORD_FILE" \
+    -listen 127.0.0.1 -rfbport 5901 -xkb -ncache 0 >/tmp/inertia/x11vnc-control.log 2>&1 &
+  websockify --heartbeat=30 --web="$NOVNC_ROOT" 0.0.0.0:6080 127.0.0.1:5900 \
+    >/tmp/inertia/novnc-view.log 2>&1 &
+  websockify --heartbeat=30 --web="$NOVNC_ROOT" 0.0.0.0:6081 127.0.0.1:5901 \
+    >/tmp/inertia/novnc-control.log 2>&1 &
   screen_up=0
   for _ in $(seq 1 40); do
     if (echo >/dev/tcp/127.0.0.1/6080) >/dev/null 2>&1; then screen_up=1; break; fi
