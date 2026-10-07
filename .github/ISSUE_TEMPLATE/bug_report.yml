@@ -1,0 +1,83 @@
+name: Bug report
+description: Something in Inertia does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security problems must not be reported here**; use the repository's Security tab > "Report a vulnerability" instead (see SECURITY.md).
+
+        Before posting logs or screenshots, remove API keys, tokens, personal file paths and anything else private.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Ask the agent to ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Inertia version
+      description: Shown in Settings > About, or the commit hash if you built from source.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Release installer
+        - Built from source
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Chat and agents
+        - Tools and permissions
+        - Model providers
+        - MCP / OpenAPI / Composio
+        - Routines
+        - Memory or skills
+        - Computers (Docker / Daytona / local)
+        - Terminal or browser pane
+        - Voice
+        - Installer / uninstaller
+        - Other
+  - type: input
+    id: provider
+    attributes:
+      label: Model provider and model
+      description: If relevant, e.g. "Anthropic, claude-sonnet-4" or "Ollama, llama3.1".
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, errors or screenshots
+      description: Error messages, relevant output, or screenshots. Remove anything private first.
+      render: text

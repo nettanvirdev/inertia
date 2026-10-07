@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/nettanvirdev/inertia/security/advisories/new
+    about: Report security problems privately. Please do not open a public issue.
+  - name: Questions and ideas
+    url: https://github.com/nettanvirdev/inertia/discussions
+    about: Ask a question or discuss an idea.
+  - name: Documentation
+    url: https://github.com/nettanvirdev/inertia/tree/master/docs
+    about: Guides for using and developing Inertia.
