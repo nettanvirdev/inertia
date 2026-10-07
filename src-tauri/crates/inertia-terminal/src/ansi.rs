@@ -112,7 +112,7 @@ fn percent_decode(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// `/D:/oss/inertia` is what a `file://` URL calls a Windows path, and it is
+/// `/D:/code/inertia` is what a `file://` URL calls a Windows path, and it is
 /// not one. The leading slash comes off; nothing else is touched.
 fn normalize(value: &str) -> Option<String> {
     let text = value.trim();
@@ -142,8 +142,8 @@ mod tests {
 
     #[test]
     fn a_file_url_holding_a_windows_path_loses_its_leading_slash() {
-        let raw = "\u{1b}]7;file:///D:/oss/inertia\u{1b}\\";
-        assert_eq!(read_cwd(raw).as_deref(), Some("D:/oss/inertia"));
+        let raw = "\u{1b}]7;file:///D:/code/inertia\u{1b}\\";
+        assert_eq!(read_cwd(raw).as_deref(), Some("D:/code/inertia"));
     }
 
     /// A chunk spanning two prompts holds two reports, and the shell is where

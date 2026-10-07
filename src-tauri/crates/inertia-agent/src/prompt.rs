@@ -2027,10 +2027,10 @@ mod tests {
     fn a_folder_that_changed_mid_conversation_is_said_out_loud() {
         let text = environment(&Context {
             cwd: "C:/work/website".into(),
-            previous_cwd: Some("D:/Inertia/files/work".into()),
+            previous_cwd: Some("C:/Users/you/Documents/Inertia/files/work".into()),
             ..context()
         });
-        assert!(text.contains("  Working directory: C:/work/website\n  Earlier turns in this conversation ran in: D:/Inertia/files/work\n  The user changed it. What you said about the old folder was true then.\n"));
+        assert!(text.contains("  Working directory: C:/work/website\n  Earlier turns in this conversation ran in: C:/Users/you/Documents/Inertia/files/work\n  The user changed it. What you said about the old folder was true then.\n"));
 
         let same = environment(&Context {
             cwd: "C:/work/website".into(),

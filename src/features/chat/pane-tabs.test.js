@@ -105,7 +105,7 @@ describe("activeOf", () => {
 
 describe("labelFor", () => {
   it("names a terminal after its folder", () => {
-    expect(labelFor({ kind: "sh", serial: 1, cwd: "D:\\oss\\inertia" })).toBe("inertia");
+    expect(labelFor({ kind: "sh", serial: 1, cwd: "D:\\code\\inertia" })).toBe("inertia");
     expect(labelFor({ kind: "sh", serial: 1, cwd: "/home/me/project/" })).toBe("project");
   });
 

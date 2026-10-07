@@ -115,7 +115,7 @@ const WRITE_TOOLS = new Set(["write", "edit", "patch"]);
 
 /**
  * The paths an agent deliberately handed over, which is a different claim from
- * the paths it touched. See `main/tools/builtin/present.cjs`.
+ * the paths it touched. See `builtin/present.rs` in the `inertia-tools` crate.
  */
 function presentedPaths(name, metadata) {
   if (name !== "present") return [];

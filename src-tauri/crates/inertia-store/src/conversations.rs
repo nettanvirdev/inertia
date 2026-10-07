@@ -538,9 +538,9 @@ mod tests {
         assert!(raw.contains("\"updatedAt\""), "got {raw}");
     }
 
-    /// Taken verbatim from a thread in a workspace the Electron build had been
-    /// using for months. It was read as damaged and quarantined, and every
-    /// field below `mode` would have been deleted by the next save.
+    /// Shaped exactly like a thread the Electron build wrote. A file like this
+    /// was read as damaged and quarantined, and every field below `mode` would
+    /// have been deleted by the next save.
     const REAL_THREAD: &str = r#"{
       "id": "thr-local-mta1b2c3-1",
       "agentId": "agent-inertia-dev",
@@ -551,11 +551,11 @@ mod tests {
       "pinned": false,
       "unread": 0,
       "updatedAt": "2026-09-06T17:19:33.869Z",
-      "preview": "@scraper hello",
+      "preview": "@researcher hello",
       "messageCount": 1,
       "computerAttached": null,
       "temporary": false,
-      "room": { "primary": "agent-inertia-dev", "roster": ["agent-inertia-dev", "agent-scraper"], "hops": 1 },
+      "room": { "primary": "agent-inertia-dev", "roster": ["agent-inertia-dev", "agent-researcher"], "hops": 1 },
       "createdAt": "2026-09-06T16:49:20.572Z",
       "context": { "used": 215460, "window": 1000000, "at": 1788715172478 }
     }"#;
@@ -584,7 +584,7 @@ mod tests {
         let written: serde_json::Value = serde_json::from_str(&raw).unwrap();
 
         assert_eq!(written["mode"], "group");
-        assert_eq!(written["room"]["roster"][1], "agent-scraper");
+        assert_eq!(written["room"]["roster"][1], "agent-researcher");
         assert_eq!(written["context"]["window"], 1_000_000);
         assert_eq!(written["temporary"], false);
         assert_eq!(written["draft"], false);

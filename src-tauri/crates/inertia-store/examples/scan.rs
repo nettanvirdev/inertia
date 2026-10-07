@@ -1,10 +1,10 @@
 //! Reads a real workspace folder and reports what came back.
 //!
 //! A unit test proves the code agrees with itself; this proves it agrees with a
-//! folder that was written by the Electron app over months of real use, which
-//! is the only thing that actually matters for the port.
+//! folder that real use has written, including one an older build produced.
+//! Anything reported as unreadable is a record the app would quarantine.
 //!
-//!     cargo run -p inertia-store --example scan -- D:\Inertia
+//!     cargo run -p inertia-store --example scan -- ~/Documents/Inertia
 
 use inertia_store::collections;
 use inertia_store::layout::{Collection, Document, Layout};
