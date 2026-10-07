@@ -16,10 +16,10 @@ export default defineConfig(() => ({
 
   resolve: {
     alias: {
-      // The two aliases the ported renderer is written against. `@shared` is
-      // pure ESM with no imports of its own, which is why the same files can
-      // back both halves of the app rather than growing a second answer to
-      // the same question.
+      // The two aliases `src/` is written against. `@shared` is pure ESM with
+      // no imports of its own: the rules several screens must give the same
+      // answer to, several of them twinned on the Rust side, testable without
+      // a DOM.
       "@": path.resolve(here, "./src"),
       "@shared": path.resolve(here, "./src/shared"),
     },
@@ -27,10 +27,10 @@ export default defineConfig(() => ({
 
   build: {
     target: "chrome130",
-    // On, because a stack trace from a packaged build is otherwise a list of
-    // minified names in one line of one file. The maps are only read when
-    // devtools are open, so they cost disk and nothing at runtime.
-    sourcemap: true,
+    // Only for debug builds (`tauri build --debug` sets TAURI_ENV_DEBUG): a
+    // release build embeds every byte of dist/ in the executable, and the maps
+    // would add megabytes to every download for a stack trace nobody reads.
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
     chunkSizeWarningLimit: 1500,
   },
 

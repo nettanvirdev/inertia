@@ -98,7 +98,7 @@ const { productName, version } = JSON.parse(
   readFileSync(join(appTauri, "tauri.conf.json"), "utf8"),
 );
 
-// 1. The themed uninstaller, staged where the app's bundle.resources expects it.
+// 1. The themed uninstaller, staged where tauri.setup.conf.json expects it.
 run("bunx", ["tauri", "build", "--no-bundle"], uninstallTauri);
 const uninstallBuilt = join(uninstallTauri, "target", "release", "inertia-uninstall.exe");
 if (!existsSync(uninstallBuilt)) {
@@ -113,8 +113,10 @@ console.log(
 Staging uninstaller (${(statSync(uninstallStaged).size / 1024 / 1024).toFixed(1)} MB)`,
 );
 
-// 2. The app.
-run("bun", ["run", "tauri", "build"], root);
+// 2. The app. The uninstaller resource is merged in here rather than living in
+// tauri.conf.json, so a plain `tauri dev` / `tauri build` on a fresh clone (or
+// on macOS and Linux) never needs a file only this script produces.
+run("bun", ["run", "tauri", "build", "--config", "src-tauri/tauri.setup.conf.json"], root);
 
 // 3. The payload.
 const payload = newestNsisInstaller();

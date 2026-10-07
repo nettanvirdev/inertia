@@ -24,11 +24,17 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; form-action 'none'",
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
     "active": false,
-    "icon": ["../../src-tauri/icons/icon.ico", "../../src-tauri/icons/128x128.png"]
+    "icon": [
+      "../../src-tauri/icons/icon.ico",
+      "../../src-tauri/icons/128x128.png"
+    ]
   }
 }

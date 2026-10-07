@@ -1,0 +1,48 @@
+name: CI
+
+# Docs-only changes skip CI: nothing they touch is built or tested.
+on:
+  push:
+    branches: [master]
+    paths-ignore: ["**.md", "docs/**", "LICENSE", ".github/ISSUE_TEMPLATE/**"]
+  pull_request:
+    paths-ignore: ["**.md", "docs/**", "LICENSE", ".github/ISSUE_TEMPLATE/**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - run: bun run build
+
+  # Windows, because that is the platform the app is built and tested on, and
+  # the setup bootstrapper and uninstaller only compile there.
+  rust:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri
+            installer/src-tauri
+            uninstaller/src-tauri
+      # The Tauri crates embed the built frontends at compile time.
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run build:setup-ui
+      - run: cargo clippy --workspace --all-targets --manifest-path src-tauri/Cargo.toml -- -D warnings
+      - run: cargo test --workspace --manifest-path src-tauri/Cargo.toml
+      - run: cargo check --manifest-path installer/src-tauri/Cargo.toml
+      - run: cargo check --manifest-path uninstaller/src-tauri/Cargo.toml

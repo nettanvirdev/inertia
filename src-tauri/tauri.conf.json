@@ -24,7 +24,10 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; frame-src http://127.0.0.1:* https://*.daytonaproxy01.net https://*.daytona.work; object-src 'none'; base-uri 'self'; form-action 'none'",
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
@@ -45,8 +48,16 @@
         "installerHooks": "./windows/hooks.nsh"
       }
     },
+    "publisher": "Tanvir Ahamed",
+    "copyright": "Copyright (c) 2026 Tanvir Ahamed. MIT License.",
+    "license": "MIT",
+    "homepage": "https://github.com/nettanvirdev/inertia",
+    "category": "DeveloperTool",
+    "shortDescription": "A desktop workspace for AI agents",
+    "longDescription": "Inertia is a desktop workspace for AI agents: chat, built-in tools, MCP and OpenAPI integrations, sandboxed computers, routines and memory.",
     "resources": {
-      "resources/inertia-uninstall.exe": "inertia-uninstall.exe"
+      "../LICENSE": "LICENSE.txt",
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     }
   }
 }

@@ -1,8 +1,7 @@
 version: 2
 updates:
-  # Frontend (bun/npm) dependencies. Everything lands in ONE pull request per
-  # run rather than one per package - a starter this size has no CI to gate
-  # them, so a single reviewable bump beats a dozen separate ones.
+  # One grouped pull request per ecosystem per week rather than one per
+  # package: CI gates each group, and a single reviewable bump beats a dozen.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -13,13 +12,25 @@ updates:
         patterns:
           - "*"
 
-  # Rust/Tauri dependencies
+  # The app workspace and the two setup binaries each keep their own lockfile.
   - package-ecosystem: "cargo"
-    directory: "/src-tauri"
+    directories:
+      - "/src-tauri"
+      - "/installer/src-tauri"
+      - "/uninstaller/src-tauri"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
     groups:
       cargo:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
         patterns:
           - "*"

@@ -1,0 +1,7 @@
+# Normalise line endings in the repository; check out native endings locally.
+* text=auto
+
+# Files that run inside the Linux sandbox image, or are embedded into the app
+# binary with include_str!, must stay LF on every platform.
+*.sh text eol=lf
+src-tauri/crates/inertia-computers/sandbox/** text eol=lf

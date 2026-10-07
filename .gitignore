@@ -26,3 +26,20 @@ dist-ssr
 # Setup bootstrapper build output
 dist-installer
 dist-setup
+
+# Local tool config
+.claude/
+
+# Secrets and signing material - never commit these
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+secrets.json
+
+# Stray images dropped at the repo root (docs images live in docs/assets/)
+/*.png
+/*.jpg

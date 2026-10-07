@@ -202,7 +202,7 @@ describe("the icon set", () => {
  * The other half of "does every icon render": the ones that are files.
  *
  * The drawn set is only most of what the app shows. The logo in the rail, the
- * one on the setup screen, the tray icon, the .ico electron-builder stamps
+ * one on the setup screen, the tray icon, the .ico the Tauri bundler stamps
  * into the .exe and the two BMPs NSIS paints on the installer are all files on
  * disk named by a string somewhere, and every one of those strings can be
  * wrong in a way nothing notices until a user is looking at the result.
@@ -251,13 +251,8 @@ describe("the image files the app ships", () => {
     ).toEqual([]);
   });
 
-  it("has every logo the renderer and the tray ask for", () => {
-    // The tray falls back through this list and shows an empty square if all
-    // of them are gone, which on Windows is indistinguishable from a tray icon
-    // that simply failed to draw.
+  it("has every logo the renderer asks for", () => {
     const results = [
-      "public/assets/logo.png",
-      "public/assets/logo-32.png",
       "public/assets/logo-64.png",
       "public/assets/logo-256.png",
       "public/assets/logo-512.png",
@@ -283,13 +278,13 @@ describe("the image files the app ships", () => {
   });
 
   it("keeps those <img> sources relative, so they survive file://", () => {
-    // The packaged app is loaded with `loadFile(dist/index.html)`. Under a
-    // file:// document, `src="/assets/logo-256.png"` is the root of the drive:
-    // it resolved to file:///D:/assets/logo-256.png and ERR_FILE_NOT_FOUND, so
-    // the setup screen, the rail and the settings header all opened with a
-    // broken-image box in every build that was ever packaged. Vite rewrites
-    // the absolute form inside index.html, which is why the favicon was fine
-    // and nothing else was, and why dev never showed it.
+    // A relative source resolves under any origin the page is served from. The
+    // earlier Electron build loaded `dist/index.html` as a file:// document,
+    // where `src="/assets/logo-256.png"` is the root of the drive: it resolved
+    // to file:///D:/assets/logo-256.png and ERR_FILE_NOT_FOUND, so the setup
+    // screen, the rail and the settings header all opened with a broken-image
+    // box in every build that was packaged. Tauri's asset protocol would
+    // forgive the absolute form; this keeps the pages from depending on that.
     const absolute = [];
     for (const file of sourceFiles(path.join(root, "src"))) {
       const rel = path.relative(root, file).split(path.sep).join("/");

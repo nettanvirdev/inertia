@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "resources/inertia-uninstall.exe": "inertia-uninstall.exe"
+    }
+  }
+}
